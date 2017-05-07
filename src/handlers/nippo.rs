@@ -22,7 +22,7 @@ pub fn new_handler(req: &mut Request) -> IronResult<Response> {
     let mut login_user: models::user::User = models::user::User{..Default::default()};
     match handlers::account::current_user(req, &conn) {
         Ok(user) => { login_user = user; }
-        Err(e) => { println!("Errored: {:?}", e); }
+        Err(e) => { error!("Errored: {:?}", e); }
     }
     let login_id = login_user.id;
     if login_id == 0 {
@@ -50,7 +50,7 @@ pub fn create_handler(req: &mut Request) -> IronResult<Response> {
     let mut login_user: models::user::User = models::user::User{..Default::default()};
     match handlers::account::current_user(req, &conn) {
         Ok(user) => { login_user = user; }
-        Err(e) => { println!("Errored: {:?}", e); }
+        Err(e) => { error!("Errored: {:?}", e); }
     }
     let login_id = login_user.id;
     if login_id == 0 {
@@ -109,7 +109,7 @@ pub fn create_handler(req: &mut Request) -> IronResult<Response> {
             return Ok(Response::with((status::Found, Redirect(url))));
         }
         Err(e) => {
-            println!("Errored: {:?}", e);
+            error!("Errored: {:?}", e);
             return Ok(Response::with((status::InternalServerError)));
         }
     }
@@ -120,7 +120,7 @@ pub fn list_handler(req: &mut Request) -> IronResult<Response> {
     let mut login_user: models::user::User = models::user::User{..Default::default()};
     match handlers::account::current_user(req, &conn) {
         Ok(user) => { login_user = user; }
-        Err(e) => { println!("Errored: {:?}", e); }
+        Err(e) => { error!("Errored: {:?}", e); }
     }
     let login_id = login_user.id;
     if login_id == 0 {
@@ -165,7 +165,7 @@ pub fn list_handler(req: &mut Request) -> IronResult<Response> {
             posts = posts_db;
         }
         Err(e) => {
-            println!("Errored: {:?}", e);
+            error!("Errored: {:?}", e);
             return Ok(Response::with((status::InternalServerError)));
         }
     }
@@ -175,7 +175,7 @@ pub fn list_handler(req: &mut Request) -> IronResult<Response> {
             count = count_db;
         }
         Err(e) => {
-            println!("Errored: {:?}", e);
+            error!("Errored: {:?}", e);
             return Ok(Response::with((status::InternalServerError)));
         }
     }
@@ -203,7 +203,7 @@ pub fn show_handler(req: &mut Request) -> IronResult<Response> {
     let mut login_user: models::user::User = models::user::User{..Default::default()};
     match handlers::account::current_user(req, &conn) {
         Ok(user) => { login_user = user; }
-        Err(e) => { println!("Errored: {:?}", e); }
+        Err(e) => { error!("Errored: {:?}", e); }
     }
     let login_id = login_user.id;
     if login_id == 0 {
@@ -236,7 +236,7 @@ pub fn show_handler(req: &mut Request) -> IronResult<Response> {
             post = post_db;
         }
         Err(e) => {
-            println!("Errored: {:?}", e);
+            error!("Errored: {:?}", e);
             return Ok(Response::with((status::InternalServerError)));
         }
     }
@@ -246,7 +246,7 @@ pub fn show_handler(req: &mut Request) -> IronResult<Response> {
             comments = comments_db;
         }
         Err(e) => {
-            println!("Errored: {:?}", e);
+            error!("Errored: {:?}", e);
             return Ok(Response::with((status::InternalServerError)));
         }
     }
@@ -270,7 +270,7 @@ pub fn delete_handler(req: &mut Request) -> IronResult<Response> {
     let mut login_user: models::user::User = models::user::User{..Default::default()};
     match handlers::account::current_user(req, &conn) {
         Ok(user) => { login_user = user; }
-        Err(e) => { println!("Errored: {:?}", e); }
+        Err(e) => { error!("Errored: {:?}", e); }
     }
     let login_id = login_user.id;
     if login_id == 0 {
@@ -291,7 +291,7 @@ pub fn delete_handler(req: &mut Request) -> IronResult<Response> {
             }
         }
         Err(e) => {
-            println!("Errored: {:?}", e);
+            error!("Errored: {:?}", e);
             return Ok(Response::with((status::InternalServerError)));
         }
     }
@@ -301,7 +301,7 @@ pub fn delete_handler(req: &mut Request) -> IronResult<Response> {
             return Ok(Response::with((status::Found, Redirect(url_for!(req, "nippo/list")))));
         }
         Err(e) => {
-            println!("Errored: {:?}", e);
+            error!("Errored: {:?}", e);
             Ok(Response::with((status::InternalServerError)))
         }
     }
@@ -312,7 +312,7 @@ pub fn edit_handler(req: &mut Request) -> IronResult<Response> {
     let mut login_user: models::user::User = models::user::User{..Default::default()};
     match handlers::account::current_user(req, &conn) {
         Ok(user) => { login_user = user; }
-        Err(e) => { println!("Errored: {:?}", e); }
+        Err(e) => { error!("Errored: {:?}", e); }
     }
     let login_id = login_user.id;
     if login_id == 0 {
@@ -345,7 +345,7 @@ pub fn edit_handler(req: &mut Request) -> IronResult<Response> {
             post = post_db;
         }
         Err(e) => {
-            println!("Errored: {:?}", e);
+            error!("Errored: {:?}", e);
             return Ok(Response::with((status::InternalServerError)));
         }
     }
@@ -374,7 +374,7 @@ pub fn update_handler(req: &mut Request) -> IronResult<Response> {
     let mut login_user: models::user::User = models::user::User{..Default::default()};
     match handlers::account::current_user(req, &conn) {
         Ok(user) => { login_user = user; }
-        Err(e) => { println!("Errored: {:?}", e); }
+        Err(e) => { error!("Errored: {:?}", e); }
     }
     let login_id = login_user.id;
     if login_id == 0 {
@@ -436,7 +436,7 @@ pub fn update_handler(req: &mut Request) -> IronResult<Response> {
             }
         }
         Err(e) => {
-            println!("Errored: {:?}", e);
+            error!("Errored: {:?}", e);
             return Ok(Response::with((status::InternalServerError)));
         }
     }
@@ -450,7 +450,7 @@ pub fn update_handler(req: &mut Request) -> IronResult<Response> {
             for diff in diff::lines(left, right) {
                 match diff {
                     diff::Result::Left(l)    => diff_body += &format!("-{}\n", l),
-                    diff::Result::Both(l, _) => print!(" {}\n", l),
+                    diff::Result::Both(l, _) => debug!(" {}\n", l),
                     diff::Result::Right(r)   => diff_body += &format!("+{}\n", r)
                 }
             }
@@ -464,7 +464,7 @@ pub fn update_handler(req: &mut Request) -> IronResult<Response> {
             return Ok(Response::with((status::Found, Redirect(url))));
         }
         Err(e) => {
-            println!("Errored: {:?}", e);
+            error!("Errored: {:?}", e);
             return Ok(Response::with((status::InternalServerError)));
         }
     }
@@ -475,7 +475,7 @@ pub fn comment_handler(req: &mut Request) -> IronResult<Response> {
     let mut login_user: models::user::User = models::user::User{..Default::default()};
     match handlers::account::current_user(req, &conn) {
         Ok(user) => { login_user = user; }
-        Err(e) => { println!("Errored: {:?}", e); }
+        Err(e) => { error!("Errored: {:?}", e); }
     }
     let login_id = login_user.id;
     if login_id == 0 {
@@ -513,7 +513,7 @@ pub fn comment_handler(req: &mut Request) -> IronResult<Response> {
             return Ok(Response::with((status::Found, Redirect(url))));
         }
         Err(e) => {
-            println!("Errored: {:?}", e);
+            error!("Errored: {:?}", e);
             return Ok(Response::with((status::InternalServerError)));
         }
     }

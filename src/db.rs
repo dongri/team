@@ -13,12 +13,12 @@ macro_rules! get_pg_connection {
         Ok(pool) => match pool.get() {
             Ok(conn) => conn,
             Err(_) => {
-                println!("Couldn't get a connection to pg!");
+                error!("Couldn't get a connection to pg!");
                 return Ok(Response::with((status::InternalServerError)));
             }
         },
         Err(_) => {
-            println!("Couldn't get the pg pool from the request!");
+            error!("Couldn't get the pg pool from the request!");
             return Ok(Response::with((status::InternalServerError)));
         }
     })

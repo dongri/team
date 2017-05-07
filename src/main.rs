@@ -32,11 +32,15 @@ extern crate hyper_tls;
 extern crate futures;
 extern crate tokio_core;
 
+#[macro_use]
+extern crate log;
+extern crate fern;
+
 use std::error::Error;
 use std::path::Path;
 
 use iron::prelude::*;
-use router::{Router};
+use router::Router;
 use hbs::{HandlebarsEngine, DirectorySource};
 use staticfile::Static;
 use mount::Mount;
@@ -52,7 +56,10 @@ mod handlers;
 mod models;
 mod helper;
 
-struct LoggerHandler<H: Handler> { logger: Logger, handler: H }
+struct LoggerHandler<H: Handler> {
+    logger: Logger,
+    handler: H,
+}
 impl<H: Handler> Handler for LoggerHandler<H> {
     fn handle(&self, req: &mut Request) -> IronResult<Response> {
         let entry = time::precise_time_ns();
@@ -65,19 +72,40 @@ impl<H: Handler> Handler for LoggerHandler<H> {
 struct Logger;
 impl Logger {
     fn log(&self, req: &Request, res: Result<&Response, &IronError>, time: u64) {
-        println!("Request: {:?}\nResponse: {:?}\nResponse-Time: {:?}", req, res, time)
+        info!("Request: {:?}\nResponse: {:?}\nResponse-Time: {:?}",
+              req,
+              res,
+              time)
     }
 }
 impl AroundMiddleware for Logger {
     fn around(self, handler: Box<Handler>) -> Box<Handler> {
         Box::new(LoggerHandler {
-            logger: self,
-            handler: handler
-        }) as Box<Handler>
+                     logger: self,
+                     handler: handler,
+                 }) as Box<Handler>
     }
 }
 
+fn setup_fern(level: log::LogLevelFilter) {
+    fern::Dispatch::new()
+        .format(|out, message, record| {
+            out.finish(format_args!("[{}][{}/{}:{}][{}] {}",
+                                    chrono::Local::now().to_rfc3339(),
+                                    record.location().module_path(),
+                                    record.location().file(),
+                                    record.location().line(),
+                                    record.level(),
+                                    message))
+        })
+        .level(level)
+        .chain(std::io::stdout())
+        .apply()
+        .unwrap();
+}
+
 fn main() {
+    setup_fern(log::LogLevelFilter::Debug);
     let router = handlers::router::create_router();
 
     let mut mount = Mount::new();
@@ -90,14 +118,13 @@ fn main() {
     let mut chain = Chain::new(mount);
 
     let mut hbse = HandlebarsEngine::new();
-    hbse.add(Box::new(
-        DirectorySource::new("./templates/", ".hbs")));
+    hbse.add(Box::new(DirectorySource::new("./templates/", ".hbs")));
     if let Err(r) = hbse.reload() {
         panic!("{}", r.description());
     }
     chain.link_after(hbse);
 
-    let conn_string:String = helper::get_env("TEAM_DATABASE_URL");
+    let conn_string: String = helper::get_env("TEAM_DATABASE_URL");
     let pool = db::get_pool(&conn_string);
     chain.link(PRead::<db::PostgresDB>::both(pool));
 
@@ -111,6 +138,6 @@ fn main() {
         port = "3000".to_string();
     }
     let listen = format!("{}:{}", "0.0.0.0", port);
-    println!("Listen {:?}", listen);
+    info!("Listen {:?}", listen);
     Iron::new(chain).http(listen).unwrap();
 }

@@ -55,7 +55,7 @@ pub fn tag_search(conn: &db::PostgresConnection, tag_name: &String, offset: i32,
                 });
             },
             Err(e) => {
-                println!("Errored: {:?}", e);
+                error!("Errored: {:?}", e);
             }
         }
     }

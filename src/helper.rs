@@ -60,7 +60,7 @@ pub fn post_to_slack(conn: &db::PostgresConnection, user_id: &i32, title: &Strin
             slack(text);
         }
         Err(e) => {
-            println!("Errored: {:?}", e);
+            error!("Errored: {:?}", e);
         }
     }
 }
@@ -79,9 +79,9 @@ pub fn slack(text: String) {
                 .build()
                 .unwrap();
             let res = slack.send(&p);
-            println!("{:?}", res);
+            error!("{:?}", res);
         }
-        _ => println!("can not connect to slack(env TEAM_SLACK={})", url),
+        _ => error!("can not connect to slack(env TEAM_SLACK={})", url),
     }
 }
 
@@ -108,7 +108,7 @@ pub fn webhook(username: String, title: String, body: String, url: String) {
 
     let post = client.request(req);
     let res = core.run(post);
-    println!("{:?}", res);
+    error!("{:?}", res);
 }
 
 
