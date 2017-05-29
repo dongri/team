@@ -1,0 +1,20 @@
+<header class="mui-appbar mui--z1">
+  <div class="mui-container">
+    <table width="100%">
+      <tr class="mui--appbar-height">
+        <td class="mui--text-title">Team</td>
+        <td align="right">
+          <ul class="mui-list--inline mui--text-body2">
+            <li><a href="/nippo/list">Nippo</a></li>
+            {{#if logged_in}}
+              <li><a href="/signout">Sign Out</a></li>
+            {{else}}
+              <li><a href="/signin">Sign In</a></li>
+              <li><a href="/signup">Sign Up</a></li>
+            {{/if}}
+          </ul>
+        </td>
+      </tr>
+    </table>
+  </div>
+</header>

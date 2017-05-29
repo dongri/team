@@ -1,0 +1,27 @@
+[package]
+name = "team"
+version = "0.1.0"
+authors = ["Dongri Jin <dongrify@gmail.com>"]
+
+[dependencies]
+iron = "0.5.1"
+router = "0.5.1"
+mount = "0.3.0"
+persistent = "0.3.0"
+staticfile = "0.4.0"
+params = "0.6.0"
+iron-sessionstorage = "0.6.6"
+urlencoded = "0.5.0"
+
+postgres = "0.14.1"
+r2d2 = "0.7.2"
+r2d2_postgres = "0.12.0"
+
+handlebars-iron = "0.24.1"
+
+serde = "1.0.7"
+serde_json = "1.0.2"
+serde_derive = "1.0.7"
+
+[features]
+integration_tests = []
