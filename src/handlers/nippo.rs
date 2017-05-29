@@ -27,7 +27,7 @@ pub fn new_handler(req: &mut Request) -> IronResult<Response> {
     let data = Data {
         logged_in: login_id != 0,
     };
-    resp.set_mut(Template::new("nippo/form", to_json(&data))).set_mut(status::Ok);
+    resp.set_mut(helper::template("nippo/form", to_json(&data))).set_mut(status::Ok);
     return Ok(resp);
 }
 
@@ -65,8 +65,6 @@ pub fn create_handler(req: &mut Request) -> IronResult<Response> {
         Ok(id) => {
             let url = Url::parse(&format!("{}/{}/{}", helper::get_domain(), "/nippo/show", id).to_string()).unwrap();
             return Ok(Response::with((status::Found, Redirect(url))));
-            // let path = &format!("{}/{}", "nippo/show", id);
-            // return Ok(Response::with((status::Found, Redirect(url_for!(req, path)))));
         },
         Err(e) => {
             println!("Errored: {:?}", e);
@@ -160,12 +158,25 @@ pub fn delete_handler(req: &mut Request) -> IronResult<Response> {
     if login_id == 0 {
         return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
     }
-    let conn = get_pg_connection!(req);
+    let conn_s = get_pg_connection!(req);
+    let conn_d = get_pg_connection!(req);
 
     let ref id_str = req.extensions.get::<Router>().unwrap().find("id").unwrap_or("/");
     let id = id_str.parse::<i32>().unwrap();
 
-    match models::nippo::delete_nippo_by_id(conn, id) {
+    match models::nippo::get_nippo_by_id(conn_s, id) {
+        Ok(nippo) => {
+            if nippo.user_id != login_id {
+                return Ok(Response::with((status::Forbidden)));
+            }
+        },
+        Err(e) => {
+            println!("Errored: {:?}", e);
+            return Ok(Response::with((status::InternalServerError)));
+        }
+    }
+
+    match models::nippo::delete_nippo_by_id(conn_d, id) {
         Ok(_) => {
             return Ok(Response::with((status::Found, Redirect(url_for!(req, "nippo/list")))));
         },
@@ -196,6 +207,9 @@ pub fn edit_handler(req: &mut Request) -> IronResult<Response> {
 
     match models::nippo::get_nippo_by_id(conn, id) {
         Ok(nippo_obj) => {
+            if nippo_obj.user_id != login_id {
+                return Ok(Response::with((status::Forbidden)));
+            }
             nippo = nippo_obj;
         },
         Err(e) => {
@@ -216,7 +230,9 @@ pub fn update_handler(req: &mut Request) -> IronResult<Response> {
     if login_id == 0 {
         return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
     }
-    let conn = get_pg_connection!(req);
+
+    let conn_s = get_pg_connection!(req);
+    let conn_u = get_pg_connection!(req);
 
     use params::{Params, Value};
     let map = req.get_ref::<Params>().unwrap();
@@ -247,8 +263,19 @@ pub fn update_handler(req: &mut Request) -> IronResult<Response> {
         _ => print!("{:?}", "a"),
     }
 
+    match models::nippo::get_nippo_by_id(conn_s, id) {
+        Ok(nippo_obj) => {
+            if nippo_obj.user_id != login_id {
+                return Ok(Response::with((status::Forbidden)));
+            }
+        },
+        Err(e) => {
+            println!("Errored: {:?}", e);
+            return Ok(Response::with((status::InternalServerError)));
+        }
+    }
 
-    match models::nippo::update_nippo(conn, id, title.to_string(), body.to_string()) {
+    match models::nippo::update_nippo(conn_u, id, title.to_string(), body.to_string()) {
         Ok(_) => {
             let url = Url::parse(&format!("{}/{}/{}", helper::get_domain(), "nippo/show", id).to_string()).unwrap();
             return Ok(Response::with((status::Found, Redirect(url))));

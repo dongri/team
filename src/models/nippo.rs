@@ -4,7 +4,7 @@ use db;
 #[derive(Serialize, Debug, Default)]
 pub struct Nippo {
     id: i32,
-    user_id: i32,
+    pub user_id: i32,
     title: String,
     body: String,
 }
