@@ -1,24 +1,14 @@
-<!doctype html>
-<html>
-  <head>
-    {{> meta}}
-  </head>
-  <body>
-    {{> header}}
-    <div class="mui-container">
-      <div class="mui--appbar-height"></div>
-      <form class="mui-form" action="/nippo/create" method="post">
-        <legend>タイトル</legend>
-        <div class="mui-textfield">
-          <input type="text" placeholder="" name="title">
-        </div>
-        <legend>本文 (markdown)</legend>
-        <div class="mui-textfield">
-          <textarea placeholder="" name=body></textarea>
-        </div>
-        <button type="submit" class="mui-btn mui-btn--raised">Submit</button>
-      </form>
+{{#*inline "page"}}
+  <form class="mui-form" action="/nippo/create" method="post">
+    <legend>タイトル</legend>
+    <div class="mui-textfield">
+      <input type="text" placeholder="" name="title">
     </div>
-    {{> footer}}
-  </body>
-</html>
+    <legend>本文 (markdown)</legend>
+    <div class="mui-textfield">
+      <textarea placeholder="" name=body></textarea>
+    </div>
+    <button type="submit" class="mui-btn mui-btn--raised">Submit</button>
+  </form>
+{{/inline}}
+{{~> layout ~}}

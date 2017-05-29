@@ -1,24 +1,14 @@
-<!doctype html>
-<html>
-  <head>
-    {{> meta}}
-  </head>
-  <body>
-    {{> header}}
-    <div class="mui-container">
-      <div class="mui--appbar-height"></div>
-      <form class="mui-form" action="/signin" method="post">
-        <legend>Email</legend>
-        <div class="mui-textfield">
-          <input type="text" placeholder="" name="email">
-        </div>
-        <legend>Password</legend>
-        <div class="mui-textfield">
-          <input type="password" placeholder="" name="password">
-        </div>
-        <button type="submit" class="mui-btn mui-btn--raised">Submit</button>
-      </form>
+{{#*inline "page"}}
+  <form class="mui-form" action="/signin" method="post">
+    <legend>Email</legend>
+    <div class="mui-textfield">
+      <input type="text" placeholder="" name="email">
     </div>
-    {{> footer}}
-  </body>
-</html>
+    <legend>Password</legend>
+    <div class="mui-textfield">
+      <input type="password" placeholder="" name="password">
+    </div>
+    <button type="submit" class="mui-btn mui-btn--raised">Submit</button>
+  </form>
+{{/inline}}
+{{~> layout ~}}

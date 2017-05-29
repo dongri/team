@@ -1,47 +1,35 @@
-<!doctype html>
-<html>
-  <head>
-    {{> meta}}
-  </head>
-  <body>
-    {{> header}}
-    <div class="mui-container">
-      <div class="mui--appbar-height"></div>
-      <form class="mui-form" action="/nippo/create" method="post">
-        <legend>タイトル</legend>
-        <div class="mui-textfield">
-          {{nippo.title}}
-        </div>
-        <legend>本文 (markdown)</legend>
-        <div class="mui-textfield" id="marked">
-        </div>
-      </form>
-      <a href="/nippo/edit/{{nippo.id}}">Edit</a> |
-      <a href="/nippo/delete/{{nippo.id}}">Delete</a>
-
-
-      <ul>
-        {{#each comments}}
-          <li>
-            <b>{{body}}</b>
-          </li>
-        {{/each}}
-      </ul>
-
-      <form class="mui-form" action="/nippo/comment" method="post">
-        <input type="hidden" name="id" value="{{nippo.id}}">
-        <legend>コメント</legend>
-        <div class="mui-textfield">
-          <textarea placeholder="" name=body></textarea>
-        </div>
-        <button type="submit" class="mui-btn mui-btn--raised">Submit</button>
-      </form>
-
+{{#*inline "page"}}
+  <form class="mui-form" action="/nippo/create" method="post">
+    <legend>タイトル</legend>
+    <div class="mui-textfield">
+      {{nippo.title}}
     </div>
-    {{> footer}}
+    <legend>本文 (markdown)</legend>
+    <div class="mui-textfield" id="marked">
+    </div>
+  </form>
+  <a href="/nippo/edit/{{nippo.id}}">Edit</a> |
+  <a href="/nippo/delete/{{nippo.id}}">Delete</a>
 
-    <script>
-      document.getElementById('marked').innerHTML = marked('{{nippo.body}}');
-    </script>
-  </body>
-</html>
+
+  <ul>
+    {{#each comments}}
+      <li>
+        <b>{{body}}</b>
+      </li>
+    {{/each}}
+  </ul>
+
+  <form class="mui-form" action="/nippo/comment" method="post">
+    <input type="hidden" name="id" value="{{nippo.id}}">
+    <legend>コメント</legend>
+    <div class="mui-textfield">
+      <textarea placeholder="" name=body></textarea>
+    </div>
+    <button type="submit" class="mui-btn mui-btn--raised">Submit</button>
+  </form>
+  <script>
+    document.getElementById('marked').innerHTML = marked('{{nippo.body}}');
+  </script>
+{{/inline}}
+{{~> layout ~}}
