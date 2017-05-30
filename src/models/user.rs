@@ -9,14 +9,14 @@ pub struct User {
     password: String,
 }
 
-pub fn create_user(conn: db::PostgresConnection, email: String, username: String, password: String) -> Result<(), Error> {
+pub fn create(conn: db::PostgresConnection, email: String, username: String, password: String) -> Result<(), Error> {
     conn.execute(
         "INSERT INTO users (email, username, password) VALUES ($1, $2, $3);",
         &[&email, &username, &password]
     ).map(|_| ())
 }
 
-pub fn get_user_by_username_password(conn: db::PostgresConnection, email: String, password: String) -> Result<User, Error> {
+pub fn get_by_username_password(conn: db::PostgresConnection, email: String, password: String) -> Result<User, Error> {
     let mut user: User = User{..Default::default()};
     for row in &conn.query("SELECT id, email, username, password from users where email = $1 and password = $2", &[&email, &password]).unwrap() {
         user = User {

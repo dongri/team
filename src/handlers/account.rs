@@ -1,16 +1,15 @@
-use persistent;
-use iron_sessionstorage;
-
 use iron::{Request, status};
 use iron::modifiers::{Redirect};
 use iron::prelude::{IronResult};
-use hbs::{Template};
 use iron::prelude::*;
+use hbs::{Template};
+use persistent;
+
+use iron_sessionstorage;
+use iron_sessionstorage::traits::*;
 
 use db;
 use models;
-
-use iron_sessionstorage::traits::*;
 
 #[derive(Serialize, Debug, Default)]
 pub struct Login {
@@ -50,23 +49,23 @@ pub fn post_signup_handler(req: &mut Request) -> IronResult<Response> {
             Some(&Value::String(ref name)) => {
                 email= name.to_string();
             },
-            _ => email = "".to_string(),
+            _ => return Ok(Response::with((status::BadRequest))),
         }
         match map.get("username") {
             Some(&Value::String(ref name)) => {
                 username = name.to_string();
             },
-            _ => username = "".to_string(),
+            _ => return Ok(Response::with((status::BadRequest))),
         }
         match map.get("password") {
             Some(&Value::String(ref name)) => {
                 password = name.to_string();
             },
-            _ => password = "".to_string(),
+            _ => return Ok(Response::with((status::BadRequest))),
         }
     }
 
-    match models::user::create_user(conn, email, username, password) {
+    match models::user::create(conn, email, username, password) {
         Ok(_) => {
             return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
         },
@@ -101,17 +100,17 @@ pub fn post_signin_handler(req: &mut Request) -> IronResult<Response> {
             Some(&Value::String(ref name)) => {
                 email = name.to_string();
             },
-            _ => email = "".to_string(),
+            _ => return Ok(Response::with((status::BadRequest))),
         }
         match map.get("password") {
             Some(&Value::String(ref name)) => {
                 password = name.to_string();
             },
-            _ => password = "".to_string(),
+            _ => return Ok(Response::with((status::BadRequest))),
         }
     }
 
-    match models::user::get_user_by_username_password(conn, email, password) {
+    match models::user::get_by_username_password(conn, email, password) {
         Ok(user) => {
             println!("{:?}", user.username);
             if user.username != "" {

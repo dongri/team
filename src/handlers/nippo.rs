@@ -45,23 +45,21 @@ pub fn create_handler(req: &mut Request) -> IronResult<Response> {
     {
         use params::{Params, Value};
         let map = req.get_ref::<Params>().unwrap();
-
-
         match map.get("title") {
             Some(&Value::String(ref name)) => {
                 title = name.to_string();
             },
-            _ => title = "".to_string(),
+            _ => return Ok(Response::with((status::BadRequest))),
         }
         match map.get("body") {
             Some(&Value::String(ref name)) => {
                 body = name.to_string();
             },
-            _ => body = "".to_string(),
+            _ => return Ok(Response::with((status::BadRequest))),
         }
     }
 
-    match models::nippo::create_nippo(conn, login_id, title, body) {
+    match models::nippo::create(conn, login_id, title, body) {
         Ok(id) => {
             let url = Url::parse(&format!("{}/{}/{}", helper::get_domain(), "/nippo/show", id).to_string()).unwrap();
             return Ok(Response::with((status::Found, Redirect(url))));
@@ -85,7 +83,7 @@ pub fn list_handler(req: &mut Request) -> IronResult<Response> {
         nippos: Vec<models::nippo::Nippo>,
     }
     let conn = get_pg_connection!(req);
-    match models::nippo::list_nippos(conn) {
+    match models::nippo::list(conn) {
         Ok(nippos) => {
             let data = Data {
                 logged_in: login_id != 0,
@@ -106,8 +104,8 @@ pub fn show_handler(req: &mut Request) -> IronResult<Response> {
     if login_id == 0 {
         return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
     }
-    let conn = get_pg_connection!(req);
-    let conn2 = get_pg_connection!(req);
+    let conn_s = get_pg_connection!(req);
+    let conn_c = get_pg_connection!(req);
     let mut resp = Response::new();
 
     let ref id_str = req.extensions.get::<Router>().unwrap().find("id").unwrap_or("/");
@@ -123,7 +121,7 @@ pub fn show_handler(req: &mut Request) -> IronResult<Response> {
     let nippo: models::nippo::Nippo;
     let comments: Vec<models::nippo::Comment>;
 
-    match models::nippo::get_marked_nippo_by_id(conn, id) {
+    match models::nippo::get_marked_by_id(conn_s, id) {
         Ok(nippo_obj) => {
             nippo = nippo_obj;
         },
@@ -133,7 +131,7 @@ pub fn show_handler(req: &mut Request) -> IronResult<Response> {
         }
     }
 
-    match models::nippo::get_nippo_comments(conn2, id) {
+    match models::nippo::get_comments_by_nippo_id(conn_c, id) {
         Ok(comments_obj) => {
             comments = comments_obj;
         },
@@ -164,7 +162,7 @@ pub fn delete_handler(req: &mut Request) -> IronResult<Response> {
     let ref id_str = req.extensions.get::<Router>().unwrap().find("id").unwrap_or("/");
     let id = id_str.parse::<i32>().unwrap();
 
-    match models::nippo::get_nippo_by_id(conn_s, id) {
+    match models::nippo::get_by_id(conn_s, id) {
         Ok(nippo) => {
             if nippo.user_id != login_id {
                 return Ok(Response::with((status::Forbidden)));
@@ -176,7 +174,7 @@ pub fn delete_handler(req: &mut Request) -> IronResult<Response> {
         }
     }
 
-    match models::nippo::delete_nippo_by_id(conn_d, id) {
+    match models::nippo::delete_by_id(conn_d, id) {
         Ok(_) => {
             return Ok(Response::with((status::Found, Redirect(url_for!(req, "nippo/list")))));
         },
@@ -205,7 +203,7 @@ pub fn edit_handler(req: &mut Request) -> IronResult<Response> {
     let ref id_str = req.extensions.get::<Router>().unwrap().find("id").unwrap_or("/");
     let id = id_str.parse::<i32>().unwrap();
 
-    match models::nippo::get_nippo_by_id(conn, id) {
+    match models::nippo::get_by_id(conn, id) {
         Ok(nippo_obj) => {
             if nippo_obj.user_id != login_id {
                 return Ok(Response::with((status::Forbidden)));
@@ -237,33 +235,32 @@ pub fn update_handler(req: &mut Request) -> IronResult<Response> {
     use params::{Params, Value};
     let map = req.get_ref::<Params>().unwrap();
 
-    let mut id_str = "";
-    let mut title = "";
-    let mut body = "";
+    let id: i32;
+    let title: String;
+    let body: String;
 
     match map.find(&["id"]) {
         Some(&Value::String(ref name)) => {
-            id_str = name
+            id = name.to_string().parse::<i32>().unwrap();
         },
-        _ => print!("{:?}", "a"),
+        _ => return Ok(Response::with((status::BadRequest))),
     }
-    let id = id_str.parse::<i32>().unwrap();
 
     match map.find(&["title"]) {
         Some(&Value::String(ref name)) => {
-            title = name
+            title = name.to_string();
         },
-        _ => print!("{:?}", "a"),
+        _ => return Ok(Response::with((status::BadRequest))),
     }
 
     match map.find(&["body"]) {
         Some(&Value::String(ref name)) => {
-            body = name
+            body = name.to_string();
         },
-        _ => print!("{:?}", "a"),
+        _ => return Ok(Response::with((status::BadRequest))),
     }
 
-    match models::nippo::get_nippo_by_id(conn_s, id) {
+    match models::nippo::get_by_id(conn_s, id) {
         Ok(nippo_obj) => {
             if nippo_obj.user_id != login_id {
                 return Ok(Response::with((status::Forbidden)));
@@ -275,7 +272,7 @@ pub fn update_handler(req: &mut Request) -> IronResult<Response> {
         }
     }
 
-    match models::nippo::update_nippo(conn_u, id, title.to_string(), body.to_string()) {
+    match models::nippo::update(conn_u, id, title, body) {
         Ok(_) => {
             let url = Url::parse(&format!("{}/{}/{}", helper::get_domain(), "nippo/show", id).to_string()).unwrap();
             return Ok(Response::with((status::Found, Redirect(url))));
@@ -297,27 +294,25 @@ pub fn comment_handler(req: &mut Request) -> IronResult<Response> {
     use params::{Params, Value};
     let map = req.get_ref::<Params>().unwrap();
 
-    let mut id_str = "";
-    let mut body = "";
+    let id: i32;
+    let body: String;
 
     match map.find(&["id"]) {
         Some(&Value::String(ref name)) => {
-            id_str = name
+            id = name.parse::<i32>().unwrap();
         },
-        _ => print!("{:?}", "a"),
+        _ => return Ok(Response::with((status::BadRequest))),
     }
-    let id = id_str.parse::<i32>().unwrap();
 
     match map.find(&["body"]) {
         Some(&Value::String(ref name)) => {
-            body = name
+            body = name.to_string();
         },
-        _ => print!("{:?}", "a"),
+        _ => return Ok(Response::with((status::BadRequest))),
     }
 
-    match models::nippo::add_comment_nippo(conn, login_id, id, body.to_string()) {
+    match models::nippo::add_comment(conn, login_id, id, body) {
         Ok(_) => {
-            println!("{:?}", id);
             let url = Url::parse(&format!("{}/{}/{}", helper::get_domain(), "nippo/show", id).to_string()).unwrap();
             return Ok(Response::with((status::Found, Redirect(url))));
         },
