@@ -10,6 +10,7 @@ use iron_sessionstorage::traits::*;
 
 use db;
 use models;
+use helper;
 
 #[derive(Serialize, Debug, Default)]
 pub struct Login {
@@ -39,7 +40,7 @@ pub fn post_signup_handler(req: &mut Request) -> IronResult<Response> {
 
     let email: String;
     let username: String;
-    let password: String;
+    let mut password: String;
 
     {
         use params::{Params, Value};
@@ -47,24 +48,34 @@ pub fn post_signup_handler(req: &mut Request) -> IronResult<Response> {
 
         match map.get("email") {
             Some(&Value::String(ref name)) => {
+                if name == "" {
+                    return Ok(Response::with((status::BadRequest)));
+                }
                 email= name.to_string();
             },
             _ => return Ok(Response::with((status::BadRequest))),
         }
         match map.get("username") {
             Some(&Value::String(ref name)) => {
+                if name == "" {
+                    return Ok(Response::with((status::BadRequest)));
+                }
                 username = name.to_string();
             },
             _ => return Ok(Response::with((status::BadRequest))),
         }
         match map.get("password") {
             Some(&Value::String(ref name)) => {
+                if name == "" {
+                    return Ok(Response::with((status::BadRequest)));
+                }
                 password = name.to_string();
             },
             _ => return Ok(Response::with((status::BadRequest))),
         }
     }
 
+    password = helper::encrypt_password(password);
     match models::user::create(conn, email, username, password) {
         Ok(_) => {
             return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
@@ -90,7 +101,7 @@ pub fn post_signin_handler(req: &mut Request) -> IronResult<Response> {
     let conn = get_pg_connection!(req);
 
     let email: String;
-    let password: String;
+    let mut password: String;
 
     {
         use params::{Params, Value};
@@ -110,6 +121,7 @@ pub fn post_signin_handler(req: &mut Request) -> IronResult<Response> {
         }
     }
 
+    password = helper::encrypt_password(password);
     match models::user::get_by_username_password(conn, email, password) {
         Ok(user) => {
             println!("{:?}", user.username);
