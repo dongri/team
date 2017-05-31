@@ -3,7 +3,7 @@ use db;
 use models;
 
 #[derive(Serialize, Debug, Default)]
-pub struct Nippo {
+pub struct Post {
     id: i32,
     pub user_id: i32,
     title: String,
@@ -13,16 +13,16 @@ pub struct Nippo {
 
 pub fn create(conn: db::PostgresConnection, user_id: i32, title: String, body: String) -> Result<(i32), Error> {
     let mut id = 0;
-    for row in &conn.query("INSERT INTO nippos (user_id, title, body) VALUES ($1, $2, $3) returning id;", &[&user_id, &title, &body]).unwrap() {
+    for row in &conn.query("INSERT INTO posts (user_id, title, body) VALUES ($1, $2, $3) returning id;", &[&user_id, &title, &body]).unwrap() {
         id = row.get("id");
     }
     Ok(id)
 }
 
-pub fn list(conn: db::PostgresConnection) -> Result<Vec<Nippo>, Error> {
-    let mut nippos: Vec<Nippo> = Vec::new();
-    for row in &conn.query("SELECT n.id, n.user_id, n.title, n.body, u.email, u.username, u.icon_url from nippos as n join users as u on u.id=n.user_id", &[]).unwrap() {
-        nippos.push(Nippo {
+pub fn list(conn: db::PostgresConnection) -> Result<Vec<Post>, Error> {
+    let mut posts: Vec<Post> = Vec::new();
+    for row in &conn.query("SELECT p.id, p.user_id, p.title, p.body, u.email, u.username, u.icon_url from posts as p join users as u on u.id = p.user_id", &[]).unwrap() {
+        posts.push(Post {
             id: row.get("id"),
             user_id: row.get("user_id"),
             title: row.get("title"),
@@ -35,19 +35,19 @@ pub fn list(conn: db::PostgresConnection) -> Result<Vec<Nippo>, Error> {
             }
         });
     }
-    Ok(nippos)
+    Ok(posts)
 }
 
 pub fn update(conn: db::PostgresConnection, id: i32, title: String, body: String) -> Result<(), Error> {
     conn.execute(
-        "UPDATE nippos set title = $1, body = $2 WHERE id = $3", &[&title, &body, &id]
+        "UPDATE posts set title = $1, body = $2 WHERE id = $3", &[&title, &body, &id]
     ).map(|_| ())
 }
 
-pub fn get_by_id(conn: db::PostgresConnection, id: i32) -> Result<Nippo, Error> {
-    let rows = &conn.query("SELECT n.id, n.user_id, n.title, n.body, u.email, u.username, u.icon_url from nippos as n join users as u on u.id=n.user_id where n.id = $1", &[&id]).unwrap();
+pub fn get_by_id(conn: db::PostgresConnection, id: i32) -> Result<Post, Error> {
+    let rows = &conn.query("SELECT p.id, p.user_id, p.title, p.body, u.email, u.username, u.icon_url from posts as p join users as u on u.id = p.user_id where p.id = $1", &[&id]).unwrap();
     let row = rows.get(0);
-    let nippo = Nippo {
+    let post = Post {
         id: row.get("id"),
         user_id: row.get("user_id"),
         title: row.get("title"),
@@ -59,13 +59,13 @@ pub fn get_by_id(conn: db::PostgresConnection, id: i32) -> Result<Nippo, Error> 
             icon_url: row.get("icon_url"),
         }
     };
-    Ok(nippo)
+    Ok(post)
 }
 
-pub fn get_marked_by_id(conn: db::PostgresConnection, id: i32) -> Result<Nippo, Error> {
-    let rows = &conn.query("SELECT n.id, n.user_id, n.title, n.body, u.email, u.username, u.icon_url from nippos as n join users as u on u.id=n.user_id where n.id = $1", &[&id]).unwrap();
+pub fn get_marked_by_id(conn: db::PostgresConnection, id: i32) -> Result<Post, Error> {
+    let rows = &conn.query("SELECT p.id, p.user_id, p.title, p.body, u.email, u.username, u.icon_url from posts as p join users as u on u.id = p.user_id where p.id = $1", &[&id]).unwrap();
     let row = rows.get(0);
-    let mut nippo = Nippo {
+    let mut post = Post {
         id: row.get("id"),
         user_id: row.get("user_id"),
         title: row.get("title"),
@@ -77,13 +77,13 @@ pub fn get_marked_by_id(conn: db::PostgresConnection, id: i32) -> Result<Nippo, 
             icon_url: row.get("icon_url"),
         }
     };
-    nippo.body = nippo.body.replace("\r\n", "\\n\\n");
-    Ok(nippo)
+    post.body = post.body.replace("\r\n", "\\n\\n");
+    Ok(post)
 }
 
 pub fn delete_by_id(conn: db::PostgresConnection, id: i32) -> Result<(), Error> {
     conn.execute(
-        "DELETE FROM nippos WHERE id = $1;",
+        "DELETE FROM posts WHERE id = $1;",
         &[&id]
     ).map(|_| ())
 }
@@ -92,25 +92,25 @@ pub fn delete_by_id(conn: db::PostgresConnection, id: i32) -> Result<(), Error> 
 pub struct Comment {
     id: i32,
     user_id: i32,
-    nippo_id: i32,
+    post_id: i32,
     body: String,
     user: models::user::User,
 }
 
-pub fn add_comment(conn: db::PostgresConnection, user_id: i32, nippo_id: i32, body: String) -> Result<(), Error> {
+pub fn add_comment(conn: db::PostgresConnection, user_id: i32, post_id: i32, body: String) -> Result<(), Error> {
     conn.execute(
-        "INSERT INTO nippo_comments (user_id, nippo_id, body) VALUES ($1, $2, $3);",
-        &[&user_id, &nippo_id, &body]
+        "INSERT INTO post_comments (user_id, post_id, body) VALUES ($1, $2, $3);",
+        &[&user_id, &post_id, &body]
     ).map(|_| ())
 }
 
-pub fn get_comments_by_nippo_id(conn: db::PostgresConnection, id: i32) -> Result<Vec<Comment>, Error> {
+pub fn get_comments_by_post_id(conn: db::PostgresConnection, id: i32) -> Result<Vec<Comment>, Error> {
     let mut comments: Vec<Comment> = Vec::new();
-    for row in &conn.query("SELECT c.id, c.user_id, c.nippo_id, c.body, u.email, u.username, u.icon_url from nippo_comments as c join users as u on u.id = c.user_id where c.nippo_id = $1", &[&id]).unwrap() {
+    for row in &conn.query("SELECT c.id, c.user_id, c.post_id, c.body, u.email, u.username, u.icon_url from post_comments as c join users as u on u.id = c.user_id where c.post_id = $1", &[&id]).unwrap() {
         comments.push(Comment {
             id: row.get("id"),
             user_id: row.get("user_id"),
-            nippo_id: row.get("nippo_id"),
+            post_id: row.get("post_id"),
             body: row.get("body"),
             user: models::user::User{
                 id: row.get("user_id"),

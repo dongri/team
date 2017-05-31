@@ -1,4 +1,5 @@
 pub mod router;
 pub mod index;
-pub mod nippo;
 pub mod account;
+pub mod nippo;
+pub mod post;

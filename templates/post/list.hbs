@@ -1,11 +1,11 @@
 {{#*inline "page"}}
-  <strong><a href="/nippo/new">New</a></strong>
+  <strong><a href="/post/new">New</a></strong>
   <ul>
-  {{#each nippos}}
+  {{#each posts}}
     <li>
       <img src="{{user.icon_url}}" width="50px;">
       <br>
-      <b><a href="/nippo/show/{{id}}">{{title}}</a></b>
+      <b><a href="/post/show/{{id}}">{{title}}</a></b>
     </li>
   {{/each}}
   </ul>

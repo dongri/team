@@ -27,7 +27,7 @@ pub fn new_handler(req: &mut Request) -> IronResult<Response> {
     let data = Data {
         logged_in: login_id != 0,
     };
-    resp.set_mut(helper::template("nippo/form", to_json(&data))).set_mut(status::Ok);
+    resp.set_mut(helper::template("post/form", to_json(&data))).set_mut(status::Ok);
     return Ok(resp);
 }
 
@@ -59,9 +59,9 @@ pub fn create_handler(req: &mut Request) -> IronResult<Response> {
         }
     }
 
-    match models::nippo::create(conn, login_id, title, body) {
+    match models::post::create(conn, login_id, title, body) {
         Ok(id) => {
-            let url = Url::parse(&format!("{}/{}/{}", helper::get_domain(), "/nippo/show", id).to_string()).unwrap();
+            let url = Url::parse(&format!("{}/{}/{}", helper::get_domain(), "/post/show", id).to_string()).unwrap();
             return Ok(Response::with((status::Found, Redirect(url))));
         },
         Err(e) => {
@@ -80,16 +80,16 @@ pub fn list_handler(req: &mut Request) -> IronResult<Response> {
     #[derive(Serialize)]
     struct Data {
         logged_in: bool,
-        nippos: Vec<models::nippo::Nippo>,
+        posts: Vec<models::post::Post>,
     }
     let conn = get_pg_connection!(req);
-    match models::nippo::list(conn) {
-        Ok(nippos) => {
+    match models::post::list(conn) {
+        Ok(posts) => {
             let data = Data {
                 logged_in: login_id != 0,
-                nippos: nippos,
+                posts: posts,
             };
-            resp.set_mut(Template::new("nippo/list", to_json(&data))).set_mut(status::Ok);
+            resp.set_mut(Template::new("post/list", to_json(&data))).set_mut(status::Ok);
             return Ok(resp);
         },
         Err(e) => {
@@ -114,17 +114,17 @@ pub fn show_handler(req: &mut Request) -> IronResult<Response> {
     #[derive(Serialize, Default)]
     struct Data {
         logged_in: bool,
-        nippo: models::nippo::Nippo,
+        post: models::post::Post,
         editable: bool,
-        comments: Vec<models::nippo::Comment>,
+        comments: Vec<models::post::Comment>,
     }
 
-    let nippo: models::nippo::Nippo;
-    let comments: Vec<models::nippo::Comment>;
+    let post: models::post::Post;
+    let comments: Vec<models::post::Comment>;
 
-    match models::nippo::get_marked_by_id(conn_s, id) {
-        Ok(nippo_obj) => {
-            nippo = nippo_obj;
+    match models::post::get_marked_by_id(conn_s, id) {
+        Ok(post_obj) => {
+            post = post_obj;
         },
         Err(e) => {
             println!("Errored: {:?}", e);
@@ -132,7 +132,7 @@ pub fn show_handler(req: &mut Request) -> IronResult<Response> {
         }
     }
 
-    match models::nippo::get_comments_by_nippo_id(conn_c, id) {
+    match models::post::get_comments_by_post_id(conn_c, id) {
         Ok(comments_obj) => {
             comments = comments_obj;
         },
@@ -142,15 +142,15 @@ pub fn show_handler(req: &mut Request) -> IronResult<Response> {
         }
     }
 
-    let owner_id = nippo.user_id;
+    let owner_id = post.user_id;
     let data = Data {
         logged_in: login_id != 0,
-        nippo: nippo,
+        post: post,
         editable: owner_id == login_id,
         comments: comments,
     };
 
-    resp.set_mut(Template::new("nippo/show", to_json(&data))).set_mut(status::Ok);
+    resp.set_mut(Template::new("post/show", to_json(&data))).set_mut(status::Ok);
     return Ok(resp);
 }
 
@@ -165,9 +165,9 @@ pub fn delete_handler(req: &mut Request) -> IronResult<Response> {
     let ref id_str = req.extensions.get::<Router>().unwrap().find("id").unwrap_or("/");
     let id = id_str.parse::<i32>().unwrap();
 
-    match models::nippo::get_by_id(conn_s, id) {
-        Ok(nippo) => {
-            if nippo.user_id != login_id {
+    match models::post::get_by_id(conn_s, id) {
+        Ok(post) => {
+            if post.user_id != login_id {
                 return Ok(Response::with((status::Forbidden)));
             }
         },
@@ -177,9 +177,9 @@ pub fn delete_handler(req: &mut Request) -> IronResult<Response> {
         }
     }
 
-    match models::nippo::delete_by_id(conn_d, id) {
+    match models::post::delete_by_id(conn_d, id) {
         Ok(_) => {
-            return Ok(Response::with((status::Found, Redirect(url_for!(req, "nippo/list")))));
+            return Ok(Response::with((status::Found, Redirect(url_for!(req, "post/list")))));
         },
         Err(e) => {
             println!("Errored: {:?}", e);
@@ -198,20 +198,20 @@ pub fn edit_handler(req: &mut Request) -> IronResult<Response> {
     #[derive(Serialize, Default)]
     struct Data {
         logged_in: bool,
-        nippo: models::nippo::Nippo,
+        post: models::post::Post,
     }
 
-    let nippo: models::nippo::Nippo;
+    let post: models::post::Post;
 
     let ref id_str = req.extensions.get::<Router>().unwrap().find("id").unwrap_or("/");
     let id = id_str.parse::<i32>().unwrap();
 
-    match models::nippo::get_by_id(conn, id) {
-        Ok(nippo_obj) => {
-            if nippo_obj.user_id != login_id {
+    match models::post::get_by_id(conn, id) {
+        Ok(post_obj) => {
+            if post_obj.user_id != login_id {
                 return Ok(Response::with((status::Forbidden)));
             }
-            nippo = nippo_obj;
+            post = post_obj;
         },
         Err(e) => {
             println!("Errored: {:?}", e);
@@ -220,9 +220,9 @@ pub fn edit_handler(req: &mut Request) -> IronResult<Response> {
     }
     let data = Data {
         logged_in: login_id != 0,
-        nippo: nippo,
+        post: post,
     };
-    resp.set_mut(Template::new("nippo/edit", to_json(&data))).set_mut(status::Ok);
+    resp.set_mut(Template::new("post/edit", to_json(&data))).set_mut(status::Ok);
     return Ok(resp);
 }
 
@@ -263,9 +263,9 @@ pub fn update_handler(req: &mut Request) -> IronResult<Response> {
         _ => return Ok(Response::with((status::BadRequest))),
     }
 
-    match models::nippo::get_by_id(conn_s, id) {
-        Ok(nippo_obj) => {
-            if nippo_obj.user_id != login_id {
+    match models::post::get_by_id(conn_s, id) {
+        Ok(post_obj) => {
+            if post_obj.user_id != login_id {
                 return Ok(Response::with((status::Forbidden)));
             }
         },
@@ -275,9 +275,9 @@ pub fn update_handler(req: &mut Request) -> IronResult<Response> {
         }
     }
 
-    match models::nippo::update(conn_u, id, title, body) {
+    match models::post::update(conn_u, id, title, body) {
         Ok(_) => {
-            let url = Url::parse(&format!("{}/{}/{}", helper::get_domain(), "nippo/show", id).to_string()).unwrap();
+            let url = Url::parse(&format!("{}/{}/{}", helper::get_domain(), "post/show", id).to_string()).unwrap();
             return Ok(Response::with((status::Found, Redirect(url))));
         },
         Err(e) => {
@@ -314,9 +314,9 @@ pub fn comment_handler(req: &mut Request) -> IronResult<Response> {
         _ => return Ok(Response::with((status::BadRequest))),
     }
 
-    match models::nippo::add_comment(conn, login_id, id, body) {
+    match models::post::add_comment(conn, login_id, id, body) {
         Ok(_) => {
-            let url = Url::parse(&format!("{}/{}/{}", helper::get_domain(), "nippo/show", id).to_string()).unwrap();
+            let url = Url::parse(&format!("{}/{}/{}", helper::get_domain(), "post/show", id).to_string()).unwrap();
             return Ok(Response::with((status::Found, Redirect(url))));
         },
         Err(e) => {

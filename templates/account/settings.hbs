@@ -1,0 +1,13 @@
+{{#*inline "page"}}
+  <form class="mui-form" action="/account/settings" method="post">
+    <legend>Icon URL</legend>
+    <div class="mui-textfield">
+      <input type="text" placeholder="Icon URL" name="icon_url" value="{{user.icon_url}}">
+    </div>
+    <div>
+      <img src="{{user.icon_url}}" width="300px;">
+    </div>
+    <button type="submit" class="mui-btn mui-btn--raised">Submit</button>
+  </form>
+{{/inline}}
+{{~> layout ~}}

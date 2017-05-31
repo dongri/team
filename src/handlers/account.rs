@@ -4,6 +4,7 @@ use iron::prelude::{IronResult};
 use iron::prelude::*;
 use hbs::{Template};
 use persistent;
+use hbs::handlebars::to_json;
 
 use iron_sessionstorage;
 use iron_sessionstorage::traits::*;
@@ -11,6 +12,7 @@ use iron_sessionstorage::traits::*;
 use db;
 use models;
 use helper;
+use handlers;
 
 #[derive(Serialize, Debug, Default)]
 pub struct Login {
@@ -150,5 +152,69 @@ pub fn get_login_id(req: &mut Request) -> i32 {
         return 0;
     } else {
         return login.id.parse::<i32>().unwrap();
+    }
+}
+
+pub fn get_settings_handler(req: &mut Request) -> IronResult<Response> {
+    let login_id = handlers::account::get_login_id(req);
+    if login_id == 0 {
+        return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
+    }
+    let conn_s = get_pg_connection!(req);
+    let mut resp = Response::new();
+
+    #[derive(Serialize, Default)]
+    struct Data {
+        logged_in: bool,
+        user: models::user::User,
+    }
+
+    let user: models::user::User;
+
+    match models::user::get_by_id(conn_s, login_id) {
+        Ok(user_obj) => {
+            user = user_obj;
+        },
+        Err(e) => {
+            println!("Errored: {:?}", e);
+            return Ok(Response::with((status::InternalServerError)))
+        }
+    }
+    let data = Data {
+        logged_in: login_id != 0,
+        user: user,
+    };
+
+    resp.set_mut(Template::new("account/settings", to_json(&data))).set_mut(status::Ok);
+    return Ok(resp);
+}
+
+pub fn post_settings_handler(req: &mut Request) -> IronResult<Response> {
+    let login_id = handlers::account::get_login_id(req);
+    if login_id == 0 {
+        return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
+    }
+    let conn = get_pg_connection!(req);
+    let icon_url: String;
+    {
+        use params::{Params, Value};
+        let map = req.get_ref::<Params>().unwrap();
+
+        match map.get("icon_url") {
+            Some(&Value::String(ref name)) => {
+                icon_url = name.to_string();
+            },
+            _ => return Ok(Response::with((status::BadRequest))),
+        }
+    }
+
+    match models::user::update_icon_url(conn, login_id, icon_url) {
+        Ok(_) => {
+            return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_settings")))));
+        },
+        Err(e) => {
+            println!("Errored: {:?}", e);
+            return Ok(Response::with((status::InternalServerError)));
+        }
     }
 }
