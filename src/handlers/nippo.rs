@@ -13,6 +13,8 @@ use helper;
 use models;
 use handlers;
 
+const PAGINATES_PER: i32 = 10;
+
 pub fn new_handler(req: &mut Request) -> IronResult<Response> {
     let login_id = handlers::account::get_login_id(req);
     if login_id == 0 {
@@ -76,27 +78,73 @@ pub fn list_handler(req: &mut Request) -> IronResult<Response> {
     if login_id == 0 {
         return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
     }
+    let conn_l = get_pg_connection!(req);
+    let conn_c = get_pg_connection!(req);
+
+    let page_param: String;
+
+    {
+        use params::{Params, Value};
+        let map = req.get_ref::<Params>().unwrap();
+        match map.get("page") {
+            Some(&Value::String(ref name)) => {
+                page_param = name.to_string();
+            },
+            _ => page_param = "1".to_string(),
+        }
+    }
+
     let mut resp = Response::new();
-    #[derive(Serialize)]
+
+    #[derive(Serialize, Debug)]
     struct Data {
         logged_in: bool,
         nippos: Vec<models::nippo::Nippo>,
+        total_count: i32,
+        next_page: i32,
+        prev_page: i32,
     }
-    let conn = get_pg_connection!(req);
-    match models::nippo::list(conn) {
-        Ok(nippos) => {
-            let data = Data {
-                logged_in: login_id != 0,
-                nippos: nippos,
-            };
-            resp.set_mut(Template::new("nippo/list", to_json(&data))).set_mut(status::Ok);
-            return Ok(resp);
+
+    let mut page = page_param.parse::<i32>().unwrap();
+    let offset = ( page - 1 ) * PAGINATES_PER;
+    let limit = PAGINATES_PER;
+
+    let nippos: Vec<models::nippo::Nippo>;
+    let count: i32;
+
+    match models::nippo::list(conn_l, offset, limit) {
+        Ok(nippos_db) => {
+            nippos = nippos_db;
         },
         Err(e) => {
             println!("Errored: {:?}", e);
-            Ok(Response::with((status::InternalServerError)))
+            return Ok(Response::with((status::InternalServerError)));
         }
     }
+
+    match models::nippo::count(conn_c) {
+        Ok(count_db) => {
+            count = count_db;
+        },
+        Err(e) => {
+            println!("Errored: {:?}", e);
+            return Ok(Response::with((status::InternalServerError)));
+        }
+    }
+
+    if page == 0 {
+        page = 1;
+    }
+    let data = Data {
+        logged_in: login_id != 0,
+        nippos: nippos,
+        total_count: count,
+        next_page: page + 1,
+        prev_page: page - 1,
+    };
+
+    resp.set_mut(Template::new("nippo/list", to_json(&data))).set_mut(status::Ok);
+    return Ok(resp);
 }
 
 pub fn show_handler(req: &mut Request) -> IronResult<Response> {

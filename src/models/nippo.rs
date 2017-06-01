@@ -19,9 +19,9 @@ pub fn create(conn: db::PostgresConnection, user_id: i32, title: String, body: S
     Ok(id)
 }
 
-pub fn list(conn: db::PostgresConnection) -> Result<Vec<Nippo>, Error> {
+pub fn list(conn: db::PostgresConnection, offset: i32, limit: i32) -> Result<Vec<Nippo>, Error> {
     let mut nippos: Vec<Nippo> = Vec::new();
-    for row in &conn.query("SELECT n.id, n.user_id, n.title, n.body, u.email, u.username, u.icon_url from nippos as n join users as u on u.id=n.user_id", &[]).unwrap() {
+    for row in &conn.query("SELECT n.id, n.user_id, n.title, n.body, u.email, u.username, u.icon_url from nippos as n join users as u on u.id = n.user_id offset $1::int limit $2::int", &[&offset, &limit]).unwrap() {
         nippos.push(Nippo {
             id: row.get("id"),
             user_id: row.get("user_id"),
@@ -37,6 +37,14 @@ pub fn list(conn: db::PostgresConnection) -> Result<Vec<Nippo>, Error> {
     }
     Ok(nippos)
 }
+
+pub fn count(conn: db::PostgresConnection) -> Result<i32, Error> {
+    let rows = &conn.query("SELECT count(*)::int as count from nippos", &[]).unwrap();
+    let row = rows.get(0);
+    let count = row.get("count");
+    Ok(count)
+}
+
 
 pub fn update(conn: db::PostgresConnection, id: i32, title: String, body: String) -> Result<(), Error> {
     conn.execute(

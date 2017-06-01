@@ -9,5 +9,10 @@
     </li>
   {{/each}}
   </ul>
+  <div class="paginates">
+    <a href="/nippo/list?page={{prev_page}}">前</a>
+    {{total_count}}
+    <a href="/nippo/list?page={{next_page}}">次</a>
+  </div>
 {{/inline}}
 {{~> layout ~}}
