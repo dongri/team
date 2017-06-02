@@ -99,6 +99,7 @@ pub fn list_handler(req: &mut Request) -> IronResult<Response> {
 
     #[derive(Serialize, Debug)]
     struct Data {
+        title: String,
         logged_in: bool,
         posts: Vec<models::post::Post>,
         total_count: i32,
@@ -137,6 +138,7 @@ pub fn list_handler(req: &mut Request) -> IronResult<Response> {
         page = 1;
     }
     let data = Data {
+        title: String::from("日報"),
         logged_in: login_id != 0,
         posts: posts,
         total_count: count,
