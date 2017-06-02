@@ -95,7 +95,7 @@ pub fn get_marked_by_id(conn: db::PostgresConnection, id: i32) -> Result<Post, E
 
 pub fn delete_by_id(conn: db::PostgresConnection, id: i32) -> Result<(), Error> {
     conn.execute(
-        "DELETE FROM posts WHERE id = $1;",
+        "DELETE FROM posts WHERE id = $1",
         &[&id]
     ).map(|_| ())
 }
