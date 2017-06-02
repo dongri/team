@@ -13,6 +13,9 @@ use helper;
 use models;
 use handlers;
 
+const PAGINATES_PER: i32 = 2;
+const POST_KIND: i32 = 1;
+
 pub fn new_handler(req: &mut Request) -> IronResult<Response> {
     let login_id = handlers::account::get_login_id(req);
     if login_id == 0 {
@@ -59,9 +62,9 @@ pub fn create_handler(req: &mut Request) -> IronResult<Response> {
         }
     }
 
-    match models::post::create(conn, login_id, title, body) {
+    match models::post::create(conn, POST_KIND, login_id, title, body) {
         Ok(id) => {
-            let url = Url::parse(&format!("{}/{}/{}", helper::get_domain(), "/post/show", id).to_string()).unwrap();
+            let url = Url::parse(&format!("{}/{}/{}", helper::get_domain(), "post/show", id).to_string()).unwrap();
             return Ok(Response::with((status::Found, Redirect(url))));
         },
         Err(e) => {
@@ -76,27 +79,73 @@ pub fn list_handler(req: &mut Request) -> IronResult<Response> {
     if login_id == 0 {
         return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
     }
+    let conn_l = get_pg_connection!(req);
+    let conn_c = get_pg_connection!(req);
+
+    let page_param: String;
+
+    {
+        use params::{Params, Value};
+        let map = req.get_ref::<Params>().unwrap();
+        match map.get("page") {
+            Some(&Value::String(ref name)) => {
+                page_param = name.to_string();
+            },
+            _ => page_param = "1".to_string(),
+        }
+    }
+
     let mut resp = Response::new();
-    #[derive(Serialize)]
+
+    #[derive(Serialize, Debug)]
     struct Data {
         logged_in: bool,
         posts: Vec<models::post::Post>,
+        total_count: i32,
+        next_page: i32,
+        prev_page: i32,
     }
-    let conn = get_pg_connection!(req);
-    match models::post::list(conn) {
-        Ok(posts) => {
-            let data = Data {
-                logged_in: login_id != 0,
-                posts: posts,
-            };
-            resp.set_mut(Template::new("post/list", to_json(&data))).set_mut(status::Ok);
-            return Ok(resp);
+
+    let mut page = page_param.parse::<i32>().unwrap();
+    let offset = ( page - 1 ) * PAGINATES_PER;
+    let limit = PAGINATES_PER;
+
+    let posts: Vec<models::post::Post>;
+    let count: i32;
+
+    match models::post::list(conn_l, POST_KIND, offset, limit) {
+        Ok(posts_db) => {
+            posts = posts_db;
         },
         Err(e) => {
             println!("Errored: {:?}", e);
-            Ok(Response::with((status::InternalServerError)))
+            return Ok(Response::with((status::InternalServerError)));
         }
     }
+
+    match models::post::count(conn_c, POST_KIND) {
+        Ok(count_db) => {
+            count = count_db;
+        },
+        Err(e) => {
+            println!("Errored: {:?}", e);
+            return Ok(Response::with((status::InternalServerError)));
+        }
+    }
+
+    if page == 0 {
+        page = 1;
+    }
+    let data = Data {
+        logged_in: login_id != 0,
+        posts: posts,
+        total_count: count,
+        next_page: page + 1,
+        prev_page: page - 1,
+    };
+
+    resp.set_mut(Template::new("post/list", to_json(&data))).set_mut(status::Ok);
+    return Ok(resp);
 }
 
 pub fn show_handler(req: &mut Request) -> IronResult<Response> {

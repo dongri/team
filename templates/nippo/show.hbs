@@ -1,13 +1,13 @@
 {{#*inline "page"}}
-  <img src="{{nippo.user.icon_url}}" width="50px;">
+  <img src="{{post.user.icon_url}}" width="50px;">
   <form class="mui-form" action="/nippo/create" method="post">
-    <h1>{{nippo.title}}</h1>
+    <h1>{{post.title}}</h1>
     <div class="mui-textfield" id="marked">
     </div>
   </form>
   {{#if editable}}
-    <a href="/nippo/edit/{{nippo.id}}">Edit</a> |
-    <a href="/nippo/delete/{{nippo.id}}">Delete</a>
+    <a href="/nippo/edit/{{post.id}}">Edit</a> |
+    <a href="/nippo/delete/{{post.id}}">Delete</a>
   {{/if}}
   <ul>
     {{#each comments}}
@@ -18,7 +18,7 @@
   </ul>
 
   <form class="mui-form" action="/nippo/comment" method="post">
-    <input type="hidden" name="id" value="{{nippo.id}}">
+    <input type="hidden" name="id" value="{{post.id}}">
     <legend>コメント</legend>
     <div class="mui-textfield">
       <textarea placeholder="" name=body></textarea>
@@ -26,7 +26,7 @@
     <button type="submit" class="mui-btn mui-btn--raised">Submit</button>
   </form>
   <script>
-    document.getElementById('marked').innerHTML = marked('{{nippo.body}}');
+    document.getElementById('marked').innerHTML = marked('{{post.body}}');
   </script>
 {{/inline}}
 {{~> layout ~}}

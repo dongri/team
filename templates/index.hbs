@@ -1,9 +1,17 @@
 {{#*inline "page"}}
-  <br>
-  <br>
-  <div class="mui--text-display3">Brand.io</div>
-  <br>
-  <br>
-  <button class="mui-btn mui-btn--raised">Get started</button>
+  <ul>
+  {{#each posts}}
+    <li>
+      <img src="{{user.icon_url}}" width="50px;">
+      <br>
+      <b><a href="/post/show/{{id}}">{{title}}</a></b>
+    </li>
+  {{/each}}
+  </ul>
+  <div class="paginates">
+    <a href="/?page={{prev_page}}">前</a>
+    {{total_count}}
+    <a href="/?page={{next_page}}">次</a>
+  </div>
 {{/inline}}
 {{~> layout ~}}
