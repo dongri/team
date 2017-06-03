@@ -64,6 +64,8 @@ pub fn create_handler(req: &mut Request) -> IronResult<Response> {
 
     match models::post::create(conn, POST_KIND, login_id, title, body) {
         Ok(id) => {
+            // TODO post to slack
+            
             let url = Url::parse(&format!("{}/{}/{}", helper::get_domain(), "nippo/show", id).to_string()).unwrap();
             return Ok(Response::with((status::Found, Redirect(url))));
         },

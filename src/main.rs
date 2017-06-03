@@ -20,6 +20,8 @@ extern crate serde_derive;
 
 extern crate crypto;
 
+extern crate slack_hook;
+
 use std::error::Error;
 use std::path::Path;
 use std::env;

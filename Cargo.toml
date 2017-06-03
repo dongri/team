@@ -25,5 +25,7 @@ serde_derive = "1.0.7"
 
 rust-crypto = "0.2.36"
 
+slack-hook = "0.4"
+
 [features]
 integration_tests = []
