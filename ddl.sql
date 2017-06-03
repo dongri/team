@@ -2,17 +2,17 @@
 
 create table users (
   id            serial primary key,
-  email         varchar(255) NOT NULL,
   username      varchar(255) NOT NULL,
   password      varchar(255) NOT NULL,
   icon_url      varchar(2048),
   created       timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated       timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+  updated       timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(username)
 );
 
 create table posts (
   id            serial primary key,
-  kind          int NOT NULL,
+  kind          varchar(255) NOT NULL,
   user_id       serial REFERENCES users (id) ON DELETE CASCADE NOT NULL,
   title         varchar(255) NOT NULL,
   body          text NOT NULL,

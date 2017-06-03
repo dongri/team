@@ -2,7 +2,7 @@
   <form class="mui-form" action="/nippo/update" method="post">
     <input type="hidden" name="id" value="{{post.id}}">
     <div class="mui-textfield">
-      <input type="text" placeholder="Title" name="title" value="{{post.title}}">
+      <input type="text" placeholder="Title" name="title" value="{{post.title}}" class="input-title">
     </div>
     <div class="mui-textfield">
       <textarea name="body" placeholder="body" id="mdeditor" cols="30" rows="10" class="form-control">{{post.body}}</textarea>

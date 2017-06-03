@@ -5,7 +5,11 @@
       <input type="text" placeholder="Icon URL" name="icon_url" value="{{user.icon_url}}">
     </div>
     <div>
-      <img src="{{user.icon_url}}" width="300px;">
+    {{#if user.icon_url}}
+      <img src="{{user.icon_url}}" class="user-icon">
+    {{else}}
+      <canvas width="80" height="80" data-jdenticon-hash="{{user.username_hash}}" class="user-icon"></canvas>
+    {{/if}}
     </div>
     <button type="submit" class="mui-btn mui-btn--raised">Submit</button>
   </form>

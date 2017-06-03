@@ -14,7 +14,7 @@ use models;
 use handlers;
 
 const PAGINATES_PER: i32 = 10;
-const POST_KIND: i32 = 2;
+const POST_KIND: &str = "nippo";
 
 pub fn new_handler(req: &mut Request) -> IronResult<Response> {
     let login_id = handlers::account::get_login_id(req);
@@ -102,7 +102,8 @@ pub fn list_handler(req: &mut Request) -> IronResult<Response> {
         title: String,
         logged_in: bool,
         posts: Vec<models::post::Post>,
-        total_count: i32,
+        current_page: i32,
+        total_page: i32,
         next_page: i32,
         prev_page: i32,
     }
@@ -114,7 +115,7 @@ pub fn list_handler(req: &mut Request) -> IronResult<Response> {
     let posts: Vec<models::post::Post>;
     let count: i32;
 
-    match models::post::list(conn_l, 2, offset, limit) {
+    match models::post::list(conn_l, POST_KIND, offset, limit) {
         Ok(posts_db) => {
             posts = posts_db;
         },
@@ -141,7 +142,8 @@ pub fn list_handler(req: &mut Request) -> IronResult<Response> {
         title: String::from("日報"),
         logged_in: login_id != 0,
         posts: posts,
-        total_count: count,
+        current_page: page,
+        total_page: count / PAGINATES_PER + 1,
         next_page: page + 1,
         prev_page: page - 1,
     };

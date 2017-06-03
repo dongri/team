@@ -22,6 +22,7 @@ extern crate crypto;
 
 use std::error::Error;
 use std::path::Path;
+use std::env;
 
 use iron::prelude::*;
 use router::{Router};
@@ -52,7 +53,12 @@ fn main() {
     }
     chain.link_after(hbse);
 
-    let pool = db::get_pool("postgres://root:@localhost:5432/team");
+    let conn_string:String = match env::var("TEAM_DATABASE_URL") {
+        Ok(val) => val,
+        Err(_) => "postgres://root:@localhost:5432/team".to_string()
+    };
+
+    let pool = db::get_pool(&conn_string);
     chain.link(PRead::<db::PostgresDB>::both(pool));
 
     let secret = b"FLEo9NZJDhZbBaT".to_vec();

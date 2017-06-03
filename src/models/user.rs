@@ -1,29 +1,30 @@
 use postgres::error::Error;
 use db;
+use helper;
 
 #[derive(Serialize, Debug, Default)]
 pub struct User {
     pub id: i32,
-    pub email: String,
     pub username: String,
     pub icon_url: Option<String>,
+    pub username_hash: String,
 }
 
-pub fn create(conn: db::PostgresConnection, email: String, username: String, password: String) -> Result<(), Error> {
+pub fn create(conn: db::PostgresConnection, username: String, password: String) -> Result<(), Error> {
     conn.execute(
-        "INSERT INTO users (email, username, password) VALUES ($1, $2, $3);",
-        &[&email, &username, &password]
+        "INSERT INTO users (username, password) VALUES ($1, $2);",
+        &[&username, &password]
     ).map(|_| ())
 }
 
-pub fn get_by_username_password(conn: db::PostgresConnection, email: String, password: String) -> Result<User, Error> {
+pub fn get_by_username_password(conn: db::PostgresConnection, username: String, password: String) -> Result<User, Error> {
     let mut user: User = User{..Default::default()};
-    for row in &conn.query("SELECT id, email, username, icon_url from users where email = $1 and password = $2", &[&email, &password]).unwrap() {
+    for row in &conn.query("SELECT id, username, icon_url from users where username = $1 and password = $2", &[&username, &password]).unwrap() {
         user = User {
             id: row.get("id"),
-            email: row.get("email"),
             username: row.get("username"),
             icon_url: row.get("icon_url"),
+            username_hash: helper::username_hash(row.get("username")),
         };
     }
     Ok(user)
@@ -31,12 +32,12 @@ pub fn get_by_username_password(conn: db::PostgresConnection, email: String, pas
 
 pub fn get_by_id(conn: db::PostgresConnection, id: i32) -> Result<User, Error> {
     let mut user: User = User{..Default::default()};
-    for row in &conn.query("SELECT id, email, username, icon_url from users where id = $1", &[&id]).unwrap() {
+    for row in &conn.query("SELECT id, username, icon_url from users where id = $1", &[&id]).unwrap() {
         user = User {
             id: row.get("id"),
-            email: row.get("email"),
             username: row.get("username"),
             icon_url: row.get("icon_url"),
+            username_hash: helper::username_hash(row.get("username")),
         };
     }
     Ok(user)

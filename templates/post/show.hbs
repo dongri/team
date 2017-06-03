@@ -1,5 +1,9 @@
 {{#*inline "page"}}
-  <img src="{{post.user.icon_url}}" width="50px;">
+  {{#if post.user.icon_url}}
+    <img src="{{post.user.icon_url}}" class="user-icon">
+  {{else}}
+    <canvas width="50" height="50" data-jdenticon-hash="{{post.user.username_hash}}" class="user-icon"></canvas>
+  {{/if}}
   <form class="mui-form" action="/post/create" method="post">
     <h1>{{post.title}}</h1>
     <div class="mui-textfield" id="marked">
@@ -9,17 +13,36 @@
     <a href="/post/edit/{{post.id}}">Edit</a> |
     <a href="/post/delete/{{post.id}}">Delete</a>
   {{/if}}
-  <ul>
+
+  <div class="comments">
+    <ul class="post-items">
     {{#each comments}}
       <li>
-        <b>{{body}}</b>
+        <div class="post-item-left">
+          {{#if user.icon_url}}
+            <img src="{{user.icon_url}}" class="user-icon">
+          {{else}}
+            <canvas width="50" height="50" data-jdenticon-hash="{{user.username_hash}}" class="user-icon"></canvas>
+          {{/if}}
+        </div>
+        <div class="post-item-right">
+          <div class="post-item">
+            <div class="post-username">
+              @{{user.username}}<br/>
+            </div>
+            <div class="post-body">
+              {{body}}
+            </div>
+          </div>
+        </div>
       </li>
     {{/each}}
-  </ul>
+    </ul>
+  </div>
 
   <form class="mui-form" action="/post/comment" method="post">
     <input type="hidden" name="id" value="{{post.id}}">
-    <legend>コメント</legend>
+    <legend>Post a comment</legend>
     <div class="mui-textfield">
       <textarea placeholder="" name=body></textarea>
     </div>
