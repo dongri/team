@@ -108,3 +108,7 @@ footer {
 .paginates {
   margin-top: 20px;
 }
+
+.mui-textfield {
+  padding-top: 0px;
+}
