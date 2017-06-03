@@ -1,10 +1,18 @@
 {{#*inline "page"}}
   <form class="mui-form" action="/nippo/create" method="post">
     <div class="mui-textfield">
-      <input type="text" placeholder="Title" name="title" class="input-title">
+      <input type="text" placeholder="Title" name="title" class="input-title" id="nippo-title">
     </div>
     <div class="mui-textfield">
-      <textarea placeholder="" name="body" id="mdeditor"></textarea>
+      <textarea placeholder="" name="body" id="mdeditor">
+# 本日の作業内容
+
+# 発生した問題
+
+# 明日の作業予定
+
+# 所感
+</textarea>
     </div>
     <button type="submit" class="mui-btn mui-btn--raised">Submit</button>
   </form>
@@ -12,6 +20,21 @@
     var simplemde = new SimpleMDE({
       element: document.getElementById("mdeditor"),
       spellChecker: false
+    });
+    $( document ).ready(function() {
+      var today = new Date();
+      var dd = today.getDate();
+      var mm = today.getMonth()+1; //January is 0!
+
+      var yyyy = today.getFullYear();
+      if(dd<10){
+          dd='0'+dd;
+      }
+      if(mm<10){
+          mm='0'+mm;
+      }
+      var today = yyyy + '/' + mm +'/' + dd;
+      $("#nippo-title").val(today);
     });
   </script>
 {{/inline}}

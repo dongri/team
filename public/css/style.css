@@ -4,6 +4,7 @@ html,
 body {
   height: 100%;
   font-family: 'Noto Sans JP', sans-serif;
+  font-size: 16px;
 }
 
 html,
@@ -100,6 +101,8 @@ footer {
 }
 .input-title {
   font-size: 30px !important;
+  padding-bottom: 30px !important;
+  padding-top: 10px !important;
 }
 .comments {
   margin-top: 40px;
@@ -108,7 +111,6 @@ footer {
 .paginates {
   margin-top: 20px;
 }
-
-.mui-textfield {
+#marked {
   padding-top: 0px;
 }
