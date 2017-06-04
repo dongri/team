@@ -67,6 +67,6 @@ fn main() {
     mount.mount("/img", Static::new(Path::new("./public/img/")));
     mount.mount("/", chain);
 
-    println!("Listen on localhost:3000");
-    Iron::new(mount).http("localhost:3000").unwrap();
+    println!("Listen on 0.0.0.0:3000");
+    Iron::new(mount).http("0.0.0.0:3000").unwrap();
 }
