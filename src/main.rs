@@ -67,6 +67,11 @@ fn main() {
     mount.mount("/img", Static::new(Path::new("./public/img/")));
     mount.mount("/", chain);
 
-    println!("Listen on 0.0.0.0:3000");
-    Iron::new(mount).http("0.0.0.0:3000").unwrap();
+    let mut port = helper::get_env("PORT");
+    if port == "" {
+        port = "3000".to_string();
+    }
+    let listen = format!("{}:{}", "0.0.0.0", port);
+    println!("Listen {:?}", listen);
+    Iron::new(mount).http(listen).unwrap();
 }
