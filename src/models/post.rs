@@ -119,7 +119,7 @@ pub fn add_comment(conn: db::PostgresConnection, user_id: i32, post_id: i32, bod
 
 pub fn get_comments_by_post_id(conn: db::PostgresConnection, id: i32) -> Result<Vec<Comment>, Error> {
     let mut comments: Vec<Comment> = Vec::new();
-    for row in &conn.query("SELECT c.id, c.user_id, c.post_id, c.body, u.username, u.icon_url from post_comments as c join users as u on u.id = c.user_id where c.post_id = $1", &[&id]).unwrap() {
+    for row in &conn.query("SELECT c.id, c.user_id, c.post_id, c.body, u.username, u.icon_url from post_comments as c join users as u on u.id = c.user_id where c.post_id = $1 order by id asc", &[&id]).unwrap() {
         comments.push(Comment {
             id: row.get("id"),
             user_id: row.get("user_id"),
