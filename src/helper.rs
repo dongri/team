@@ -43,7 +43,7 @@ pub fn slack(text: String) {
     let slack = Slack::new(url).unwrap();
     let p = PayloadBuilder::new()
       .text(text)
-      .channel("#team")
+      //.channel("#team")
       .username("Team")
       .icon_emoji(":beers:")
       .build()
