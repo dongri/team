@@ -113,4 +113,10 @@ footer {
 }
 #marked {
   padding-top: 0px;
+  font-size: 1.15em;
+}
+#marked h1 {
+  border-bottom: solid 3px #eee;
+  font-size: 1.7em;
+  line-height: 1.2;
 }

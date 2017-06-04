@@ -24,7 +24,6 @@ extern crate slack_hook;
 
 use std::error::Error;
 use std::path::Path;
-use std::env;
 
 use iron::prelude::*;
 use router::{Router};
@@ -55,11 +54,7 @@ fn main() {
     }
     chain.link_after(hbse);
 
-    let conn_string:String = match env::var("TEAM_DATABASE_URL") {
-        Ok(val) => val,
-        Err(_) => "postgres://root:@localhost:5432/team".to_string()
-    };
-
+    let conn_string:String = helper::get_env("TEAM_DATABASE_URL");
     let pool = db::get_pool(&conn_string);
     chain.link(PRead::<db::PostgresDB>::both(pool));
 

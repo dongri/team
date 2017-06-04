@@ -7,7 +7,6 @@ use iron::modifiers::{Redirect};
 use hbs::handlebars::to_json;
 use iron::{Url};
 use iron::prelude::{IronResult};
-use slack_hook::{Slack, PayloadBuilder};
 
 use db;
 use helper;
@@ -69,17 +68,7 @@ pub fn create_handler(req: &mut Request) -> IronResult<Response> {
         Ok(id) => {
             let link = format!("{}/{}/{}", helper::get_domain(), "post/show", id).to_string();
             let text = format!("{}\n{}\n{}", "new post", body_slack, link).to_string();
-            let slack = Slack::new("https://hooks.slack.com/services/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").unwrap();
-            let p = PayloadBuilder::new()
-              .text(text)
-              .channel("#team")
-              .username("Team")
-              .icon_emoji(":chart_with_upwards_trend:")
-              .build()
-              .unwrap();
-            let res = slack.send(&p);
-            println!("{:?}", res);
-
+            helper::slack(text);
             let url = Url::parse(&format!("{}/{}/{}", helper::get_domain(), "post/show", id).to_string()).unwrap();
             return Ok(Response::with((status::Found, Redirect(url))));
         },
@@ -287,6 +276,7 @@ pub fn edit_handler(req: &mut Request) -> IronResult<Response> {
             return Ok(Response::with((status::InternalServerError)));
         }
     }
+
     let data = Data {
         logged_in: login_id != 0,
         post: post,
@@ -344,8 +334,15 @@ pub fn update_handler(req: &mut Request) -> IronResult<Response> {
         }
     }
 
-    match models::post::update(conn_u, id, title, body) {
+    let body_db = body.clone();
+    let body_slack = body.clone();
+
+    match models::post::update(conn_u, id, title, body_db) {
         Ok(_) => {
+            let link = format!("{}/{}/{}", helper::get_domain(), "post/show", id).to_string();
+            let text = format!("{}\n{}\n{}", "edit post", body_slack, link).to_string();
+            helper::slack(text);
+
             let url = Url::parse(&format!("{}/{}/{}", helper::get_domain(), "post/show", id).to_string()).unwrap();
             return Ok(Response::with((status::Found, Redirect(url))));
         },
