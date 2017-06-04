@@ -62,10 +62,15 @@ pub fn create_handler(req: &mut Request) -> IronResult<Response> {
         }
     }
 
-    match models::post::create(conn, POST_KIND, login_id, title, body) {
+    let body_db = body.clone();
+    let body_slack = body.clone();
+
+    match models::post::create(conn, POST_KIND, login_id, title, body_db) {
         Ok(id) => {
-            // TODO post to slack
-            
+            let link = format!("{}/{}/{}", helper::get_domain(), "nippo/show", id).to_string();
+            let text = format!("{}\n{}\n{}", "New nippo", body_slack, link).to_string();
+            helper::slack(text);
+
             let url = Url::parse(&format!("{}/{}/{}", helper::get_domain(), "nippo/show", id).to_string()).unwrap();
             return Ok(Response::with((status::Found, Redirect(url))));
         },
@@ -369,8 +374,15 @@ pub fn comment_handler(req: &mut Request) -> IronResult<Response> {
         _ => return Ok(Response::with((status::BadRequest))),
     }
 
-    match models::post::add_comment(conn, login_id, id, body) {
+    let body_db = body.clone();
+    let body_slack = body.clone();
+
+    match models::post::add_comment(conn, login_id, id, body_db) {
         Ok(_) => {
+            let link = format!("{}/{}/{}", helper::get_domain(), "nippo/show", id).to_string();
+            let text = format!("{}\n{}\n{}", "New comment", body_slack, link).to_string();
+            helper::slack(text);
+
             let url = Url::parse(&format!("{}/{}/{}", helper::get_domain(), "nippo/show", id).to_string()).unwrap();
             return Ok(Response::with((status::Found, Redirect(url))));
         },

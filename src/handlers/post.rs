@@ -67,7 +67,7 @@ pub fn create_handler(req: &mut Request) -> IronResult<Response> {
     match models::post::create(conn, POST_KIND, login_id, title, body_db) {
         Ok(id) => {
             let link = format!("{}/{}/{}", helper::get_domain(), "post/show", id).to_string();
-            let text = format!("{}\n{}\n{}", "new post", body_slack, link).to_string();
+            let text = format!("{}\n{}\n{}", "New post", body_slack, link).to_string();
             helper::slack(text);
             let url = Url::parse(&format!("{}/{}/{}", helper::get_domain(), "post/show", id).to_string()).unwrap();
             return Ok(Response::with((status::Found, Redirect(url))));
@@ -340,7 +340,7 @@ pub fn update_handler(req: &mut Request) -> IronResult<Response> {
     match models::post::update(conn_u, id, title, body_db) {
         Ok(_) => {
             let link = format!("{}/{}/{}", helper::get_domain(), "post/show", id).to_string();
-            let text = format!("{}\n{}\n{}", "edit post", body_slack, link).to_string();
+            let text = format!("{}\n{}\n{}", "Edit post", body_slack, link).to_string();
             helper::slack(text);
 
             let url = Url::parse(&format!("{}/{}/{}", helper::get_domain(), "post/show", id).to_string()).unwrap();
@@ -380,8 +380,15 @@ pub fn comment_handler(req: &mut Request) -> IronResult<Response> {
         _ => return Ok(Response::with((status::BadRequest))),
     }
 
-    match models::post::add_comment(conn, login_id, id, body) {
+    let body_db = body.clone();
+    let body_slack = body.clone();
+
+    match models::post::add_comment(conn, login_id, id, body_db) {
         Ok(_) => {
+            let link = format!("{}/{}/{}", helper::get_domain(), "post/show", id).to_string();
+            let text = format!("{}\n{}\n{}", "New comment", body_slack, link).to_string();
+            helper::slack(text);
+
             let url = Url::parse(&format!("{}/{}/{}", helper::get_domain(), "post/show", id).to_string()).unwrap();
             return Ok(Response::with((status::Found, Redirect(url))));
         },
