@@ -116,7 +116,6 @@ pub fn post_signin_handler(req: &mut Request) -> IronResult<Response> {
     password = helper::encrypt_password(password);
     match models::user::get_by_username_password(conn, username, password) {
         Ok(user) => {
-            println!("{:?}", user.username);
             if user.username != "" {
                 try!(req.session().set(Login { id: user.id.to_string() }));
                 return Ok(Response::with((status::Found, Redirect(url_for!(req, "nippo/list")))))
