@@ -49,7 +49,9 @@
     <button type="submit" class="mui-btn mui-btn--raised">Submit</button>
   </form>
   <script>
-    document.getElementById('marked').innerHTML = marked('{{post.body}}');
+    var body = '{{post.body}}';
+    body = body.replace(/&quot;/g, "\"");
+    document.getElementById('marked').innerHTML = marked(body);
   </script>
 {{/inline}}
 {{~> layout ~}}

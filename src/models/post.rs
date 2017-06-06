@@ -91,6 +91,7 @@ pub fn get_marked_by_id(conn: db::PostgresConnection, id: i32) -> Result<Post, E
         }
     };
     post.body = post.body.replace("\r\n", "\\n\\n");
+    post.body = post.body.replace("'", "\\'");
     Ok(post)
 }
 
