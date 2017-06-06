@@ -27,5 +27,7 @@ rust-crypto = "0.2.36"
 
 slack-hook = "0.4"
 
+time = "0.1"
+
 [features]
 integration_tests = []

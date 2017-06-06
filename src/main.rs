@@ -22,6 +22,8 @@ extern crate crypto;
 
 extern crate slack_hook;
 
+extern crate time;
+
 use std::error::Error;
 use std::path::Path;
 
@@ -34,6 +36,7 @@ use persistent::Read as PRead;
 
 use iron_sessionstorage::SessionStorage;
 use iron_sessionstorage::backends::SignedCookieBackend;
+use iron::middleware::{AroundMiddleware, Handler};
 
 #[macro_use]
 mod db;
@@ -41,10 +44,41 @@ mod handlers;
 mod models;
 mod helper;
 
+struct LoggerHandler<H: Handler> { logger: Logger, handler: H }
+impl<H: Handler> Handler for LoggerHandler<H> {
+    fn handle(&self, req: &mut Request) -> IronResult<Response> {
+        let entry = time::precise_time_ns();
+        let res = self.handler.handle(req);
+        let time = time::precise_time_ns() - entry;
+        self.logger.log(req, res.as_ref(), time);
+        res
+    }
+}
+struct Logger;
+impl Logger {
+    fn log(&self, req: &Request, res: Result<&Response, &IronError>, time: u64) {
+        println!("Request: {:?}\nResponse: {:?}\nResponse-Time: {:?}", req, res, time)
+    }
+}
+impl AroundMiddleware for Logger {
+    fn around(self, handler: Box<Handler>) -> Box<Handler> {
+        Box::new(LoggerHandler {
+            logger: self,
+            handler: handler
+        }) as Box<Handler>
+    }
+}
+
 fn main() {
     let router = handlers::router::create_router();
 
-    let mut chain = Chain::new(router);
+    let mut mount = Mount::new();
+    mount.mount("/css", Static::new(Path::new("./public/css/")));
+    mount.mount("/js", Static::new(Path::new("./public/js/")));
+    mount.mount("/img", Static::new(Path::new("./public/img/")));
+    mount.mount("/", router);
+
+    let mut chain = Chain::new(mount);
 
     let mut hbse = HandlebarsEngine::new();
     hbse.add(Box::new(
@@ -61,11 +95,7 @@ fn main() {
     let secret = b"FLEo9NZJDhZbBaT".to_vec();
     chain.link_around(SessionStorage::new(SignedCookieBackend::new(secret)));
 
-    let mut mount = Mount::new();
-    mount.mount("/css", Static::new(Path::new("./public/css/")));
-    mount.mount("/js", Static::new(Path::new("./public/js/")));
-    mount.mount("/img", Static::new(Path::new("./public/img/")));
-    mount.mount("/", chain);
+    chain.around(Logger);
 
     let mut port = helper::get_env("PORT");
     if port == "" {
@@ -73,5 +103,5 @@ fn main() {
     }
     let listen = format!("{}:{}", "0.0.0.0", port);
     println!("Listen {:?}", listen);
-    Iron::new(mount).http(listen).unwrap();
+    Iron::new(chain).http(listen).unwrap();
 }
