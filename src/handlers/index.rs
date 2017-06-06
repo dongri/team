@@ -39,7 +39,7 @@ pub fn index_handler(req: &mut Request) -> IronResult<Response> {
     struct Data {
         title: String,
         logged_in: bool,
-        posts: Vec<models::post::Post>,
+        feeds: Vec<models::post::Feed>,
         current_page: i32,
         total_page: i32,
         next_page: i32,
@@ -50,12 +50,12 @@ pub fn index_handler(req: &mut Request) -> IronResult<Response> {
     let offset = ( page - 1 ) * PAGINATES_PER;
     let limit = PAGINATES_PER;
 
-    let posts: Vec<models::post::Post>;
+    let feeds: Vec<models::post::Feed>;
     let count: i32;
 
-    match models::post::list_all(conn_l, offset, limit) {
-        Ok(posts_db) => {
-            posts = posts_db;
+    match models::post::get_feeds(conn_l, offset, limit) {
+        Ok(feeds_db) => {
+            feeds = feeds_db;
         },
         Err(e) => {
             println!("Errored: {:?}", e);
@@ -79,7 +79,7 @@ pub fn index_handler(req: &mut Request) -> IronResult<Response> {
     let data = Data {
         title: String::from("Team"),
         logged_in: login_id != 0,
-        posts: posts,
+        feeds: feeds,
         current_page: page,
         total_page: count / PAGINATES_PER + 1,
         next_page: page + 1,

@@ -1,6 +1,6 @@
 {{#*inline "page"}}
   <ul class="post-items">
-  {{#each posts}}
+  {{#each feeds}}
     <li>
       <div class="post-item-left">
         {{#if user.icon_url}}
@@ -16,6 +16,9 @@
           </div>
           <div class="post-title">
             <a href="/{{kind}}/show/{{id}}">{{title}}</a>
+            {{#if body}}
+              <div class="feed-comment">{{body}}</div>
+            {{/if}}
           </div>
         </div>
       </div>

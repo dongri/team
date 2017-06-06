@@ -137,10 +137,52 @@ pub fn get_comments_by_post_id(conn: db::PostgresConnection, id: i32) -> Result<
     Ok(comments)
 }
 
-pub fn list_all(conn: db::PostgresConnection, offset: i32, limit: i32) -> Result<Vec<Post>, Error> {
-    let mut posts: Vec<Post> = Vec::new();
-    for row in &conn.query("SELECT p.id, p.kind, p.user_id, p.title, p.body, u.username, u.icon_url from posts as p join users as u on u.id = p.user_id order by p.id desc offset $1::int limit $2::int", &[&offset, &limit]).unwrap() {
-        posts.push(Post {
+// pub fn list_all(conn: db::PostgresConnection, offset: i32, limit: i32) -> Result<Vec<Post>, Error> {
+//     let mut posts: Vec<Post> = Vec::new();
+//     for row in &conn.query("SELECT p.id, p.kind, p.user_id, p.title, p.body, u.username, u.icon_url from posts as p join users as u on u.id = p.user_id order by p.id desc offset $1::int limit $2::int", &[&offset, &limit]).unwrap() {
+//         posts.push(Post {
+//             id: row.get("id"),
+//             kind: row.get("kind"),
+//             user_id: row.get("user_id"),
+//             title: row.get("title"),
+//             body: row.get("body"),
+//             user: models::user::User{
+//                 id: row.get("user_id"),
+//                 username: row.get("username"),
+//                 icon_url: row.get("icon_url"),
+//                 username_hash: helper::username_hash(row.get("username")),
+//             }
+//         });
+//     }
+//     Ok(posts)
+// }
+
+pub fn count_all(conn: db::PostgresConnection) -> Result<i32, Error> {
+    let rows = &conn.query("SELECT count(*)::int as count from posts", &[]).unwrap();
+    let row = rows.get(0);
+    let count = row.get("count");
+    Ok(count)
+}
+
+
+#[derive(Serialize, Debug, Default)]
+pub struct Feed {
+    id: i32,
+    pub kind: String,
+    pub user_id: i32,
+    title: String,
+    body: String,
+    user: models::user::User,
+}
+
+pub fn get_feeds(conn: db::PostgresConnection, offset: i32, limit: i32) -> Result<Vec<Feed>, Error> {
+    let mut feeds: Vec<Feed> = Vec::new();
+    for row in &conn.query("
+        (select p.id, p.kind, p.user_id, p.title, '' as body, u.username, u.icon_url, p.created from posts as p join users as u on u.id=p.user_id)
+        union
+        (select c.post_id, p.kind, c.user_id, p.title as title, c.body, u.username, u.icon_url, c.created from post_comments as c join users as u on u.id=c.user_id join posts as p on c.post_id=p.id)
+        order by created desc offset $1::int limit $2::int", &[&offset, &limit]).unwrap() {
+        feeds.push(Feed {
             id: row.get("id"),
             kind: row.get("kind"),
             user_id: row.get("user_id"),
@@ -154,12 +196,5 @@ pub fn list_all(conn: db::PostgresConnection, offset: i32, limit: i32) -> Result
             }
         });
     }
-    Ok(posts)
-}
-
-pub fn count_all(conn: db::PostgresConnection) -> Result<i32, Error> {
-    let rows = &conn.query("SELECT count(*)::int as count from posts", &[]).unwrap();
-    let row = rows.get(0);
-    let count = row.get("count");
-    Ok(count)
+    Ok(feeds)
 }

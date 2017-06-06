@@ -4,6 +4,9 @@
   {{else}}
     <canvas width="50" height="50" data-jdenticon-hash="{{post.user.username_hash}}" class="user-icon"></canvas>
   {{/if}}
+  <div class="post-username">
+    @{{post.user.username}}<br/>
+  </div>
   <form class="mui-form" action="/nippo/create" method="post">
     <h1>{{post.title}}</h1>
     <div class="mui-textfield" id="marked">
@@ -46,7 +49,7 @@
     <input type="hidden" name="id" value="{{post.id}}">
     <legend>Post a comment</legend>
     <div class="mui-textfield">
-      <textarea placeholder="" name=body></textarea>
+      <textarea placeholder="comment" name=body></textarea>
     </div>
     <button type="submit" class="mui-btn mui-btn--raised">Submit</button>
   </form>
