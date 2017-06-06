@@ -83,7 +83,7 @@ pub fn get_signin_handler(req: &mut Request) -> IronResult<Response> {
     let mut resp = Response::new();
     if try!(req.session().get::<Login>()).is_some() {
         // Already logged in
-        return Ok(Response::with((status::Found, Redirect(url_for!(req, "nippo/list")))));
+        return Ok(Response::with((status::Found, Redirect(url_for!(req, "index")))));
     }
     resp.set_mut(Template::new("account/signin", {})).set_mut(status::Ok);
     return Ok(resp);
@@ -118,7 +118,7 @@ pub fn post_signin_handler(req: &mut Request) -> IronResult<Response> {
         Ok(user) => {
             if user.username != "" {
                 try!(req.session().set(Login { id: user.id.to_string() }));
-                return Ok(Response::with((status::Found, Redirect(url_for!(req, "nippo/list")))))
+                return Ok(Response::with((status::Found, Redirect(url_for!(req, "index")))))
             } else {
                 return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))))
             }
