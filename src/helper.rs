@@ -59,3 +59,14 @@ pub fn string_to_static_str(s: String) -> &'static str {
         ret
     }
 }
+
+use iron::status;
+use params::{Map, Value};
+pub fn get_param(map: &Map, name: &str) -> Result<String, status::Status> {
+    match map.get(name) {
+        Some(&Value::String(ref value)) => {
+            return Ok(value.to_string());
+        }
+        _ => return Err(status::BadRequest),
+    }
+}
