@@ -37,7 +37,6 @@ pub fn index_handler(req: &mut Request) -> IronResult<Response> {
 
     #[derive(Serialize, Debug)]
     struct Data {
-        title: String,
         logged_in: bool,
         feeds: Vec<models::post::Feed>,
         current_page: i32,
@@ -77,7 +76,6 @@ pub fn index_handler(req: &mut Request) -> IronResult<Response> {
         page = 1;
     }
     let data = Data {
-        title: String::from("Team"),
         logged_in: login_id != 0,
         feeds: feeds,
         current_page: page,
