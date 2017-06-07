@@ -9,8 +9,7 @@
   </div>
   <form class="mui-form" action="/nippo/create" method="post">
     <h1>{{post.title}}</h1>
-    <div class="mui-textfield" id="marked">
-    </div>
+    <div class="mui-textfield marked">{{post.body}}</div>
   </form>
   <div class="post-action">
     {{#if editable}}
@@ -35,9 +34,7 @@
             <div class="post-username">
               @{{user.username}}<br/>
             </div>
-            <div class="post-body">
-              {{body}}
-            </div>
+            <div class="post-body marked">{{body}}</div>
           </div>
         </div>
       </li>
@@ -54,9 +51,14 @@
     <button type="submit" class="mui-btn mui-btn--raised">Submit</button>
   </form>
   <script>
-    var body = '{{post.body}}';
-    body = body.replace(/&quot;/g, "\"");
-    document.getElementById('marked').innerHTML = marked(body);
+    $(".marked").each(function(index, element){
+      var markdownText = $(element).text();
+      var htmlText = marked(markdownText);
+      $(element).html(htmlText);
+      $('pre code', element).each(function(i, e) {
+          hljs.highlightBlock(e, e.className);
+      });
+    });
   </script>
 {{/inline}}
 {{~> layout ~}}

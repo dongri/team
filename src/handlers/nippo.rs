@@ -182,7 +182,7 @@ pub fn show_handler(req: &mut Request) -> IronResult<Response> {
     let post: models::post::Post;
     let comments: Vec<models::post::Comment>;
 
-    match models::post::get_marked_by_id(conn_s, id) {
+    match models::post::get_by_id(conn_s, id) {
         Ok(post_db) => {
             post = post_db;
         },

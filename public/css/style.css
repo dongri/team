@@ -69,12 +69,13 @@ footer {
 }
 .post-items li {
   margin-bottom: 10px;
+  display: flex;
 }
 
 .post-item-left {
   display: inline-block;
   vertical-align: top;
-  margin-right: 5px;
+  margin-right: 10px;
 }
 .post-item-right {
   display: inline-block;

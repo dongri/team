@@ -74,27 +74,6 @@ pub fn get_by_id(conn: db::PostgresConnection, id: i32) -> Result<Post, Error> {
     Ok(post)
 }
 
-pub fn get_marked_by_id(conn: db::PostgresConnection, id: i32) -> Result<Post, Error> {
-    let rows = &conn.query("SELECT p.id, p.kind, p.user_id, p.title, p.body, u.username, u.icon_url from posts as p join users as u on u.id=p.user_id where p.id = $1", &[&id]).unwrap();
-    let row = rows.get(0);
-    let mut post = Post {
-        id: row.get("id"),
-        kind: row.get("kind"),
-        user_id: row.get("user_id"),
-        title: row.get("title"),
-        body: row.get("body"),
-        user: models::user::User{
-            id: row.get("user_id"),
-            username: row.get("username"),
-            icon_url: row.get("icon_url"),
-            username_hash: helper::username_hash(row.get("username")),
-        }
-    };
-    post.body = post.body.replace("\r\n", "\\n\\n");
-    post.body = post.body.replace("'", "\\'");
-    Ok(post)
-}
-
 pub fn delete_by_id(conn: db::PostgresConnection, id: i32) -> Result<(), Error> {
     conn.execute(
         "DELETE FROM posts WHERE id = $1",
