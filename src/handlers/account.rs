@@ -277,3 +277,29 @@ pub fn post_password_update(req: &mut Request) -> IronResult<Response> {
     }
 }
 
+pub fn post_username_update(req: &mut Request) -> IronResult<Response> {
+    let username: String;
+    {
+        use params::Params;
+        let map = &req.get_ref::<Params>().unwrap();
+        match helper::get_param(map, "username") {
+            Ok(value) => username = value,
+            Err(st) => return Ok(Response::with((st))),
+        }
+    }
+    let conn = get_pg_connection!(req);
+    let login_id = handlers::account::get_login_id(req);
+    if login_id == 0 {
+        return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
+    }
+    match models::user::update_username(&conn, login_id, username) {
+        Ok(_) => {
+            return Ok(Response::with((status::Found,
+                                      Redirect(url_for!(req, "account/get_settings")))));
+        }
+        Err(e) => {
+            println!("Errored: {:?}", e);
+            return Ok(Response::with((status::InternalServerError)));
+        }
+    }
+}

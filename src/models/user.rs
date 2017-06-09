@@ -77,3 +77,9 @@ pub fn update_password(conn: &db::PostgresConnection, id: i32, password: String)
         "UPDATE users set password = $2 WHERE id = $1", &[&id, &password]
     ).map(|_| ())
 }
+
+pub fn update_username(conn: &db::PostgresConnection, id: i32, username: String) -> Result<(), Error>{
+    conn.execute(
+        "UPDATE users set username = $2 WHERE id = $1", &[&id, &username]
+    ).map(|_| ())
+}

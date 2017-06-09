@@ -17,6 +17,7 @@ pub fn create_router() -> Router {
     router.get("/account/settings", account::get_settings_handler, "account/get_settings");
     router.post("/account/settings", account::post_settings_handler, "account/post_settings");
     router.post("/account/password", account::post_password_update, "account/post_password");
+    router.post("/account/username", account::post_username_update, "account/post_username");
 
     router.get("/nippo/new", nippo::new_handler, "nippo/new");
     router.post("/nippo/create", nippo::create_handler, "nippo/create");

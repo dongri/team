@@ -1,16 +1,10 @@
 {{#*inline "page"}}
-<form class="mui-form" action="/account/settings" method="post">
-  <legend>Icon URL</legend>
+<form class="mui-form" action="/account/username" method="post">
+  <legend>username</legend>
   <div class="mui-textfield">
-    <input type="text" placeholder="Icon URL" name="icon_url" value="{{user.icon_url}}">
+    <input type="text" id="username" name="username" value="{{user.username}}" placeholder="username">
   </div>
-  <div>
-    {{#if user.icon_url}}
-    <img src="{{user.icon_url}}" class="user-icon"> {{else}}
-    <canvas width="80" height="80" data-jdenticon-hash="{{user.username_hash}}" class="user-icon"></canvas>
-    {{/if}}
-  </div>
-  <button type="submit" class="mui-btn mui-btn--raised">Submit</button>
+  <button type="submit" class="mui-btn mui-btn--raised">Update</button>
 </form>
 <hr />
 <form class="mui-form" action="/account/password" method="post">
@@ -26,6 +20,20 @@
   <label for="confirm_password">Confirm new password</label>
   <div class="mui-textfield">
     <input type="password" id="confirm_password" name="confirm_password" placeholder="confirm">
+  </div>
+  <button type="submit" class="mui-btn mui-btn--raised">Submit</button>
+</form>
+<hr />
+<form class="mui-form" action="/account/settings" method="post">
+  <legend>Icon URL</legend>
+  <div class="mui-textfield">
+    <input type="text" placeholder="Icon URL" name="icon_url" value="{{user.icon_url}}">
+  </div>
+  <div>
+    {{#if user.icon_url}}
+    <img src="{{user.icon_url}}" class="user-icon"> {{else}}
+    <canvas width="80" height="80" data-jdenticon-hash="{{user.username_hash}}" class="user-icon"></canvas>
+    {{/if}}
   </div>
   <button type="submit" class="mui-btn mui-btn--raised">Submit</button>
 </form>
