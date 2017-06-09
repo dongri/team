@@ -180,7 +180,7 @@ pub fn get_feeds(conn: db::PostgresConnection, offset: i32, limit: i32) -> Resul
 
 pub fn search(conn: db::PostgresConnection, keyword: String, offset: i32, limit: i32) -> Result<Vec<Post>, Error> {
     let mut posts: Vec<Post> = Vec::new();
-    for row in &conn.query("SELECT p.id, p.kind, p.user_id, p.title, p.body, u.username, u.icon_url from posts as p join users as u on u.id = p.user_id where p.title like '%' || $1 || '%' order by p.id desc offset $2::int limit $3::int", &[&keyword, &offset, &limit]).unwrap() {
+    for row in &conn.query("SELECT p.id, p.kind, p.user_id, p.title, p.body, u.username, u.icon_url from posts as p join users as u on u.id = p.user_id where p.title like '%' || $1 || '%' or p.body like '%' || $1 || '%' order by p.id desc offset $2::int limit $3::int", &[&keyword, &offset, &limit]).unwrap() {
         posts.push(Post {
             id: row.get("id"),
             kind: row.get("kind"),
@@ -199,7 +199,7 @@ pub fn search(conn: db::PostgresConnection, keyword: String, offset: i32, limit:
 }
 
 pub fn search_count(conn: db::PostgresConnection, keyword: String) -> Result<i32, Error> {
-    let rows = &conn.query("SELECT count(*)::int as count from posts where title like '%' || $1 || '%'", &[&keyword]).unwrap();
+    let rows = &conn.query("SELECT count(*)::int as count from posts where title like '%' || $1 || '%' or body like '%' || $1 || '%'", &[&keyword]).unwrap();
     let row = rows.get(0);
     let count = row.get("count");
     Ok(count)
