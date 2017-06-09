@@ -10,6 +10,15 @@ pub struct User {
     pub username_hash: String,
 }
 
+#[derive(Serialize, Debug, Default)]
+pub struct UserWithPassword {
+    pub id: i32,
+    pub username: String,
+    pub icon_url: Option<String>,
+    pub username_hash: String,
+    pub password: String,
+}
+
 pub fn create(conn: db::PostgresConnection, username: String, password: String) -> Result<(), Error> {
     conn.execute(
         "INSERT INTO users (username, password) VALUES ($1, $2);",
@@ -43,8 +52,28 @@ pub fn get_by_id(conn: db::PostgresConnection, id: i32) -> Result<User, Error> {
     Ok(user)
 }
 
+pub fn get_with_password_by_id(conn: &db::PostgresConnection, id: i32) -> Result<UserWithPassword, Error> {
+    let mut user = UserWithPassword{..Default::default()};
+    for row in &conn.query("SELECT id, username, icon_url, password from users where id = $1", &[&id]).unwrap() {
+        user = UserWithPassword {
+            id: row.get("id"),
+            username: row.get("username"),
+            icon_url: row.get("icon_url"),
+            username_hash: helper::username_hash(row.get("username")),
+            password: row.get("password"),
+        };
+    }
+    Ok(user)
+}
+
 pub fn update_icon_url(conn: db::PostgresConnection, id: i32, icon_url: String) -> Result<(), Error>{
     conn.execute(
         "UPDATE users set icon_url = $2 WHERE id = $1", &[&id, &icon_url]
+    ).map(|_| ())
+}
+
+pub fn update_password(conn: &db::PostgresConnection, id: i32, password: String) -> Result<(), Error>{
+    conn.execute(
+        "UPDATE users set password = $2 WHERE id = $1", &[&id, &password]
     ).map(|_| ())
 }
