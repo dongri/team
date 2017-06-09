@@ -1,0 +1,37 @@
+{{#*inline "title"}}
+  Feed - Team
+{{/inline}}
+{{#*inline "page"}}
+  <ul class="post-items">
+  {{#each posts}}
+    <li>
+      <div class="post-item-left">
+        {{#if user.icon_url}}
+          <img src="{{user.icon_url}}" class="user-icon">
+        {{else}}
+          <canvas width="50" height="50" data-jdenticon-hash="{{user.username_hash}}" class="user-icon"></canvas>
+        {{/if}}
+      </div>
+      <div class="post-item-right">
+        <div class="post-item">
+          <div class="post-username">
+            @{{user.username}}<br/>
+          </div>
+          <div class="post-title">
+            <a href="/{{kind}}/show/{{id}}">{{title}}</a>
+            {{#if body}}
+              <div class="feed-comment">{{body}}</div>
+            {{/if}}
+          </div>
+        </div>
+      </div>
+    </li>
+  {{/each}}
+  </ul>
+  <div class="paginates">
+    <a href="/search?keyword={{keyword}}&page={{prev_page}}">Previous</a>
+    {{current_page}} of {{total_page}}
+    <a href="/search?keyword={{keyword}}&page={{next_page}}">Next</a>
+  </div>
+{{/inline}}
+{{~> layout ~}}

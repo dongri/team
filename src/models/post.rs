@@ -177,3 +177,30 @@ pub fn get_feeds(conn: db::PostgresConnection, offset: i32, limit: i32) -> Resul
     }
     Ok(feeds)
 }
+
+pub fn search(conn: db::PostgresConnection, keyword: String, offset: i32, limit: i32) -> Result<Vec<Post>, Error> {
+    let mut posts: Vec<Post> = Vec::new();
+    for row in &conn.query("SELECT p.id, p.kind, p.user_id, p.title, p.body, u.username, u.icon_url from posts as p join users as u on u.id = p.user_id where p.title like '%' || $1 || '%' order by p.id desc offset $2::int limit $3::int", &[&keyword, &offset, &limit]).unwrap() {
+        posts.push(Post {
+            id: row.get("id"),
+            kind: row.get("kind"),
+            user_id: row.get("user_id"),
+            title: row.get("title"),
+            body: row.get("body"),
+            user: models::user::User{
+                id: row.get("user_id"),
+                username: row.get("username"),
+                icon_url: row.get("icon_url"),
+                username_hash: helper::username_hash(row.get("username")),
+            }
+        });
+    }
+    Ok(posts)
+}
+
+pub fn search_count(conn: db::PostgresConnection, keyword: String) -> Result<i32, Error> {
+    let rows = &conn.query("SELECT count(*)::int as count from posts where title like '%' || $1 || '%'", &[&keyword]).unwrap();
+    let row = rows.get(0);
+    let count = row.get("count");
+    Ok(count)
+}

@@ -3,6 +3,11 @@
     <table width="100%">
       <tr class="mui--appbar-height">
         <td class="mui--text-title header-title"><a href="/">Team</a></td>
+        <td>
+          <form class="mui-form" action="/search" method="get">
+            <input type="text" name="keyword" class="search-input" value="{{keyword}}" placeholder="search" />
+          </form>
+        </td>
         <td align="right">
           <ul class="mui-list--inline mui--text-body2 header-ul">
             {{#if logged_in}}

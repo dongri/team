@@ -7,6 +7,7 @@ use handlers::post;
 pub fn create_router() -> Router {
     let mut router = Router::new();
     router.get("/", index::index_handler, "index");
+    router.get("/search", index::search_handler, "search");
 
     router.get("/signup", account::get_signup_handler, "account/get_signup");
     router.post("/signup", account::post_signup_handler, "account/post_signup");
@@ -36,6 +37,7 @@ pub fn create_router() -> Router {
     router.get("/post/edit/:id", post::edit_handler, "post/edit");
     router.post("/post/update", post::update_handler, "post/update");
     router.post("/post/comment", post::comment_handler, "post/comment");
+
 
     return router;
 }

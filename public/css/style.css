@@ -52,12 +52,16 @@ footer {
   background: white;
   border: 0px;
 }
+.mui-appbar{
+  background: #4285f4;
+}
 .appbar-height {
   height: 90px;
 }
 .header-title {
   font-size: 26px;
   font-weight: 700;
+  width: 90px;
 }
 .header-ul {
   font-size: 18px;
@@ -124,4 +128,26 @@ footer {
 .feed-comment {
   font-size: 14px;
   color: #333;
+}
+.search-input {
+  border-radius: 3px;
+  border: none;
+  height: 30px;
+  background: #6499ef;
+  padding-left: 7px;
+  color: white;
+  width: 250px;
+  border: 1px solid #7daaf2;
+}
+.search-input::-webkit-input-placeholder {
+    color: #EEE;
+    font-weight: normal;
+}
+.search-input:-ms-input-placeholder {
+    color: #EEE;
+    font-weight: normal;
+}
+.search-input::-moz-placeholder {
+    color: #EEE;
+    font-weight: normal;
 }
