@@ -189,9 +189,7 @@ pub fn tag_handler(req: &mut Request) -> IronResult<Response> {
     if login_id == 0 {
         return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
     }
-    let conn_l = get_pg_connection!(req);
-    let conn_c = get_pg_connection!(req);
-
+    let conn = get_pg_connection!(req);
     let page_param: String;
 
     {
@@ -206,10 +204,7 @@ pub fn tag_handler(req: &mut Request) -> IronResult<Response> {
         }
     }
 
-    let ref tag_name = req.extensions.get::<Router>().unwrap().find("name").unwrap_or("/");
-
-    let tag_search = tag_name.to_string().clone();
-    let tag_count = tag_name.to_string().clone();
+    let tag_name = req.extensions.get::<Router>().unwrap().find("name").unwrap_or("/").to_string();
 
     let mut resp = Response::new();
 
@@ -231,7 +226,7 @@ pub fn tag_handler(req: &mut Request) -> IronResult<Response> {
     let posts: Vec<models::post::Post>;
     let count: i32;
 
-    match models::tag::tag_search(conn_l, tag_search, offset, limit) {
+    match models::tag::tag_search(&conn, &tag_name, offset, limit) {
         Ok(posts_db) => {
             posts = posts_db;
         },
@@ -241,7 +236,7 @@ pub fn tag_handler(req: &mut Request) -> IronResult<Response> {
         }
     }
 
-    match models::tag::tag_count(conn_c, tag_count) {
+    match models::tag::tag_count(&conn, &tag_name) {
         Ok(count_db) => {
             count = count_db;
         },

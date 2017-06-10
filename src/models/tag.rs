@@ -33,7 +33,7 @@ pub fn get_tags_by_post_id(conn: &db::PostgresConnection, post_id: i32) -> Resul
     Ok(tags)
 }
 
-pub fn tag_search(conn: db::PostgresConnection, tag_name: String, offset: i32, limit: i32) -> Result<Vec<models::post::Post>, Error> {
+pub fn tag_search(conn: &db::PostgresConnection, tag_name: &String, offset: i32, limit: i32) -> Result<Vec<models::post::Post>, Error> {
     let mut posts: Vec<models::post::Post> = Vec::new();
     for row in &conn.query("SELECT p.id, p.kind, p.user_id, p.title, p.body, u.username, u.icon_url from posts as p join users as u on u.id = p.user_id join taggings as t on p.id = t.post_id join tags as tg on t.tag_id = tg.id where tg.name = $1 order by p.id desc offset $2::int limit $3::int", &[&tag_name, &offset, &limit]).unwrap() {
         match models::tag::get_tags_by_post_id(&conn, row.get("id")) {
@@ -61,7 +61,7 @@ pub fn tag_search(conn: db::PostgresConnection, tag_name: String, offset: i32, l
     Ok(posts)
 }
 
-pub fn tag_count(conn: db::PostgresConnection, tag_name: String) -> Result<i32, Error> {
+pub fn tag_count(conn: &db::PostgresConnection, tag_name: &String) -> Result<i32, Error> {
     let rows = &conn.query("SELECT count(p.*)::int as count from posts as p join taggings as t on p.id = t.post_id join tags tg on t.tag_id = tg.id where tg.name = $1", &[&tag_name]).unwrap();
     let row = rows.get(0);
     let count = row.get("count");
