@@ -288,7 +288,9 @@ pub fn edit_handler(req: &mut Request) -> IronResult<Response> {
     for t in &post.tags {
         tag_str = format!("{},{}", tag_str, t.name).to_string();
     }
-    tag_str.remove(0);
+    if tag_str.len() > 0 {
+        tag_str.remove(0);
+    }
 
     let data = Data {
         logged_in: login_id != 0,
