@@ -21,6 +21,11 @@
           <div class="post-title">
             <a href="/nippo/show/{{id}}">{{title}}</a>
           </div>
+          <div class="post-tags">
+            {{#each tags}}
+              <span class="tag-label"><a href="/tag/{{name}}">{{name}}</a></span>
+            {{/each}}
+          </div>
         </div>
       </div>
     </li>

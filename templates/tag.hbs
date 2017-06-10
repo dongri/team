@@ -1,8 +1,8 @@
 {{#*inline "title"}}
-  Posts - Team
+  Feed - Team
 {{/inline}}
 {{#*inline "page"}}
-  <button class="mui-btn mui-btn--small mui-btn--primary post-button" onClick="location.href='/post/new'">Post Know-how</button>
+  <h3 class="tag_name">tag: {{tag_name}}</h3>
   <ul class="post-items">
   {{#each posts}}
     <li>
@@ -19,7 +19,10 @@
             @{{user.username}}<br/>
           </div>
           <div class="post-title">
-            <a href="/post/show/{{id}}">{{title}}</a>
+            <a href="/{{kind}}/show/{{id}}">{{title}}</a>
+            {{#if body}}
+              <div class="feed-comment">{{body}}</div>
+            {{/if}}
           </div>
           <div class="post-tags">
             {{#each tags}}
@@ -32,9 +35,9 @@
   {{/each}}
   </ul>
   <div class="paginates">
-    <a href="/post/list?page={{prev_page}}">Previous</a>
+    <a href="/tag/{{tag_name}}?page={{prev_page}}">Previous</a>
     {{current_page}} of {{total_page}}
-    <a href="/post/list?page={{next_page}}">Next</a>
+    <a href="/tag/{{tag_name}}?page={{next_page}}">Next</a>
   </div>
 {{/inline}}
 {{~> layout ~}}

@@ -10,6 +10,9 @@
     <div class="mui-textfield">
       <textarea name="body" placeholder="body" id="mdeditor" cols="30" rows="10" class="form-control">{{post.body}}</textarea>
     </div>
+    <div class="mui-textfield">
+      <input type="text" placeholder="Tags (e.g. rust,tips,postgres)" name="tags" value="{{tags}}" class="input-tags">
+    </div>
     <button type="submit" class="mui-btn mui-btn--raised">Update</button>
   </form>
   <script>

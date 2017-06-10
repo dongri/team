@@ -44,6 +44,7 @@ pub fn create_handler(req: &mut Request) -> IronResult<Response> {
 
     let title: String;
     let body: String;
+    let tags: String;
 
     {
         use params::{Params, Value};
@@ -60,12 +61,17 @@ pub fn create_handler(req: &mut Request) -> IronResult<Response> {
             },
             _ => return Ok(Response::with((status::BadRequest))),
         }
+        match map.get("tags") {
+            Some(&Value::String(ref name)) => {
+                tags = name.to_string();
+            },
+            _ => return Ok(Response::with((status::BadRequest))),
+        }
     }
 
     let body_db = body.clone();
     let body_slack = body.clone();
-
-    match models::post::create(conn, POST_KIND, login_id, title, body_db) {
+    match models::post::create(conn, POST_KIND, login_id, title, body_db, tags) {
         Ok(id) => {
             let link = format!("{}/{}/{}", helper::get_domain(), "nippo/show", id).to_string();
             let text = format!("{}\n{}\n{}", "New nippo", body_slack, link).to_string();
@@ -257,6 +263,7 @@ pub fn edit_handler(req: &mut Request) -> IronResult<Response> {
     struct Data {
         logged_in: bool,
         post: models::post::Post,
+        tags: String,
     }
 
     let post: models::post::Post;
@@ -276,9 +283,17 @@ pub fn edit_handler(req: &mut Request) -> IronResult<Response> {
             return Ok(Response::with((status::InternalServerError)));
         }
     }
+
+    let mut tag_str: String = String::from("");
+    for t in &post.tags {
+        tag_str = format!("{},{}", tag_str, t.name).to_string();
+    }
+    tag_str.remove(0);
+
     let data = Data {
         logged_in: login_id != 0,
         post: post,
+        tags: tag_str,
     };
     resp.set_mut(Template::new("nippo/edit", to_json(&data))).set_mut(status::Ok);
     return Ok(resp);
@@ -299,6 +314,7 @@ pub fn update_handler(req: &mut Request) -> IronResult<Response> {
     let id: i32;
     let title: String;
     let body: String;
+    let tags: String;
 
     match map.find(&["id"]) {
         Some(&Value::String(ref name)) => {
@@ -321,6 +337,13 @@ pub fn update_handler(req: &mut Request) -> IronResult<Response> {
         _ => return Ok(Response::with((status::BadRequest))),
     }
 
+    match map.find(&["tags"]) {
+        Some(&Value::String(ref name)) => {
+            tags = name.to_string();
+        },
+        _ => return Ok(Response::with((status::BadRequest))),
+    }
+
     match models::post::get_by_id(conn_s, id) {
         Ok(post_db) => {
             if post_db.user_id != login_id {
@@ -333,7 +356,7 @@ pub fn update_handler(req: &mut Request) -> IronResult<Response> {
         }
     }
 
-    match models::post::update(conn_u, id, title, body) {
+    match models::post::update(conn_u, id, title, body, tags) {
         Ok(_) => {
             let url = Url::parse(&format!("{}/{}/{}", helper::get_domain(), "nippo/show", id).to_string()).unwrap();
             return Ok(Response::with((status::Found, Redirect(url))));

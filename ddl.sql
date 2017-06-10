@@ -28,3 +28,18 @@ create table post_comments (
   created       timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated       timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+create table tags (
+  id            serial primary key,
+  name          varchar(255) NOT NULL,
+  created       timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated       timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+create table taggings (
+  id            serial primary key,
+  tag_id        serial REFERENCES tags (id) ON DELETE CASCADE NOT NULL,
+  post_id       serial REFERENCES posts (id) ON DELETE CASCADE NOT NULL,
+  created       timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated       timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
