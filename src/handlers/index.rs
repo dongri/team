@@ -1,8 +1,8 @@
 use persistent;
 use iron::prelude::*;
 use iron::status;
-use iron::modifiers::{Redirect};
-use hbs::{Template};
+use iron::modifiers::Redirect;
+use hbs::Template;
 use hbs::handlebars::to_json;
 use router::{Router};
 
@@ -18,8 +18,7 @@ pub fn index_handler(req: &mut Request) -> IronResult<Response> {
         return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
     }
 
-    let conn_l = get_pg_connection!(req);
-    let conn_c = get_pg_connection!(req);
+    let conn = get_pg_connection!(req);
 
     let page_param: String;
 
@@ -29,7 +28,7 @@ pub fn index_handler(req: &mut Request) -> IronResult<Response> {
         match map.get("page") {
             Some(&Value::String(ref name)) => {
                 page_param = name.to_string();
-            },
+            }
             _ => page_param = "1".to_string(),
         }
     }
@@ -47,26 +46,26 @@ pub fn index_handler(req: &mut Request) -> IronResult<Response> {
     }
 
     let mut page = page_param.parse::<i32>().unwrap();
-    let offset = ( page - 1 ) * PAGINATES_PER;
+    let offset = (page - 1) * PAGINATES_PER;
     let limit = PAGINATES_PER;
 
     let feeds: Vec<models::post::Feed>;
     let count: i32;
 
-    match models::post::get_feeds(conn_l, offset, limit) {
+    match models::post::get_feeds(&conn, &offset, &limit) {
         Ok(feeds_db) => {
             feeds = feeds_db;
-        },
+        }
         Err(e) => {
             println!("Errored: {:?}", e);
             return Ok(Response::with((status::InternalServerError)));
         }
     }
 
-    match models::post::count_all(conn_c) {
+    match models::post::count_all(&conn) {
         Ok(count_db) => {
             count = count_db;
-        },
+        }
         Err(e) => {
             println!("Errored: {:?}", e);
             return Ok(Response::with((status::InternalServerError)));
@@ -85,7 +84,8 @@ pub fn index_handler(req: &mut Request) -> IronResult<Response> {
         prev_page: page - 1,
     };
 
-    resp.set_mut(Template::new("index", to_json(&data))).set_mut(status::Ok);
+    resp.set_mut(Template::new("index", to_json(&data)))
+        .set_mut(status::Ok);
     return Ok(resp);
 
     // let mut resp = Response::new();
@@ -101,8 +101,7 @@ pub fn search_handler(req: &mut Request) -> IronResult<Response> {
         return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
     }
 
-    let conn_l = get_pg_connection!(req);
-    let conn_c = get_pg_connection!(req);
+    let conn = get_pg_connection!(req);
 
     let keyword_param: String;
     let page_param: String;
@@ -113,13 +112,13 @@ pub fn search_handler(req: &mut Request) -> IronResult<Response> {
         match map.get("keyword") {
             Some(&Value::String(ref name)) => {
                 keyword_param = name.to_string();
-            },
+            }
             _ => keyword_param = "".to_string(),
         }
         match map.get("page") {
             Some(&Value::String(ref name)) => {
                 page_param = name.to_string();
-            },
+            }
             _ => page_param = "1".to_string(),
         }
     }
@@ -141,26 +140,26 @@ pub fn search_handler(req: &mut Request) -> IronResult<Response> {
     }
 
     let mut page = page_param.parse::<i32>().unwrap();
-    let offset = ( page - 1 ) * PAGINATES_PER;
+    let offset = (page - 1) * PAGINATES_PER;
     let limit = PAGINATES_PER;
 
     let posts: Vec<models::post::Post>;
     let count: i32;
 
-    match models::post::search(conn_l, keyword_search, offset, limit) {
+    match models::post::search(&conn, &keyword_search, &offset, &limit) {
         Ok(posts_db) => {
             posts = posts_db;
-        },
+        }
         Err(e) => {
             println!("Errored: {:?}", e);
             return Ok(Response::with((status::InternalServerError)));
         }
     }
 
-    match models::post::search_count(conn_c, keyword_count) {
+    match models::post::search_count(&conn, &keyword_count) {
         Ok(count_db) => {
             count = count_db;
-        },
+        }
         Err(e) => {
             println!("Errored: {:?}", e);
             return Ok(Response::with((status::InternalServerError)));
@@ -180,7 +179,8 @@ pub fn search_handler(req: &mut Request) -> IronResult<Response> {
         keyword: keyword_param,
     };
 
-    resp.set_mut(Template::new("search", to_json(&data))).set_mut(status::Ok);
+    resp.set_mut(Template::new("search", to_json(&data)))
+        .set_mut(status::Ok);
     return Ok(resp);
 }
 

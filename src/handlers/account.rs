@@ -73,7 +73,7 @@ pub fn post_signup_handler(req: &mut Request) -> IronResult<Response> {
     }
 
     password = helper::encrypt_password(password);
-    match models::user::create(conn, username, password) {
+    match models::user::create(&conn, &username, &password) {
         Ok(_) => {
             return Ok(Response::with((status::Found,
                                       Redirect(url_for!(req, "account/get_signin")))));
@@ -121,7 +121,7 @@ pub fn post_signin_handler(req: &mut Request) -> IronResult<Response> {
     }
 
     password = helper::encrypt_password(password);
-    match models::user::get_by_username_password(conn, username, password) {
+    match models::user::get_by_username_password(&conn, &username, &password) {
         Ok(user) => {
             if user.username != "" {
                 try!(req.session().set(Login { id: user.id.to_string() }));
@@ -161,7 +161,7 @@ pub fn get_settings_handler(req: &mut Request) -> IronResult<Response> {
     if login_id == 0 {
         return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
     }
-    let conn_s = get_pg_connection!(req);
+    let conn = get_pg_connection!(req);
     let mut resp = Response::new();
 
     #[derive(Serialize, Default)]
@@ -172,7 +172,7 @@ pub fn get_settings_handler(req: &mut Request) -> IronResult<Response> {
 
     let user: models::user::User;
 
-    match models::user::get_by_id(conn_s, login_id) {
+    match models::user::get_by_id(&conn, &login_id) {
         Ok(user_obj) => {
             user = user_obj;
         }
@@ -210,7 +210,7 @@ pub fn post_settings_handler(req: &mut Request) -> IronResult<Response> {
         }
     }
 
-    match models::user::update_icon_url(conn, login_id, icon_url) {
+    match models::user::update_icon_url(&conn, &login_id, &icon_url) {
         Ok(_) => {
             return Ok(Response::with((status::Found,
                                       Redirect(url_for!(req, "account/get_settings")))));
@@ -256,7 +256,7 @@ pub fn post_password_update(req: &mut Request) -> IronResult<Response> {
     let current_password = helper::encrypt_password(current_password);
     let user: models::user::UserWithPassword;
 
-    match models::user::get_with_password_by_id(&conn, login_id) {
+    match models::user::get_with_password_by_id(&conn, &login_id) {
         Ok(u) => user = u,
         Err(_) => return Ok(Response::with((status::BadRequest))),
     }
@@ -265,7 +265,7 @@ pub fn post_password_update(req: &mut Request) -> IronResult<Response> {
         return Ok(Response::with((status::BadRequest)));
     }
 
-    match models::user::update_password(&conn, login_id, helper::encrypt_password(new_password)) {
+    match models::user::update_password(&conn, &login_id, &helper::encrypt_password(new_password)) {
         Ok(_) => {
             return Ok(Response::with((status::Found,
                                       Redirect(url_for!(req, "account/get_settings")))));
@@ -292,7 +292,7 @@ pub fn post_username_update(req: &mut Request) -> IronResult<Response> {
     if login_id == 0 {
         return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
     }
-    match models::user::update_username(&conn, login_id, username) {
+    match models::user::update_username(&conn, &login_id, &username) {
         Ok(_) => {
             return Ok(Response::with((status::Found,
                                       Redirect(url_for!(req, "account/get_settings")))));
@@ -303,3 +303,4 @@ pub fn post_username_update(req: &mut Request) -> IronResult<Response> {
         }
     }
 }
+

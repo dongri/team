@@ -22,7 +22,7 @@ pub fn select_or_create_tag_id(conn: &db::PostgresConnection, tag_name: &str) ->
     Ok(tag_id)
 }
 
-pub fn get_tags_by_post_id(conn: &db::PostgresConnection, post_id: i32) -> Result<Vec<Tag>, Error> {
+pub fn get_tags_by_post_id(conn: &db::PostgresConnection, post_id: &i32) -> Result<Vec<Tag>, Error> {
     let mut tags: Vec<Tag> = Vec::new();
     for row in &conn.query("select t2.id, t2.name from taggings as t1 join tags as t2 on t1.tag_id = t2.id where t1.post_id = $1 order by t2.id desc", &[&post_id]).unwrap() {
         tags.push(Tag {
@@ -36,7 +36,7 @@ pub fn get_tags_by_post_id(conn: &db::PostgresConnection, post_id: i32) -> Resul
 pub fn tag_search(conn: &db::PostgresConnection, tag_name: &String, offset: i32, limit: i32) -> Result<Vec<models::post::Post>, Error> {
     let mut posts: Vec<models::post::Post> = Vec::new();
     for row in &conn.query("SELECT p.id, p.kind, p.user_id, p.title, p.body, u.username, u.icon_url from posts as p join users as u on u.id = p.user_id join taggings as t on p.id = t.post_id join tags as tg on t.tag_id = tg.id where tg.name = $1 order by p.id desc offset $2::int limit $3::int", &[&tag_name, &offset, &limit]).unwrap() {
-        match models::tag::get_tags_by_post_id(&conn, row.get("id")) {
+        match models::tag::get_tags_by_post_id(&conn, &row.get("id")) {
             Ok(tags) => {
                 posts.push(models::post::Post {
                     id: row.get("id"),
