@@ -13,7 +13,7 @@ pub struct Post {
     user: models::user::User,
 }
 
-pub fn create(conn: db::PostgresConnection, kind: &str, user_id: i32, title: String, body: String) -> Result<(i32), Error> {
+pub fn create(conn: &db::PostgresConnection, kind: &str, user_id: &i32, title: &String, body: &String) -> Result<(i32), Error> {
     let mut id = 0;
     for row in &conn.query("INSERT INTO posts (kind, user_id, title, body) VALUES ($1, $2, $3, $4) returning id;", &[&kind, &user_id, &title, &body]).unwrap() {
         id = row.get("id");
@@ -21,7 +21,7 @@ pub fn create(conn: db::PostgresConnection, kind: &str, user_id: i32, title: Str
     Ok(id)
 }
 
-pub fn list(conn: db::PostgresConnection, kind: &str, offset: i32, limit: i32) -> Result<Vec<Post>, Error> {
+pub fn list(conn: &db::PostgresConnection, kind: &str, offset: &i32, limit: &i32) -> Result<Vec<Post>, Error> {
     let mut posts: Vec<Post> = Vec::new();
     for row in &conn.query("SELECT p.id, p.kind, p.user_id, p.title, p.body, u.username, u.icon_url from posts as p join users as u on u.id = p.user_id where p.kind = $1 order by p.id desc offset $2::int limit $3::int", &[&kind, &offset, &limit]).unwrap() {
         posts.push(Post {
@@ -41,7 +41,7 @@ pub fn list(conn: db::PostgresConnection, kind: &str, offset: i32, limit: i32) -
     Ok(posts)
 }
 
-pub fn count(conn: db::PostgresConnection, kind: &str) -> Result<i32, Error> {
+pub fn count(conn: &db::PostgresConnection, kind: &str) -> Result<i32, Error> {
     let rows = &conn.query("SELECT count(*)::int as count from posts where kind = $1", &[&kind]).unwrap();
     let row = rows.get(0);
     let count = row.get("count");
@@ -49,13 +49,13 @@ pub fn count(conn: db::PostgresConnection, kind: &str) -> Result<i32, Error> {
 }
 
 
-pub fn update(conn: db::PostgresConnection, id: i32, title: String, body: String) -> Result<(), Error> {
+pub fn update(conn: &db::PostgresConnection, id: &i32, title: &String, body: &String) -> Result<(), Error> {
     conn.execute(
         "UPDATE posts set title = $1, body = $2 WHERE id = $3", &[&title, &body, &id]
     ).map(|_| ())
 }
 
-pub fn get_by_id(conn: db::PostgresConnection, id: i32) -> Result<Post, Error> {
+pub fn get_by_id(conn: &db::PostgresConnection, id: &i32) -> Result<Post, Error> {
     let rows = &conn.query("SELECT p.id, p.kind, p.user_id, p.title, p.body, u.username, u.icon_url from posts as p join users as u on u.id=p.user_id where p.id = $1", &[&id]).unwrap();
     let row = rows.get(0);
     let post = Post {
@@ -74,7 +74,7 @@ pub fn get_by_id(conn: db::PostgresConnection, id: i32) -> Result<Post, Error> {
     Ok(post)
 }
 
-pub fn delete_by_id(conn: db::PostgresConnection, id: i32) -> Result<(), Error> {
+pub fn delete_by_id(conn: &db::PostgresConnection, id: &i32) -> Result<(), Error> {
     conn.execute(
         "DELETE FROM posts WHERE id = $1",
         &[&id]
@@ -90,14 +90,14 @@ pub struct Comment {
     user: models::user::User,
 }
 
-pub fn add_comment(conn: db::PostgresConnection, user_id: i32, post_id: i32, body: String) -> Result<(), Error> {
+pub fn add_comment(conn: &db::PostgresConnection, user_id: &i32, post_id: &i32, body: &String) -> Result<(), Error> {
     conn.execute(
         "INSERT INTO post_comments (user_id, post_id, body) VALUES ($1, $2, $3);",
         &[&user_id, &post_id, &body]
     ).map(|_| ())
 }
 
-pub fn get_comments_by_post_id(conn: db::PostgresConnection, id: i32) -> Result<Vec<Comment>, Error> {
+pub fn get_comments_by_post_id(conn: &db::PostgresConnection, id: &i32) -> Result<Vec<Comment>, Error> {
     let mut comments: Vec<Comment> = Vec::new();
     for row in &conn.query("SELECT c.id, c.user_id, c.post_id, c.body, u.username, u.icon_url from post_comments as c join users as u on u.id = c.user_id where c.post_id = $1 order by id asc", &[&id]).unwrap() {
         comments.push(Comment {
@@ -136,7 +136,7 @@ pub fn get_comments_by_post_id(conn: db::PostgresConnection, id: i32) -> Result<
 //     Ok(posts)
 // }
 
-pub fn count_all(conn: db::PostgresConnection) -> Result<i32, Error> {
+pub fn count_all(conn: &db::PostgresConnection) -> Result<i32, Error> {
     let rows = &conn.query("SELECT count(*)::int as count from posts", &[]).unwrap();
     let row = rows.get(0);
     let count = row.get("count");
@@ -154,7 +154,7 @@ pub struct Feed {
     user: models::user::User,
 }
 
-pub fn get_feeds(conn: db::PostgresConnection, offset: i32, limit: i32) -> Result<Vec<Feed>, Error> {
+pub fn get_feeds(conn: &db::PostgresConnection, offset: &i32, limit: &i32) -> Result<Vec<Feed>, Error> {
     let mut feeds: Vec<Feed> = Vec::new();
     for row in &conn.query("
         (select p.id, p.kind, p.user_id, p.title, '' as body, u.username, u.icon_url, p.created from posts as p join users as u on u.id=p.user_id)
@@ -178,7 +178,7 @@ pub fn get_feeds(conn: db::PostgresConnection, offset: i32, limit: i32) -> Resul
     Ok(feeds)
 }
 
-pub fn search(conn: db::PostgresConnection, keyword: String, offset: i32, limit: i32) -> Result<Vec<Post>, Error> {
+pub fn search(conn: &db::PostgresConnection, keyword: &String, offset: &i32, limit: &i32) -> Result<Vec<Post>, Error> {
     let mut posts: Vec<Post> = Vec::new();
     for row in &conn.query("SELECT p.id, p.kind, p.user_id, p.title, p.body, u.username, u.icon_url from posts as p join users as u on u.id = p.user_id where p.title like '%' || $1 || '%' or p.body like '%' || $1 || '%' order by p.id desc offset $2::int limit $3::int", &[&keyword, &offset, &limit]).unwrap() {
         posts.push(Post {
@@ -198,7 +198,7 @@ pub fn search(conn: db::PostgresConnection, keyword: String, offset: i32, limit:
     Ok(posts)
 }
 
-pub fn search_count(conn: db::PostgresConnection, keyword: String) -> Result<i32, Error> {
+pub fn search_count(conn: &db::PostgresConnection, keyword: &String) -> Result<i32, Error> {
     let rows = &conn.query("SELECT count(*)::int as count from posts where title like '%' || $1 || '%' or body like '%' || $1 || '%'", &[&keyword]).unwrap();
     let row = rows.get(0);
     let count = row.get("count");
