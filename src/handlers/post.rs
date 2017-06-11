@@ -1,12 +1,12 @@
 use persistent;
 use iron::prelude::*;
 use iron::status;
-use router::{Router};
-use hbs::{Template};
-use iron::modifiers::{Redirect};
+use router::Router;
+use hbs::Template;
+use iron::modifiers::Redirect;
 use hbs::handlebars::to_json;
-use iron::{Url};
-use iron::prelude::{IronResult};
+use iron::Url;
+use iron::prelude::IronResult;
 
 use db;
 use helper;
@@ -27,10 +27,9 @@ pub fn new_handler(req: &mut Request) -> IronResult<Response> {
     struct Data {
         logged_in: bool,
     }
-    let data = Data {
-        logged_in: login_id != 0,
-    };
-    resp.set_mut(helper::template("post/form", to_json(&data))).set_mut(status::Ok);
+    let data = Data { logged_in: login_id != 0 };
+    resp.set_mut(helper::template("post/form", to_json(&data)))
+        .set_mut(status::Ok);
     return Ok(resp);
 }
 
@@ -51,30 +50,32 @@ pub fn create_handler(req: &mut Request) -> IronResult<Response> {
         match map.get("title") {
             Some(&Value::String(ref name)) => {
                 title = name.to_string();
-            },
+            }
             _ => return Ok(Response::with((status::BadRequest))),
         }
         match map.get("body") {
             Some(&Value::String(ref name)) => {
                 body = name.to_string();
-            },
+            }
             _ => return Ok(Response::with((status::BadRequest))),
         }
     }
     let body_db = body.clone();
     let body_slack = body.clone();
 
-    match models::post::create(conn, POST_KIND, login_id, title, body_db) {
+    match models::post::create(&conn, POST_KIND, &login_id, &title, &body_db) {
         Ok(id) => {
             let link = format!("{}/{}/{}", helper::get_domain(), "post/show", id).to_string();
             let text = format!("{}\n{}\n{}", "New post", body_slack, link).to_string();
             helper::slack(text);
-            let url = Url::parse(&format!("{}/{}/{}", helper::get_domain(), "post/show", id).to_string()).unwrap();
+            let url = Url::parse(&format!("{}/{}/{}", helper::get_domain(), "post/show", id)
+                                     .to_string())
+                    .unwrap();
             return Ok(Response::with((status::Found, Redirect(url))));
-        },
+        }
         Err(e) => {
             println!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)))
+            return Ok(Response::with((status::InternalServerError)));
         }
     }
 }
@@ -84,8 +85,7 @@ pub fn list_handler(req: &mut Request) -> IronResult<Response> {
     if login_id == 0 {
         return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
     }
-    let conn_l = get_pg_connection!(req);
-    let conn_c = get_pg_connection!(req);
+    let conn = get_pg_connection!(req);
 
     let page_param: String;
 
@@ -95,7 +95,7 @@ pub fn list_handler(req: &mut Request) -> IronResult<Response> {
         match map.get("page") {
             Some(&Value::String(ref name)) => {
                 page_param = name.to_string();
-            },
+            }
             _ => page_param = "1".to_string(),
         }
     }
@@ -113,26 +113,26 @@ pub fn list_handler(req: &mut Request) -> IronResult<Response> {
     }
 
     let mut page = page_param.parse::<i32>().unwrap();
-    let offset = ( page - 1 ) * PAGINATES_PER;
+    let offset = (page - 1) * PAGINATES_PER;
     let limit = PAGINATES_PER;
 
     let posts: Vec<models::post::Post>;
     let count: i32;
 
-    match models::post::list(conn_l, POST_KIND, offset, limit) {
+    match models::post::list(&conn, POST_KIND, &offset, &limit) {
         Ok(posts_db) => {
             posts = posts_db;
-        },
+        }
         Err(e) => {
             println!("Errored: {:?}", e);
             return Ok(Response::with((status::InternalServerError)));
         }
     }
 
-    match models::post::count(conn_c, POST_KIND) {
+    match models::post::count(&conn, POST_KIND) {
         Ok(count_db) => {
             count = count_db;
-        },
+        }
         Err(e) => {
             println!("Errored: {:?}", e);
             return Ok(Response::with((status::InternalServerError)));
@@ -151,7 +151,8 @@ pub fn list_handler(req: &mut Request) -> IronResult<Response> {
         prev_page: page - 1,
     };
 
-    resp.set_mut(Template::new("post/list", to_json(&data))).set_mut(status::Ok);
+    resp.set_mut(Template::new("post/list", to_json(&data)))
+        .set_mut(status::Ok);
     return Ok(resp);
 }
 
@@ -160,11 +161,14 @@ pub fn show_handler(req: &mut Request) -> IronResult<Response> {
     if login_id == 0 {
         return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
     }
-    let conn_s = get_pg_connection!(req);
-    let conn_c = get_pg_connection!(req);
+    let conn = get_pg_connection!(req);
     let mut resp = Response::new();
 
-    let ref id_str = req.extensions.get::<Router>().unwrap().find("id").unwrap_or("/");
+    let ref id_str = req.extensions
+        .get::<Router>()
+        .unwrap()
+        .find("id")
+        .unwrap_or("/");
     let id = id_str.parse::<i32>().unwrap();
 
     #[derive(Serialize, Default)]
@@ -178,23 +182,23 @@ pub fn show_handler(req: &mut Request) -> IronResult<Response> {
     let post: models::post::Post;
     let comments: Vec<models::post::Comment>;
 
-    match models::post::get_by_id(conn_s, id) {
+    match models::post::get_by_id(&conn, &id) {
         Ok(post_obj) => {
             post = post_obj;
-        },
+        }
         Err(e) => {
             println!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)))
+            return Ok(Response::with((status::InternalServerError)));
         }
     }
 
-    match models::post::get_comments_by_post_id(conn_c, id) {
+    match models::post::get_comments_by_post_id(&conn, &id) {
         Ok(comments_obj) => {
             comments = comments_obj;
-        },
+        }
         Err(e) => {
             println!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)))
+            return Ok(Response::with((status::InternalServerError)));
         }
     }
 
@@ -206,7 +210,8 @@ pub fn show_handler(req: &mut Request) -> IronResult<Response> {
         comments: comments,
     };
 
-    resp.set_mut(Template::new("post/show", to_json(&data))).set_mut(status::Ok);
+    resp.set_mut(Template::new("post/show", to_json(&data)))
+        .set_mut(status::Ok);
     return Ok(resp);
 }
 
@@ -215,28 +220,31 @@ pub fn delete_handler(req: &mut Request) -> IronResult<Response> {
     if login_id == 0 {
         return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
     }
-    let conn_s = get_pg_connection!(req);
-    let conn_d = get_pg_connection!(req);
+    let conn = get_pg_connection!(req);
 
-    let ref id_str = req.extensions.get::<Router>().unwrap().find("id").unwrap_or("/");
+    let ref id_str = req.extensions
+        .get::<Router>()
+        .unwrap()
+        .find("id")
+        .unwrap_or("/");
     let id = id_str.parse::<i32>().unwrap();
 
-    match models::post::get_by_id(conn_s, id) {
+    match models::post::get_by_id(&conn, &id) {
         Ok(post) => {
             if post.user_id != login_id {
                 return Ok(Response::with((status::Forbidden)));
             }
-        },
+        }
         Err(e) => {
             println!("Errored: {:?}", e);
             return Ok(Response::with((status::InternalServerError)));
         }
     }
 
-    match models::post::delete_by_id(conn_d, id) {
+    match models::post::delete_by_id(&conn, &id) {
         Ok(_) => {
             return Ok(Response::with((status::Found, Redirect(url_for!(req, "post/list")))));
-        },
+        }
         Err(e) => {
             println!("Errored: {:?}", e);
             Ok(Response::with((status::InternalServerError)))
@@ -259,16 +267,20 @@ pub fn edit_handler(req: &mut Request) -> IronResult<Response> {
 
     let post: models::post::Post;
 
-    let ref id_str = req.extensions.get::<Router>().unwrap().find("id").unwrap_or("/");
+    let ref id_str = req.extensions
+        .get::<Router>()
+        .unwrap()
+        .find("id")
+        .unwrap_or("/");
     let id = id_str.parse::<i32>().unwrap();
 
-    match models::post::get_by_id(conn, id) {
+    match models::post::get_by_id(&conn, &id) {
         Ok(post_obj) => {
             if post_obj.user_id != login_id {
                 return Ok(Response::with((status::Forbidden)));
             }
             post = post_obj;
-        },
+        }
         Err(e) => {
             println!("Errored: {:?}", e);
             return Ok(Response::with((status::InternalServerError)));
@@ -279,7 +291,8 @@ pub fn edit_handler(req: &mut Request) -> IronResult<Response> {
         logged_in: login_id != 0,
         post: post,
     };
-    resp.set_mut(Template::new("post/edit", to_json(&data))).set_mut(status::Ok);
+    resp.set_mut(Template::new("post/edit", to_json(&data)))
+        .set_mut(status::Ok);
     return Ok(resp);
 }
 
@@ -289,8 +302,7 @@ pub fn update_handler(req: &mut Request) -> IronResult<Response> {
         return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
     }
 
-    let conn_s = get_pg_connection!(req);
-    let conn_u = get_pg_connection!(req);
+    let conn = get_pg_connection!(req);
 
     use params::{Params, Value};
     let map = req.get_ref::<Params>().unwrap();
@@ -302,30 +314,30 @@ pub fn update_handler(req: &mut Request) -> IronResult<Response> {
     match map.find(&["id"]) {
         Some(&Value::String(ref name)) => {
             id = name.to_string().parse::<i32>().unwrap();
-        },
+        }
         _ => return Ok(Response::with((status::BadRequest))),
     }
 
     match map.find(&["title"]) {
         Some(&Value::String(ref name)) => {
             title = name.to_string();
-        },
+        }
         _ => return Ok(Response::with((status::BadRequest))),
     }
 
     match map.find(&["body"]) {
         Some(&Value::String(ref name)) => {
             body = name.to_string();
-        },
+        }
         _ => return Ok(Response::with((status::BadRequest))),
     }
 
-    match models::post::get_by_id(conn_s, id) {
+    match models::post::get_by_id(&conn, &id) {
         Ok(post_obj) => {
             if post_obj.user_id != login_id {
                 return Ok(Response::with((status::Forbidden)));
             }
-        },
+        }
         Err(e) => {
             println!("Errored: {:?}", e);
             return Ok(Response::with((status::InternalServerError)));
@@ -335,15 +347,17 @@ pub fn update_handler(req: &mut Request) -> IronResult<Response> {
     let body_db = body.clone();
     let body_slack = body.clone();
 
-    match models::post::update(conn_u, id, title, body_db) {
+    match models::post::update(&conn, &id, &title, &body_db) {
         Ok(_) => {
             let link = format!("{}/{}/{}", helper::get_domain(), "post/show", id).to_string();
             let text = format!("{}\n{}\n{}", "Edit post", body_slack, link).to_string();
             helper::slack(text);
 
-            let url = Url::parse(&format!("{}/{}/{}", helper::get_domain(), "post/show", id).to_string()).unwrap();
+            let url = Url::parse(&format!("{}/{}/{}", helper::get_domain(), "post/show", id)
+                                     .to_string())
+                    .unwrap();
             return Ok(Response::with((status::Found, Redirect(url))));
-        },
+        }
         Err(e) => {
             println!("Errored: {:?}", e);
             return Ok(Response::with((status::InternalServerError)));
@@ -367,32 +381,35 @@ pub fn comment_handler(req: &mut Request) -> IronResult<Response> {
     match map.find(&["id"]) {
         Some(&Value::String(ref name)) => {
             id = name.parse::<i32>().unwrap();
-        },
+        }
         _ => return Ok(Response::with((status::BadRequest))),
     }
 
     match map.find(&["body"]) {
         Some(&Value::String(ref name)) => {
             body = name.to_string();
-        },
+        }
         _ => return Ok(Response::with((status::BadRequest))),
     }
 
     let body_db = body.clone();
     let body_slack = body.clone();
 
-    match models::post::add_comment(conn, login_id, id, body_db) {
+    match models::post::add_comment(&conn, &login_id, &id, &body_db) {
         Ok(_) => {
             let link = format!("{}/{}/{}", helper::get_domain(), "post/show", id).to_string();
             let text = format!("{}\n{}\n{}", "New comment", body_slack, link).to_string();
             helper::slack(text);
 
-            let url = Url::parse(&format!("{}/{}/{}", helper::get_domain(), "post/show", id).to_string()).unwrap();
+            let url = Url::parse(&format!("{}/{}/{}", helper::get_domain(), "post/show", id)
+                                     .to_string())
+                    .unwrap();
             return Ok(Response::with((status::Found, Redirect(url))));
-        },
+        }
         Err(e) => {
             println!("Errored: {:?}", e);
             return Ok(Response::with((status::InternalServerError)));
         }
     }
 }
+
