@@ -23,6 +23,11 @@
               <div class="feed-comment">{{body}}</div>
             {{/if}}
           </div>
+          <div class="post-tags">
+            {{#each tags}}
+              <span class="tag-label"><a href="/tag/{{name}}">{{name}}</a></span>
+            {{/each}}
+          </div>
         </div>
       </div>
     </li>

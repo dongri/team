@@ -8,6 +8,7 @@ pub fn create_router() -> Router {
     let mut router = Router::new();
     router.get("/", index::index_handler, "index");
     router.get("/search", index::search_handler, "search");
+    router.get("/tag/:name", index::tag_handler, "tag");
 
     router.get("/signup", account::get_signup_handler, "account/get_signup");
     router.post("/signup", account::post_signup_handler, "account/post_signup");

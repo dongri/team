@@ -12,6 +12,9 @@
   </div>
   <form class="mui-form" action="/nippo/create" method="post">
     <h1>{{post.title}}</h1>
+    {{#each post.tags}}
+      <span class="tag-label"><a href="/tag/{{name}}">{{name}}</a></span>
+    {{/each}}
     <div class="mui-textfield marked">{{post.body}}</div>
   </form>
   <div class="post-action">

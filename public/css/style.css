@@ -31,6 +31,7 @@ header ul.mui-list--inline {
 
 header a {
   color: white;
+  text-decoration: none !important;
 }
 
 #content-wrapper {
@@ -106,8 +107,7 @@ footer {
 }
 .input-title {
   font-size: 30px !important;
-  padding-bottom: 20px !important;
-  padding-top: 10px !important;
+  height: 60px !important;
 }
 .comments {
   margin-top: 40px;
@@ -140,14 +140,33 @@ footer {
   border: 1px solid #7daaf2;
 }
 .search-input::-webkit-input-placeholder {
-    color: #EEE;
-    font-weight: normal;
+  color: #EEE;
+  font-weight: normal;
 }
 .search-input:-ms-input-placeholder {
-    color: #EEE;
-    font-weight: normal;
+  color: #EEE;
+  font-weight: normal;
 }
 .search-input::-moz-placeholder {
-    color: #EEE;
-    font-weight: normal;
+  color: #EEE;
+  font-weight: normal;
+}
+.post-tags {
+  margin-top: 10px;
+}
+.tag-label {
+  background: #d6e5ff;
+  border-radius: 5px;
+  padding: 10px;
+  margin: 3px;
+  height: 10px;
+  padding-top: 0px;
+  padding-bottom: 2px;
+}
+.tag-label a {
+  text-decoration: none !important;
+}
+h3.tag_name {
+  margin-top: 0px;
+  margin-bottom: 20px;
 }
