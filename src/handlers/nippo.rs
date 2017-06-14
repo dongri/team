@@ -68,13 +68,10 @@ pub fn create_handler(req: &mut Request) -> IronResult<Response> {
         }
     }
 
-    let body_db = body.clone();
-    let body_slack = body.clone();
-    match models::post::create(&conn, POST_KIND, &login_id, &title, &body_db, &tags) {
+    match models::post::create(&conn, POST_KIND, &login_id, &title, &body, &tags) {
         Ok(id) => {
-            let link = format!("{}/{}/{}", helper::get_domain(), "nippo/show", id).to_string();
-            let text = format!("{}\n{}\n{}", "New nippo", body_slack, link).to_string();
-            helper::slack(text);
+            let title = String::from("New nippo");
+            helper::post_to_slack(&conn, &login_id, &title, &body, &id);
 
             let url = Url::parse(&format!("{}/{}/{}", helper::get_domain(), "nippo/show", id)
                                      .to_string())
@@ -179,7 +176,7 @@ pub fn show_handler(req: &mut Request) -> IronResult<Response> {
         .unwrap_or("/");
     let id = id_str.parse::<i32>().unwrap();
 
-    #[derive(Serialize, Default)]
+    #[derive(Serialize)]
     struct Data {
         logged_in: bool,
         post: models::post::Post,
@@ -267,7 +264,7 @@ pub fn edit_handler(req: &mut Request) -> IronResult<Response> {
     }
     let conn = get_pg_connection!(req);
     let mut resp = Response::new();
-    #[derive(Serialize, Default)]
+    #[derive(Serialize)]
     struct Data {
         logged_in: bool,
         post: models::post::Post,
@@ -411,14 +408,10 @@ pub fn comment_handler(req: &mut Request) -> IronResult<Response> {
         _ => return Ok(Response::with((status::BadRequest))),
     }
 
-    let body_db = body.clone();
-    let body_slack = body.clone();
-
-    match models::post::add_comment(&conn, &login_id, &id, &body_db) {
+    match models::post::add_comment(&conn, &login_id, &id, &body) {
         Ok(_) => {
-            let link = format!("{}/{}/{}", helper::get_domain(), "nippo/show", id).to_string();
-            let text = format!("{}\n{}\n{}", "New comment", body_slack, link).to_string();
-            helper::slack(text);
+            let title = String::from("New comment");
+            helper::post_to_slack(&conn, &login_id, &title, &body, &id);
 
             let url = Url::parse(&format!("{}/{}/{}", helper::get_domain(), "nippo/show", id)
                                      .to_string())

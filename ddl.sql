@@ -43,3 +43,11 @@ create table taggings (
   created       timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated       timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+create table stocks (
+  id            serial primary key,
+  user_id        serial REFERENCES users (id) ON DELETE CASCADE NOT NULL,
+  post_id       serial REFERENCES posts (id) ON DELETE CASCADE NOT NULL,
+  created       timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated       timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

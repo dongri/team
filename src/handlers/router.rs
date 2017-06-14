@@ -39,6 +39,10 @@ pub fn create_router() -> Router {
     router.post("/post/update", post::update_handler, "post/update");
     router.post("/post/comment", post::comment_handler, "post/comment");
 
+    router.post("/post/stock/:id", post::stock_handler, "post/stock");
+    router.post("/post/stocked/:id", post::stocked_handler, "post/stocked");
+
+    router.get("/stocked/list", post::stocked_list_handler, "stocked/list");
 
     return router;
 }

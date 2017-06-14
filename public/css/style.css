@@ -87,14 +87,34 @@ footer {
   vertical-align: top;
 }
 .user-icon {
-  width: 50px;
+  width: 40px;
   border: 1px solid #CCC;
-  border-radius: 10px;
+  border-radius: 5px;
 }
 .post-username {
   font-size: 13px;
   color: gray;
 }
+.post-item-icon {
+  display: table-cell;
+  padding-top: 20px;
+  padding-bottom: 20px;
+}
+.post-item-username {
+  font-size: 15px;
+  color: gray;
+  display: table-cell;
+  vertical-align: middle;
+  padding-left: 5px;
+  padding-top: 20px;
+  padding-bottom: 20px;
+}
+.post-user-icon {
+  width: 30px;
+  border: 1px solid #CCC;
+  border-radius: 5px;
+}
+
 .post-title {
   font-size: 20px;
 }
@@ -169,4 +189,24 @@ footer {
 h3.tag_name {
   margin-top: 0px;
   margin-bottom: 20px;
+}
+h3.stock_name {
+  margin-top: 0px;
+  margin-bottom: 20px;
+}
+.post-item-stock {
+  float: right;
+}
+.post-item-time {
+  margin-bottom: 10px;
+}
+h1.title {
+  margin-top: 0px;
+}
+.marked {
+  padding: 0px;
+  margin-top: -20px;
+}
+.post-comment-body {
+  margin-top: 0px;
 }

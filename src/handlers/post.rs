@@ -67,14 +67,12 @@ pub fn create_handler(req: &mut Request) -> IronResult<Response> {
             _ => return Ok(Response::with((status::BadRequest))),
         }
     }
-    let body_db = body.clone();
-    let body_slack = body.clone();
 
-    match models::post::create(&conn, POST_KIND, &login_id, &title, &body_db, &tags) {
+    match models::post::create(&conn, POST_KIND, &login_id, &title, &body, &tags) {
         Ok(id) => {
-            let link = format!("{}/{}/{}", helper::get_domain(), "post/show", id).to_string();
-            let text = format!("{}\n{}\n{}", "New post", body_slack, link).to_string();
-            helper::slack(text);
+            let title = String::from("New post");
+            helper::post_to_slack(&conn, &login_id, &title, &body, &id);
+
             let url = Url::parse(&format!("{}/{}/{}", helper::get_domain(), "post/show", id)
                                      .to_string())
                     .unwrap();
@@ -178,16 +176,18 @@ pub fn show_handler(req: &mut Request) -> IronResult<Response> {
         .unwrap_or("/");
     let id = id_str.parse::<i32>().unwrap();
 
-    #[derive(Serialize, Default)]
+    #[derive(Serialize)]
     struct Data {
         logged_in: bool,
         post: models::post::Post,
         editable: bool,
         comments: Vec<models::post::Comment>,
+        stocked: bool,
     }
 
     let post: models::post::Post;
     let comments: Vec<models::post::Comment>;
+    let stocked: bool;
 
     match models::post::get_by_id(&conn, &id) {
         Ok(post_obj) => {
@@ -209,12 +209,23 @@ pub fn show_handler(req: &mut Request) -> IronResult<Response> {
         }
     }
 
+    match models::post::is_stocked(&conn, &login_id, &id) {
+        Ok(is_stocked) => {
+            stocked = is_stocked;
+        }
+        Err(e) => {
+            println!("Errored: {:?}", e);
+            return Ok(Response::with((status::InternalServerError)));
+        }
+    }
+
     let owner_id = post.user_id;
     let data = Data {
         logged_in: login_id != 0,
         post: post,
         editable: owner_id == login_id,
         comments: comments,
+        stocked: stocked,
     };
 
     resp.set_mut(Template::new("post/show", to_json(&data)))
@@ -266,7 +277,7 @@ pub fn edit_handler(req: &mut Request) -> IronResult<Response> {
     }
     let conn = get_pg_connection!(req);
     let mut resp = Response::new();
-    #[derive(Serialize, Default)]
+    #[derive(Serialize)]
     struct Data {
         logged_in: bool,
         post: models::post::Post,
@@ -369,14 +380,10 @@ pub fn update_handler(req: &mut Request) -> IronResult<Response> {
         }
     }
 
-    let body_db = body.clone();
-    let body_slack = body.clone();
-
-    match models::post::update(&conn, &id, &title, &body_db, &tags) {
+    match models::post::update(&conn, &id, &title, &body, &tags) {
         Ok(_) => {
-            let link = format!("{}/{}/{}", helper::get_domain(), "post/show", id).to_string();
-            let text = format!("{}\n{}\n{}", "Edit post", body_slack, link).to_string();
-            helper::slack(text);
+            let title = String::from("Edit post");
+            helper::post_to_slack(&conn, &login_id, &title, &body, &id);
 
             let url = Url::parse(&format!("{}/{}/{}", helper::get_domain(), "post/show", id)
                                      .to_string())
@@ -417,17 +424,143 @@ pub fn comment_handler(req: &mut Request) -> IronResult<Response> {
         _ => return Ok(Response::with((status::BadRequest))),
     }
 
-    let body_db = body.clone();
-    let body_slack = body.clone();
-
-    match models::post::add_comment(&conn, &login_id, &id, &body_db) {
+    match models::post::add_comment(&conn, &login_id, &id, &body) {
         Ok(_) => {
-            let link = format!("{}/{}/{}", helper::get_domain(), "post/show", id).to_string();
-            let text = format!("{}\n{}\n{}", "New comment", body_slack, link).to_string();
-            helper::slack(text);
+            let title = String::from("New comment");
+            helper::post_to_slack(&conn, &login_id, &title, &body, &id);
 
             let url = Url::parse(&format!("{}/{}/{}", helper::get_domain(), "post/show", id)
                                      .to_string())
+                    .unwrap();
+            return Ok(Response::with((status::Found, Redirect(url))));
+        }
+        Err(e) => {
+            println!("Errored: {:?}", e);
+            return Ok(Response::with((status::InternalServerError)));
+        }
+    }
+}
+
+pub fn stock_handler(req: &mut Request) -> IronResult<Response> {
+    let login_id = handlers::account::get_login_id(req);
+    if login_id == 0 {
+        return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
+    }
+    let conn = get_pg_connection!(req);
+    let ref id_str = req.extensions
+        .get::<Router>()
+        .unwrap()
+        .find("id")
+        .unwrap_or("/");
+    let id = id_str.parse::<i32>().unwrap();
+
+    match models::post::stock_post(&conn, &login_id, &id) {
+        Ok(_) => {
+            let url = Url::parse(&format!("{}/{}/{}", helper::get_domain(), "post/show", id)
+                    .to_string())
+                    .unwrap();
+            return Ok(Response::with((status::Found, Redirect(url))));
+        }
+        Err(e) => {
+            println!("Errored: {:?}", e);
+            return Ok(Response::with((status::InternalServerError)));
+        }
+    }
+}
+
+pub fn stocked_list_handler(req: &mut Request) -> IronResult<Response> {
+    let login_id = handlers::account::get_login_id(req);
+    if login_id == 0 {
+        return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
+    }
+    let conn = get_pg_connection!(req);
+
+    let page_param: String;
+
+    {
+        use params::{Params, Value};
+        let map = req.get_ref::<Params>().unwrap();
+        match map.get("page") {
+            Some(&Value::String(ref name)) => {
+                page_param = name.to_string();
+            }
+            _ => page_param = "1".to_string(),
+        }
+    }
+
+    let mut resp = Response::new();
+
+    #[derive(Serialize, Debug)]
+    struct Data {
+        logged_in: bool,
+        posts: Vec<models::post::Post>,
+        current_page: i32,
+        total_page: i32,
+        next_page: i32,
+        prev_page: i32,
+    }
+
+    let mut page = page_param.parse::<i32>().unwrap();
+    let offset = (page - 1) * PAGINATES_PER;
+    let limit = PAGINATES_PER;
+
+    let posts: Vec<models::post::Post>;
+    let count: i32;
+
+    match models::post::stocked_list(&conn, &login_id, &offset, &limit) {
+        Ok(posts_db) => {
+            posts = posts_db;
+        }
+        Err(e) => {
+            println!("Errored: {:?}", e);
+            return Ok(Response::with((status::InternalServerError)));
+        }
+    }
+
+    match models::post::stocked_count(&conn, &login_id) {
+        Ok(count_db) => {
+            count = count_db;
+        }
+        Err(e) => {
+            println!("Errored: {:?}", e);
+            return Ok(Response::with((status::InternalServerError)));
+        }
+    }
+
+    if page == 0 {
+        page = 1;
+    }
+    let data = Data {
+        logged_in: login_id != 0,
+        posts: posts,
+        current_page: page,
+        total_page: count / PAGINATES_PER + 1,
+        next_page: page + 1,
+        prev_page: page - 1,
+    };
+
+    resp.set_mut(Template::new("stock/list", to_json(&data)))
+        .set_mut(status::Ok);
+    return Ok(resp);
+}
+
+pub fn stocked_handler(req: &mut Request) -> IronResult<Response> {
+    let login_id = handlers::account::get_login_id(req);
+    if login_id == 0 {
+        return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
+    }
+    let conn = get_pg_connection!(req);
+    let ref id_str = req.extensions
+        .get::<Router>()
+        .unwrap()
+        .find("id")
+        .unwrap_or("/");
+    let id = id_str.parse::<i32>().unwrap();
+
+    match models::post::stock_remove(&conn, &login_id, &id) {
+        Ok(_) => {
+            let url = Url::parse(&format!("{}/{}/{}", helper::get_domain(), "post/show", id)
+                    .to_string())
                     .unwrap();
             return Ok(Response::with((status::Found, Redirect(url))));
         }

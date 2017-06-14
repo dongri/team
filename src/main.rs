@@ -23,6 +23,7 @@ extern crate crypto;
 extern crate slack_hook;
 
 extern crate time;
+extern crate chrono;
 
 use std::error::Error;
 use std::path::Path;

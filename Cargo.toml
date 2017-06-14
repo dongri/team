@@ -13,7 +13,8 @@ params = "0.6.0"
 iron-sessionstorage = "0.6.6"
 urlencoded = "0.5.0"
 
-postgres = "0.14.1"
+postgres = { version = "0.14.1", features = ["with-chrono"] }
+
 r2d2 = "0.7.2"
 r2d2_postgres = "0.12.0"
 
@@ -28,6 +29,8 @@ rust-crypto = "0.2.36"
 slack-hook = "0.4"
 
 time = "0.1"
+
+chrono = { version = "0.3", features = ["serde", "rustc-serialize"] }
 
 [features]
 integration_tests = []

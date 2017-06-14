@@ -1,0 +1,40 @@
+{{#*inline "title"}}
+  Stocked posts - Team
+{{/inline}}
+{{#*inline "page"}}
+  <h3 class="stock_name">Stocked posts</h3>
+  <ul class="post-items">
+  {{#each posts}}
+    <li>
+      <div class="post-item-left">
+        {{#if user.icon_url}}
+          <img src="{{user.icon_url}}" class="user-icon">
+        {{else}}
+          <canvas width="50" height="50" data-jdenticon-hash="{{user.username_hash}}" class="user-icon"></canvas>
+        {{/if}}
+      </div>
+      <div class="post-item-right">
+        <div class="post-item">
+          <div class="post-username">
+            @{{user.username}}<br/>
+          </div>
+          <div class="post-title">
+            <a href="/post/show/{{id}}">{{title}}</a>
+          </div>
+          <div class="post-tags">
+            {{#each tags}}
+              <span class="tag-label"><a href="/tag/{{name}}">{{name}}</a></span>
+            {{/each}}
+          </div>
+        </div>
+      </div>
+    </li>
+  {{/each}}
+  </ul>
+  <div class="paginates">
+    <a href="/stocked/list?page={{prev_page}}">Previous</a>
+    {{current_page}} of {{total_page}}
+    <a href="/stocked/list?page={{next_page}}">Next</a>
+  </div>
+{{/inline}}
+{{~> layout ~}}
