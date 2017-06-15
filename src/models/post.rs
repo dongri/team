@@ -193,14 +193,6 @@ pub fn get_comments_by_post_id(conn: &db::PostgresConnection, id: &i32) -> Resul
     Ok(comments)
 }
 
-pub fn count_all(conn: &db::PostgresConnection) -> Result<i32, Error> {
-    let rows = &conn.query("SELECT count(*)::int as count from posts", &[]).unwrap();
-    let row = rows.get(0);
-    let count = row.get("count");
-    Ok(count)
-}
-
-
 #[derive(Serialize, Debug)]
 pub struct Feed {
     id: i32,
@@ -244,6 +236,18 @@ pub fn get_feeds(conn: &db::PostgresConnection, offset: &i32, limit: &i32) -> Re
         }
     }
     Ok(feeds)
+}
+
+pub fn get_feed_count(conn: &db::PostgresConnection) -> Result<i32, Error> {
+    let rows = &conn.query("
+    select sum(count)::int as count from
+    (select count(*) from posts
+    union all
+    select count(*) as b from post_comments) as t;
+    ", &[]).unwrap();
+    let row = rows.get(0);
+    let count = row.get("count");
+    Ok(count)
 }
 
 pub fn search(conn: &db::PostgresConnection, keyword: &String, offset: &i32, limit: &i32) -> Result<Vec<Post>, Error> {

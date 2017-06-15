@@ -20,7 +20,7 @@
     {{post.created}}
   </div>
   {{#each post.tags}}
-    <span class="tag-label"><a href="/tag/{{name}}">{{name}}</a></span>
+    <span class="tag-label"><a href="/tag/?name={{name}}">{{name}}</a></span>
   {{/each}}
   <div class="post-item-icon">
     {{#if post.user.icon_url}}

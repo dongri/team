@@ -43,13 +43,11 @@ header a {
 
 footer {
   box-sizing: border-box;
-  height: 100px;
   background-color: #eee;
   border-top: 1px solid #e0e0e0;
   padding-top: 35px;
 }
 footer {
-  margin-top: 40px;
   background: white;
   border: 0px;
 }
@@ -101,7 +99,7 @@ footer {
   padding-bottom: 20px;
 }
 .post-item-username {
-  font-size: 15px;
+  font-size: 13px;
   color: gray;
   display: table-cell;
   vertical-align: middle;
@@ -146,7 +144,7 @@ footer {
   line-height: 1.2;
 }
 .feed-comment {
-  font-size: 14px;
+  font-size: 20px;
   color: #333;
 }
 .search-input {
@@ -215,4 +213,27 @@ h1.title {
 .item-created {
   font-size: 11px;
   color: gray;
+}
+.feed-item {
+  display: flex;
+}
+.feed-user-icon {
+  display: inline-block;
+  vertical-align: top;
+}
+.feed-post {
+  display: inline-block;
+  vertical-align: top;
+  margin-left: 10px;
+}
+.feed-user-icon-img {
+  width: 40px;
+  border: 1px solid #CCC;
+  border-radius: 5px;
+}
+.feed-item-detail {
+  display: inline-block;
+  font-size: 13px;
+  color: gray;
+  vertical-align: top;
 }

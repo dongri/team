@@ -4,11 +4,11 @@ use iron::status;
 use iron::modifiers::Redirect;
 use hbs::Template;
 use hbs::handlebars::to_json;
-use router::{Router};
 
 use db;
 use models;
 use handlers;
+use helper;
 
 const PAGINATES_PER: i32 = 10;
 
@@ -62,7 +62,7 @@ pub fn index_handler(req: &mut Request) -> IronResult<Response> {
         }
     }
 
-    match models::post::count_all(&conn) {
+    match models::post::get_feed_count(&conn) {
         Ok(count_db) => {
             count = count_db;
         }
@@ -191,20 +191,22 @@ pub fn tag_handler(req: &mut Request) -> IronResult<Response> {
     }
     let conn = get_pg_connection!(req);
     let page_param: String;
+    let tag_param: String;
 
     {
-        use params::{Params, Value};
-        let map = req.get_ref::<Params>().unwrap();
+        use params::Params;
+        let map = &req.get_ref::<Params>().unwrap();
 
-        match map.get("page") {
-            Some(&Value::String(ref name)) => {
-                page_param = name.to_string();
-            },
-            _ => page_param = "1".to_string(),
+        match helper::get_param(map, "page") {
+            Ok(value) => page_param = value,
+            Err(_) => page_param = String::from("1"),
+        }
+
+        match helper::get_param(map, "name") {
+            Ok(value) => tag_param = value,
+            Err(st) => return Ok(Response::with((st))),
         }
     }
-
-    let tag_name = req.extensions.get::<Router>().unwrap().find("name").unwrap_or("/").to_string();
 
     let mut resp = Response::new();
 
@@ -226,7 +228,7 @@ pub fn tag_handler(req: &mut Request) -> IronResult<Response> {
     let posts: Vec<models::post::Post>;
     let count: i32;
 
-    match models::tag::tag_search(&conn, &tag_name, offset, limit) {
+    match models::tag::tag_search(&conn, &tag_param, offset, limit) {
         Ok(posts_db) => {
             posts = posts_db;
         },
@@ -236,7 +238,7 @@ pub fn tag_handler(req: &mut Request) -> IronResult<Response> {
         }
     }
 
-    match models::tag::tag_count(&conn, &tag_name) {
+    match models::tag::tag_count(&conn, &tag_param) {
         Ok(count_db) => {
             count = count_db;
         },
@@ -256,7 +258,7 @@ pub fn tag_handler(req: &mut Request) -> IronResult<Response> {
         total_page: count / PAGINATES_PER + 1,
         next_page: page + 1,
         prev_page: page - 1,
-        tag_name: tag_name.to_string(),
+        tag_name: tag_param,
     };
 
     resp.set_mut(Template::new("tag", to_json(&data))).set_mut(status::Ok);

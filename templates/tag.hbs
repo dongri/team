@@ -24,7 +24,7 @@
           </div>
           <div class="post-tags">
             {{#each tags}}
-              <span class="tag-label"><a href="/tag/{{name}}">{{name}}</a></span>
+              <span class="tag-label"><a href="/tag/?name={{name}}">{{name}}</a></span>
             {{/each}}
           </div>
         </div>
@@ -33,9 +33,9 @@
   {{/each}}
   </ul>
   <div class="paginates">
-    <a href="/tag/{{tag_name}}?page={{prev_page}}">Previous</a>
+    <a href="/tag/?name={{tag_name}}&page={{prev_page}}">Previous</a>
     {{current_page}} of {{total_page}}
-    <a href="/tag/{{tag_name}}?page={{next_page}}">Next</a>
+    <a href="/tag/?name={{tag_name}}&page={{next_page}}">Next</a>
   </div>
 {{/inline}}
 {{~> layout ~}}
