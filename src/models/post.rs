@@ -302,7 +302,7 @@ pub fn stocked_list(conn: &db::PostgresConnection, user_id: &i32, offset: &i32, 
         join stocks as s on s.post_id = p.id
         join users as u on u.id = p.user_id
         where s.user_id = $1
-        order by p.id desc offset $2::int limit $3::int", &[&user_id, &offset, &limit]).unwrap() {
+        order by s.id desc offset $2::int limit $3::int", &[&user_id, &offset, &limit]).unwrap() {
         match models::tag::get_tags_by_post_id(&conn, &row.get("id")) {
             Ok(tags) => {
                 posts.push(Post {

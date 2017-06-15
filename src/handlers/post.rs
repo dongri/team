@@ -485,6 +485,33 @@ pub fn stock_handler(req: &mut Request) -> IronResult<Response> {
     }
 }
 
+pub fn unstock_handler(req: &mut Request) -> IronResult<Response> {
+    let login_id = handlers::account::get_login_id(req);
+    if login_id == 0 {
+        return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
+    }
+    let conn = get_pg_connection!(req);
+    let ref id_str = req.extensions
+        .get::<Router>()
+        .unwrap()
+        .find("id")
+        .unwrap_or("/");
+    let id = id_str.parse::<i32>().unwrap();
+
+    match models::post::stock_remove(&conn, &login_id, &id) {
+        Ok(_) => {
+            let url = Url::parse(&format!("{}/{}/{}", helper::get_domain(), "post/show", id)
+                    .to_string())
+                    .unwrap();
+            return Ok(Response::with((status::Found, Redirect(url))));
+        }
+        Err(e) => {
+            println!("Errored: {:?}", e);
+            return Ok(Response::with((status::InternalServerError)));
+        }
+    }
+}
+
 pub fn stocked_list_handler(req: &mut Request) -> IronResult<Response> {
     let login_id = handlers::account::get_login_id(req);
     if login_id == 0 {
@@ -559,31 +586,4 @@ pub fn stocked_list_handler(req: &mut Request) -> IronResult<Response> {
     resp.set_mut(Template::new("stock/list", to_json(&data)))
         .set_mut(status::Ok);
     return Ok(resp);
-}
-
-pub fn stocked_handler(req: &mut Request) -> IronResult<Response> {
-    let login_id = handlers::account::get_login_id(req);
-    if login_id == 0 {
-        return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
-    }
-    let conn = get_pg_connection!(req);
-    let ref id_str = req.extensions
-        .get::<Router>()
-        .unwrap()
-        .find("id")
-        .unwrap_or("/");
-    let id = id_str.parse::<i32>().unwrap();
-
-    match models::post::stock_remove(&conn, &login_id, &id) {
-        Ok(_) => {
-            let url = Url::parse(&format!("{}/{}/{}", helper::get_domain(), "post/show", id)
-                    .to_string())
-                    .unwrap();
-            return Ok(Response::with((status::Found, Redirect(url))));
-        }
-        Err(e) => {
-            println!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
-        }
-    }
 }

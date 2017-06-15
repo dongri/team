@@ -40,7 +40,7 @@ pub fn create_router() -> Router {
     router.post("/post/comment", post::comment_handler, "post/comment");
 
     router.post("/post/stock/:id", post::stock_handler, "post/stock");
-    router.post("/post/stocked/:id", post::stocked_handler, "post/stocked");
+    router.post("/post/unstock/:id", post::unstock_handler, "post/unstock");
 
     router.get("/stocked/list", post::stocked_list_handler, "stocked/list");
 

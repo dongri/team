@@ -4,7 +4,7 @@
 {{#*inline "page"}}
   <div class="post-item-stock">
       {{# if stocked}}
-      <form method="post" action="/post/stocked/{{post.id}}">
+      <form method="post" action="/post/unstock/{{post.id}}">
         <button class="mui-btn mui-btn--small mui-btn--primary post-button">Stocked</button>
       </form>
       {{else}}
