@@ -201,13 +201,14 @@ pub fn count_all(conn: &db::PostgresConnection) -> Result<i32, Error> {
 }
 
 
-#[derive(Serialize, Debug, Default)]
+#[derive(Serialize, Debug)]
 pub struct Feed {
     id: i32,
     pub kind: String,
     pub user_id: i32,
     title: String,
     body: String,
+    created: NaiveDateTime,
     user: models::user::User,
     tags: Vec<models::tag::Tag>,
 }
@@ -227,6 +228,7 @@ pub fn get_feeds(conn: &db::PostgresConnection, offset: &i32, limit: &i32) -> Re
                     user_id: row.get("user_id"),
                     title: row.get("title"),
                     body: row.get("body"),
+                    created: row.get("created"),
                     user: models::user::User{
                         id: row.get("user_id"),
                         username: row.get("username"),

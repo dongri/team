@@ -32,5 +32,7 @@ time = "0.1"
 
 chrono = { version = "0.3", features = ["serde", "rustc-serialize"] }
 
+diff = "0.1.10"
+
 [features]
 integration_tests = []

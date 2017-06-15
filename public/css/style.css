@@ -172,16 +172,18 @@ footer {
   font-weight: normal;
 }
 .post-tags {
-  margin-top: 10px;
+  margin-top: 5px;
+  margin-bottom: 10px;
 }
 .tag-label {
   background: #d6e5ff;
   border-radius: 5px;
   padding: 10px;
-  margin: 3px;
   height: 10px;
   padding-top: 0px;
   padding-bottom: 2px;
+  font-size: 13px;
+  margin-top: -10px;
 }
 .tag-label a {
   text-decoration: none !important;
@@ -209,4 +211,8 @@ h1.title {
 }
 .post-comment-body {
   margin-top: 0px;
+}
+.item-created {
+  font-size: 11px;
+  color: gray;
 }
