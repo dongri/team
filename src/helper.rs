@@ -1,24 +1,23 @@
-use hbs::{Template};
+use hbs::Template;
 use serde::ser::Serialize;
 use crypto::sha2::Sha256;
 use crypto::digest::Digest;
 use slack_hook::{Slack, PayloadBuilder};
 use std::env;
-use std::mem;
 
 const SALT: &str = "6jpmgwMiTzFtFoF";
 
 pub fn get_env(key: &str) -> String {
     let value: String = match env::var(key) {
         Ok(val) => val,
-        Err(_) => "".to_string()
+        Err(_) => "".to_string(),
     };
-    return value
+    return value;
 }
 
 pub fn get_domain() -> String {
     let domain = get_env("TEAM_DOMAIN");
-    return domain
+    return domain;
 }
 
 pub fn template<T: Serialize>(name: &str, data: T) -> Template {
@@ -38,25 +37,22 @@ pub fn username_hash(username: String) -> String {
 }
 
 pub fn slack(text: String) {
-    let slack_url: String = get_env("TEAM_SLACK");
-    let url: &'static str = string_to_static_str(slack_url);
-    let slack = Slack::new(url).unwrap();
-    let p = PayloadBuilder::new()
-      .text(text)
-      //.channel("#team")
-      .username("Team")
-      .icon_emoji(":beers:")
-      .build()
-      .unwrap();
-    let res = slack.send(&p);
-    println!("{:?}", res);
-}
-
-pub fn string_to_static_str(s: String) -> &'static str {
-    unsafe {
-        let ret = mem::transmute(&s as &str);
-        mem::forget(s);
-        ret
+    let slack_url = get_env("TEAM_SLACK");
+    let url = slack_url.as_str();
+    let slack = Slack::new(url);
+    match slack {
+        Ok(slack) => {
+            let p = PayloadBuilder::new()
+                .text(text)
+                //.channel("#team")
+                .username("Team")
+                .icon_emoji(":beers:")
+                .build()
+                .unwrap();
+            let res = slack.send(&p);
+            println!("{:?}", res);
+        }
+        _ => println!("can not connect to slack(env TEAM_SLACK={})", url),
     }
 }
 
