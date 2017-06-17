@@ -143,31 +143,25 @@ pub fn get_signout_handler(req: &mut Request) -> IronResult<Response> {
     return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
 }
 
-pub fn get_login_id(req: &mut Request) -> i32 {
-    let login = req.session()
-        .get::<Login>()
-        .ok()
-        .and_then(|x| x)
-        .unwrap_or(Login { id: "".to_string() });
-    if login.id == "" {
-        return 0;
-    } else {
-        return login.id.parse::<i32>().unwrap();
-    }
-}
-
 pub fn get_settings_handler(req: &mut Request) -> IronResult<Response> {
-    let login_id = handlers::account::get_login_id(req);
+    let conn = get_pg_connection!(req);
+    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    match handlers::account::current_user(req, &conn) {
+        Ok(user) => { login_user = user; }
+        Err(e) => { println!("Errored: {:?}", e); }
+    }
+    let login_id = login_user.id;
     if login_id == 0 {
         return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
     }
-    let conn = get_pg_connection!(req);
+
     let mut resp = Response::new();
 
     #[derive(Serialize, Default)]
     struct Data {
         logged_in: bool,
         user: models::user::User,
+        login_user: models::user::User,
     }
 
     let user: models::user::User;
@@ -183,6 +177,7 @@ pub fn get_settings_handler(req: &mut Request) -> IronResult<Response> {
     }
     let data = Data {
         logged_in: login_id != 0,
+        login_user: login_user,
         user: user,
     };
 
@@ -192,11 +187,17 @@ pub fn get_settings_handler(req: &mut Request) -> IronResult<Response> {
 }
 
 pub fn post_settings_handler(req: &mut Request) -> IronResult<Response> {
-    let login_id = handlers::account::get_login_id(req);
+    let conn = get_pg_connection!(req);
+    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    match handlers::account::current_user(req, &conn) {
+        Ok(user) => { login_user = user; }
+        Err(e) => { println!("Errored: {:?}", e); }
+    }
+    let login_id = login_user.id;
     if login_id == 0 {
         return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
     }
-    let conn = get_pg_connection!(req);
+
     let icon_url: String;
     {
         use params::{Params, Value};
@@ -223,6 +224,18 @@ pub fn post_settings_handler(req: &mut Request) -> IronResult<Response> {
 }
 
 pub fn post_password_update(req: &mut Request) -> IronResult<Response> {
+    let conn = get_pg_connection!(req);
+
+    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    match handlers::account::current_user(req, &conn) {
+        Ok(user) => { login_user = user; }
+        Err(e) => { println!("Errored: {:?}", e); }
+    }
+    let login_id = login_user.id;
+    if login_id == 0 {
+        return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
+    }
+
     let current_password: String;
     let new_password: String;
     let confirm_password: String;
@@ -245,9 +258,6 @@ pub fn post_password_update(req: &mut Request) -> IronResult<Response> {
             Err(st) => return Ok(Response::with((st))),
         }
     }
-
-    let conn = get_pg_connection!(req);
-    let login_id = handlers::account::get_login_id(req);
 
     if new_password != confirm_password {
         return Ok(Response::with((status::BadRequest)));
@@ -278,6 +288,18 @@ pub fn post_password_update(req: &mut Request) -> IronResult<Response> {
 }
 
 pub fn post_username_update(req: &mut Request) -> IronResult<Response> {
+    let conn = get_pg_connection!(req);
+
+    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    match handlers::account::current_user(req, &conn) {
+        Ok(user) => { login_user = user; }
+        Err(e) => { println!("Errored: {:?}", e); }
+    }
+    let login_id = login_user.id;
+    if login_id == 0 {
+        return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
+    }
+
     let username: String;
     {
         use params::Params;
@@ -287,11 +309,7 @@ pub fn post_username_update(req: &mut Request) -> IronResult<Response> {
             Err(st) => return Ok(Response::with((st))),
         }
     }
-    let conn = get_pg_connection!(req);
-    let login_id = handlers::account::get_login_id(req);
-    if login_id == 0 {
-        return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
-    }
+
     match models::user::update_username(&conn, &login_id, &username) {
         Ok(_) => {
             return Ok(Response::with((status::Found,
@@ -304,3 +322,40 @@ pub fn post_username_update(req: &mut Request) -> IronResult<Response> {
     }
 }
 
+// pub fn get_login_id(req: &mut Request) -> i32 {
+//     let login = req.session()
+//         .get::<Login>()
+//         .ok()
+//         .and_then(|x| x)
+//         .unwrap_or(Login { id: "".to_string() });
+//     if login.id == "" {
+//         return 0;
+//     } else {
+//         return login.id.parse::<i32>().unwrap();
+//     }
+// }
+
+pub fn current_user(req: &mut Request, conn: &db::PostgresConnection) -> Result<models::user::User, String> {
+    let mut user: models::user::User = models::user::User{..Default::default()};
+    let login = req.session()
+        .get::<Login>()
+        .ok()
+        .and_then(|x| x)
+        .unwrap_or(Login { id: "".to_string() });
+
+    if login.id == "" {
+        return Ok(user);
+    } else {
+        let login_id = login.id.parse::<i32>().unwrap();
+        match models::user::get_by_id(&conn, &login_id) {
+            Ok(user_obj) => {
+                user = user_obj;
+                Ok(user)
+            }
+            Err(e) => {
+                println!("Errored: {:?}", e);
+                Err(format!("{}", e))
+            }
+        }
+    }
+}

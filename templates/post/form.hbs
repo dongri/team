@@ -12,7 +12,8 @@
     <div class="mui-textfield">
       <input type="text" placeholder="Tags (e.g. rust,tips,postgres)" name="tags" class="input-tags">
     </div>
-    <button type="submit" class="mui-btn mui-btn--raised">Submit</button>
+    <button type="submit" class="mui-btn mui-btn--raised" name='action' value="publish">publish</button>
+    <button type="submit" class="mui-btn mui-btn--raised" name='action' value="draft">Draft</button>
   </form>
   <script>
     var simplemde = new SimpleMDE({

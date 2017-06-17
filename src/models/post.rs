@@ -16,12 +16,12 @@ pub struct Post {
     pub tags: Vec<models::tag::Tag>,
 }
 
-pub fn create(conn: &db::PostgresConnection, kind: &str, user_id: &i32, title: &String, body: &String, tags: &String) -> Result<(i32), Error> {
+pub fn create(conn: &db::PostgresConnection, kind: &str, user_id: &i32, action: &String, title: &String, body: &String, tags: &String) -> Result<(i32), Error> {
     let mut post_id = 0;
     for row in &conn.query("
-        INSERT INTO posts (kind, user_id, title, body)
-        VALUES ($1, $2, $3, $4) returning id;",
-        &[&kind, &user_id, &title, &body]).unwrap() {
+        INSERT INTO posts (kind, user_id, title, body, status)
+        VALUES ($1, $2, $3, $4, $5) returning id;",
+        &[&kind, &user_id, &title, &body, &action]).unwrap() {
         post_id = row.get("id");
     }
     for mut tag in tags.split(",") {
@@ -46,7 +46,7 @@ pub fn list(conn: &db::PostgresConnection, kind: &str, offset: &i32, limit: &i32
         SELECT p.id, p.kind, p.user_id, p.title, p.body, p.created, u.username, u.icon_url
         from posts as p
         join users as u on u.id = p.user_id
-        where p.kind = $1
+        where p.status = 'publish' and p.kind = $1
         order by p.id desc offset $2::int limit $3::int", &[&kind, &offset, &limit]).unwrap() {
         match models::tag::get_tags_by_post_id(&conn, &row.get("id")) {
             Ok(tags) => {
@@ -75,16 +75,16 @@ pub fn list(conn: &db::PostgresConnection, kind: &str, offset: &i32, limit: &i32
 }
 
 pub fn count(conn: &db::PostgresConnection, kind: &str) -> Result<i32, Error> {
-    let rows = &conn.query("SELECT count(*)::int as count from posts where kind = $1", &[&kind]).unwrap();
+    let rows = &conn.query("SELECT count(*)::int as count from posts where status = 'publish' and kind = $1", &[&kind]).unwrap();
     let row = rows.get(0);
     let count = row.get("count");
     Ok(count)
 }
 
 
-pub fn update(conn: &db::PostgresConnection, id: &i32, title: &String, body: &String, tags: &String) -> Result<(), Error> {
+pub fn update(conn: &db::PostgresConnection, id: &i32, title: &String, body: &String, tags: &String, action: &String) -> Result<(), Error> {
     conn.execute(
-        "UPDATE posts set title = $1, body = $2 WHERE id = $3", &[&title, &body, &id]
+        "UPDATE posts set title = $1, body = $2, status = $3 WHERE id = $4", &[&title, &body, &action, &id]
     ).unwrap();
     let mut tag_ids_param: Vec<i32> = Vec::new();
     let mut tag_ids: Vec<i32> = Vec::new();
@@ -208,7 +208,7 @@ pub struct Feed {
 pub fn get_feeds(conn: &db::PostgresConnection, offset: &i32, limit: &i32) -> Result<Vec<Feed>, Error> {
     let mut feeds: Vec<Feed> = Vec::new();
     for row in &conn.query("
-        (select p.id, p.kind, p.user_id, p.title, '' as body, u.username, u.icon_url, p.created from posts as p join users as u on u.id=p.user_id)
+        (select p.id, p.kind, p.user_id, p.title, '' as body, u.username, u.icon_url, p.created from posts as p join users as u on u.id=p.user_id where p.status = 'publish')
         union
         (select c.post_id, p.kind, c.user_id, p.title as title, c.body, u.username, u.icon_url, c.created from post_comments as c join users as u on u.id=c.user_id join posts as p on c.post_id=p.id)
         order by created desc offset $1::int limit $2::int", &[&offset, &limit]).unwrap() {
@@ -241,7 +241,7 @@ pub fn get_feeds(conn: &db::PostgresConnection, offset: &i32, limit: &i32) -> Re
 pub fn get_feed_count(conn: &db::PostgresConnection) -> Result<i32, Error> {
     let rows = &conn.query("
     select sum(count)::int as count from
-    (select count(*) from posts
+    (select count(*) from posts where status = 'publish'
     union all
     select count(*) as b from post_comments) as t;
     ", &[]).unwrap();
@@ -252,7 +252,11 @@ pub fn get_feed_count(conn: &db::PostgresConnection) -> Result<i32, Error> {
 
 pub fn search(conn: &db::PostgresConnection, keyword: &String, offset: &i32, limit: &i32) -> Result<Vec<Post>, Error> {
     let mut posts: Vec<Post> = Vec::new();
-    for row in &conn.query("SELECT p.id, p.kind, p.user_id, p.title, p.body, p.created, u.username, u.icon_url from posts as p join users as u on u.id = p.user_id where p.title like '%' || $1 || '%' or p.body like '%' || $1 || '%' order by p.id desc offset $2::int limit $3::int", &[&keyword, &offset, &limit]).unwrap() {
+    for row in &conn.query("
+        SELECT p.id, p.kind, p.user_id, p.title, p.body, p.created, u.username, u.icon_url from posts as p
+        join users as u on u.id = p.user_id
+        where p.status = 'publish' and (p.title like '%' || $1 || '%' or p.body like '%' || $1 || '%')
+        order by p.id desc offset $2::int limit $3::int", &[&keyword, &offset, &limit]).unwrap() {
         match models::tag::get_tags_by_post_id(&conn, &row.get("id")) {
             Ok(tags) => {
                 posts.push(Post {
@@ -280,7 +284,8 @@ pub fn search(conn: &db::PostgresConnection, keyword: &String, offset: &i32, lim
 }
 
 pub fn search_count(conn: &db::PostgresConnection, keyword: &String) -> Result<i32, Error> {
-    let rows = &conn.query("SELECT count(*)::int as count from posts where title like '%' || $1 || '%' or body like '%' || $1 || '%'", &[&keyword]).unwrap();
+    let rows = &conn.query("
+        SELECT count(*)::int as count from posts where status = 'publish' and (title like '%' || $1 || '%' or body like '%' || $1 || '%')", &[&keyword]).unwrap();
     let row = rows.get(0);
     let count = row.get("count");
     Ok(count)
@@ -349,4 +354,38 @@ pub fn stock_remove(conn: &db::PostgresConnection, user_id: &i32, post_id: &i32)
         "delete from stocks where user_id = $1 and post_id = $2",
         &[&user_id, &post_id]
     ).map(|_| ())
+}
+
+pub fn draft_list(conn: &db::PostgresConnection, user_id: &i32) -> Result<Vec<Post>, Error> {
+    let mut posts: Vec<Post> = Vec::new();
+    for row in &conn.query("
+        SELECT p.id, p.kind, p.user_id, p.title, p.body, p.created, u.username, u.icon_url
+        from posts as p
+        join users as u on u.id = p.user_id
+        where p.status = 'draft' and p.user_id = $1
+        order by p.id desc", &[&user_id]).unwrap() {
+        match models::tag::get_tags_by_post_id(&conn, &row.get("id")) {
+            Ok(tags) => {
+                posts.push(Post {
+                    id: row.get("id"),
+                    kind: row.get("kind"),
+                    user_id: row.get("user_id"),
+                    title: row.get("title"),
+                    body: row.get("body"),
+                    created: row.get("created"),
+                    user: models::user::User{
+                        id: row.get("user_id"),
+                        username: row.get("username"),
+                        icon_url: row.get("icon_url"),
+                        username_hash: helper::username_hash(row.get("username")),
+                    },
+                    tags: tags,
+                });
+            },
+            Err(e) => {
+                println!("Errored: {:?}", e);
+            }
+        }
+    }
+    Ok(posts)
 }

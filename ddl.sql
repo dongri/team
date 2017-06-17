@@ -16,6 +16,7 @@ create table posts (
   user_id       serial REFERENCES users (id) ON DELETE CASCADE NOT NULL,
   title         varchar(255) NOT NULL,
   body          text NOT NULL,
+  status        varchar(255) NOT NULL,
   created       timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated       timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

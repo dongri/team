@@ -13,12 +13,16 @@ use helper;
 const PAGINATES_PER: i32 = 10;
 
 pub fn index_handler(req: &mut Request) -> IronResult<Response> {
-    let login_id = handlers::account::get_login_id(req);
+    let conn = get_pg_connection!(req);
+    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    match handlers::account::current_user(req, &conn) {
+        Ok(user) => { login_user = user; }
+        Err(e) => { println!("Errored: {:?}", e); }
+    }
+    let login_id = login_user.id;
     if login_id == 0 {
         return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
     }
-
-    let conn = get_pg_connection!(req);
 
     let page_param: String;
 
@@ -38,6 +42,7 @@ pub fn index_handler(req: &mut Request) -> IronResult<Response> {
     #[derive(Serialize, Debug)]
     struct Data {
         logged_in: bool,
+        login_user: models::user::User,
         feeds: Vec<models::post::Feed>,
         current_page: i32,
         total_page: i32,
@@ -77,6 +82,7 @@ pub fn index_handler(req: &mut Request) -> IronResult<Response> {
     }
     let data = Data {
         logged_in: login_id != 0,
+        login_user: login_user,
         feeds: feeds,
         current_page: page,
         total_page: count / PAGINATES_PER + 1,
@@ -87,21 +93,19 @@ pub fn index_handler(req: &mut Request) -> IronResult<Response> {
     resp.set_mut(Template::new("index", to_json(&data)))
         .set_mut(status::Ok);
     return Ok(resp);
-
-    // let mut resp = Response::new();
-    // let mut data = HashMap::new();
-    // data.insert(String::from("title"), "Team".to_string());
-    // resp.set_mut(Template::new("index", data)).set_mut(status::Ok);
-    // return Ok(resp);
 }
 
 pub fn search_handler(req: &mut Request) -> IronResult<Response> {
-    let login_id = handlers::account::get_login_id(req);
+    let conn = get_pg_connection!(req);
+    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    match handlers::account::current_user(req, &conn) {
+        Ok(user) => { login_user = user; }
+        Err(e) => { println!("Errored: {:?}", e); }
+    }
+    let login_id = login_user.id;
     if login_id == 0 {
         return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
     }
-
-    let conn = get_pg_connection!(req);
 
     let keyword_param: String;
     let page_param: String;
@@ -131,6 +135,7 @@ pub fn search_handler(req: &mut Request) -> IronResult<Response> {
     #[derive(Serialize, Debug)]
     struct Data {
         logged_in: bool,
+        login_user: models::user::User,
         posts: Vec<models::post::Post>,
         current_page: i32,
         total_page: i32,
@@ -171,6 +176,7 @@ pub fn search_handler(req: &mut Request) -> IronResult<Response> {
     }
     let data = Data {
         logged_in: login_id != 0,
+        login_user: login_user,
         posts: posts,
         current_page: page,
         total_page: count / PAGINATES_PER + 1,
@@ -185,11 +191,17 @@ pub fn search_handler(req: &mut Request) -> IronResult<Response> {
 }
 
 pub fn tag_handler(req: &mut Request) -> IronResult<Response> {
-    let login_id = handlers::account::get_login_id(req);
+    let conn = get_pg_connection!(req);
+    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    match handlers::account::current_user(req, &conn) {
+        Ok(user) => { login_user = user; }
+        Err(e) => { println!("Errored: {:?}", e); }
+    }
+    let login_id = login_user.id;
     if login_id == 0 {
         return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
     }
-    let conn = get_pg_connection!(req);
+
     let page_param: String;
     let tag_param: String;
 
@@ -213,6 +225,7 @@ pub fn tag_handler(req: &mut Request) -> IronResult<Response> {
     #[derive(Serialize, Debug)]
     struct Data {
         logged_in: bool,
+        login_user: models::user::User,
         posts: Vec<models::post::Post>,
         current_page: i32,
         total_page: i32,
@@ -253,6 +266,7 @@ pub fn tag_handler(req: &mut Request) -> IronResult<Response> {
     }
     let data = Data {
         logged_in: login_id != 0,
+        login_user: login_user,
         posts: posts,
         current_page: page,
         total_page: count / PAGINATES_PER + 1,

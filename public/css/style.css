@@ -237,3 +237,14 @@ h1.title {
   color: gray;
   vertical-align: top;
 }
+.dropdown-menu {
+  cursor: pointer;
+}
+.header-user-icon {
+  border-radius: 3px;
+  width: 24px;
+  background: #FFF;
+  border: 1px solid #FFF;
+  position: relative;
+  top: 6px;
+}

@@ -17,30 +17,46 @@ const PAGINATES_PER: i32 = 10;
 const POST_KIND: &str = "nippo";
 
 pub fn new_handler(req: &mut Request) -> IronResult<Response> {
-    let login_id = handlers::account::get_login_id(req);
+    let conn = get_pg_connection!(req);
+    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    match handlers::account::current_user(req, &conn) {
+        Ok(user) => { login_user = user; }
+        Err(e) => { println!("Errored: {:?}", e); }
+    }
+    let login_id = login_user.id;
     if login_id == 0 {
         return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
     }
+
     let mut resp = Response::new();
 
     #[derive(Serialize)]
     struct Data {
         logged_in: bool,
+        login_user: models::user::User,
     }
-    let data = Data { logged_in: login_id != 0 };
+    let data = Data {
+        logged_in: login_id != 0,
+        login_user: login_user,
+    };
     resp.set_mut(helper::template("nippo/form", to_json(&data)))
         .set_mut(status::Ok);
     return Ok(resp);
 }
 
 pub fn create_handler(req: &mut Request) -> IronResult<Response> {
-    let login_id = handlers::account::get_login_id(req);
+    let conn = get_pg_connection!(req);
+    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    match handlers::account::current_user(req, &conn) {
+        Ok(user) => { login_user = user; }
+        Err(e) => { println!("Errored: {:?}", e); }
+    }
+    let login_id = login_user.id;
     if login_id == 0 {
         return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
     }
 
-    let conn = get_pg_connection!(req);
-
+    let action: String;
     let title: String;
     let body: String;
     let tags: String;
@@ -48,6 +64,14 @@ pub fn create_handler(req: &mut Request) -> IronResult<Response> {
     {
         use params::{Params, Value};
         let map = req.get_ref::<Params>().unwrap();
+
+        match map.get("action") {
+            Some(&Value::String(ref name)) => {
+                action = name.to_string();
+            }
+            _ => return Ok(Response::with((status::BadRequest))),
+        }
+
         match map.get("title") {
             Some(&Value::String(ref name)) => {
                 title = name.to_string();
@@ -68,11 +92,12 @@ pub fn create_handler(req: &mut Request) -> IronResult<Response> {
         }
     }
 
-    match models::post::create(&conn, POST_KIND, &login_id, &title, &body, &tags) {
+    match models::post::create(&conn, POST_KIND, &login_id, &action, &title, &body, &tags) {
         Ok(id) => {
-            let title = String::from("New nippo");
-            helper::post_to_slack(&conn, &login_id, &title, &body, &id);
-
+            if action == "publish" {
+                let title = String::from("New nippo");
+                helper::post_to_slack(&conn, &login_id, &title, &body, &id);
+            }
             let url = Url::parse(&format!("{}/{}/{}", helper::get_domain(), "nippo/show", id)
                                      .to_string())
                     .unwrap();
@@ -86,11 +111,16 @@ pub fn create_handler(req: &mut Request) -> IronResult<Response> {
 }
 
 pub fn list_handler(req: &mut Request) -> IronResult<Response> {
-    let login_id = handlers::account::get_login_id(req);
+    let conn = get_pg_connection!(req);
+    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    match handlers::account::current_user(req, &conn) {
+        Ok(user) => { login_user = user; }
+        Err(e) => { println!("Errored: {:?}", e); }
+    }
+    let login_id = login_user.id;
     if login_id == 0 {
         return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
     }
-    let conn = get_pg_connection!(req);
 
     let page_param: String;
 
@@ -110,6 +140,7 @@ pub fn list_handler(req: &mut Request) -> IronResult<Response> {
     #[derive(Serialize, Debug)]
     struct Data {
         logged_in: bool,
+        login_user: models::user::User,
         posts: Vec<models::post::Post>,
         current_page: i32,
         total_page: i32,
@@ -149,6 +180,7 @@ pub fn list_handler(req: &mut Request) -> IronResult<Response> {
     }
     let data = Data {
         logged_in: login_id != 0,
+        login_user: login_user,
         posts: posts,
         current_page: page,
         total_page: count / PAGINATES_PER + 1,
@@ -162,11 +194,17 @@ pub fn list_handler(req: &mut Request) -> IronResult<Response> {
 }
 
 pub fn show_handler(req: &mut Request) -> IronResult<Response> {
-    let login_id = handlers::account::get_login_id(req);
+    let conn = get_pg_connection!(req);
+    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    match handlers::account::current_user(req, &conn) {
+        Ok(user) => { login_user = user; }
+        Err(e) => { println!("Errored: {:?}", e); }
+    }
+    let login_id = login_user.id;
     if login_id == 0 {
         return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
     }
-    let conn = get_pg_connection!(req);
+
     let mut resp = Response::new();
 
     let ref id_str = req.extensions
@@ -179,6 +217,7 @@ pub fn show_handler(req: &mut Request) -> IronResult<Response> {
     #[derive(Serialize)]
     struct Data {
         logged_in: bool,
+        login_user: models::user::User,
         post: models::post::Post,
         editable: bool,
         comments: Vec<models::post::Comment>,
@@ -210,6 +249,7 @@ pub fn show_handler(req: &mut Request) -> IronResult<Response> {
     let owner_id = post.user_id;
     let data = Data {
         logged_in: login_id != 0,
+        login_user: login_user,
         post: post,
         editable: owner_id == login_id,
         comments: comments,
@@ -221,11 +261,16 @@ pub fn show_handler(req: &mut Request) -> IronResult<Response> {
 }
 
 pub fn delete_handler(req: &mut Request) -> IronResult<Response> {
-    let login_id = handlers::account::get_login_id(req);
+    let conn = get_pg_connection!(req);
+    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    match handlers::account::current_user(req, &conn) {
+        Ok(user) => { login_user = user; }
+        Err(e) => { println!("Errored: {:?}", e); }
+    }
+    let login_id = login_user.id;
     if login_id == 0 {
         return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
     }
-    let conn = get_pg_connection!(req);
 
     let ref id_str = req.extensions
         .get::<Router>()
@@ -258,15 +303,22 @@ pub fn delete_handler(req: &mut Request) -> IronResult<Response> {
 }
 
 pub fn edit_handler(req: &mut Request) -> IronResult<Response> {
-    let login_id = handlers::account::get_login_id(req);
+    let conn = get_pg_connection!(req);
+    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    match handlers::account::current_user(req, &conn) {
+        Ok(user) => { login_user = user; }
+        Err(e) => { println!("Errored: {:?}", e); }
+    }
+    let login_id = login_user.id;
     if login_id == 0 {
         return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
     }
-    let conn = get_pg_connection!(req);
+
     let mut resp = Response::new();
     #[derive(Serialize)]
     struct Data {
         logged_in: bool,
+        login_user: models::user::User,
         post: models::post::Post,
         tags: String,
     }
@@ -303,6 +355,7 @@ pub fn edit_handler(req: &mut Request) -> IronResult<Response> {
 
     let data = Data {
         logged_in: login_id != 0,
+        login_user: login_user,
         post: post,
         tags: tag_str,
     };
@@ -312,20 +365,25 @@ pub fn edit_handler(req: &mut Request) -> IronResult<Response> {
 }
 
 pub fn update_handler(req: &mut Request) -> IronResult<Response> {
-    let login_id = handlers::account::get_login_id(req);
+    let conn = get_pg_connection!(req);
+    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    match handlers::account::current_user(req, &conn) {
+        Ok(user) => { login_user = user; }
+        Err(e) => { println!("Errored: {:?}", e); }
+    }
+    let login_id = login_user.id;
     if login_id == 0 {
         return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
     }
-
-    let conn = get_pg_connection!(req);
-
-    use params::{Params, Value};
-    let map = req.get_ref::<Params>().unwrap();
 
     let id: i32;
     let title: String;
     let body: String;
     let tags: String;
+    let action: String;
+
+    use params::{Params, Value};
+    let map = req.get_ref::<Params>().unwrap();
 
     match map.find(&["id"]) {
         Some(&Value::String(ref name)) => {
@@ -355,6 +413,14 @@ pub fn update_handler(req: &mut Request) -> IronResult<Response> {
         _ => return Ok(Response::with((status::BadRequest))),
     }
 
+    match map.find(&["action"]) {
+        Some(&Value::String(ref name)) => {
+            action = name.to_string();
+        }
+        _ => return Ok(Response::with((status::BadRequest))),
+    }
+
+
     match models::post::get_by_id(&conn, &id) {
         Ok(post_db) => {
             if post_db.user_id != login_id {
@@ -367,7 +433,7 @@ pub fn update_handler(req: &mut Request) -> IronResult<Response> {
         }
     }
 
-    match models::post::update(&conn, &id, &title, &body, &tags) {
+    match models::post::update(&conn, &id, &title, &body, &tags, &action) {
         Ok(_) => {
             let url = Url::parse(&format!("{}/{}/{}", helper::get_domain(), "nippo/show", id)
                                      .to_string())
@@ -382,11 +448,16 @@ pub fn update_handler(req: &mut Request) -> IronResult<Response> {
 }
 
 pub fn comment_handler(req: &mut Request) -> IronResult<Response> {
-    let login_id = handlers::account::get_login_id(req);
+    let conn = get_pg_connection!(req);
+    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    match handlers::account::current_user(req, &conn) {
+        Ok(user) => { login_user = user; }
+        Err(e) => { println!("Errored: {:?}", e); }
+    }
+    let login_id = login_user.id;
     if login_id == 0 {
         return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
     }
-    let conn = get_pg_connection!(req);
 
     use params::{Params, Value};
     let map = req.get_ref::<Params>().unwrap();
