@@ -81,43 +81,43 @@ pub fn count(conn: &db::PostgresConnection, kind: &str) -> Result<i32, Error> {
     Ok(count)
 }
 
-
+use super::tag;
 pub fn update(conn: &db::PostgresConnection, id: &i32, title: &String, body: &String, tags: &String, action: &String) -> Result<(), Error> {
     conn.execute(
         "UPDATE posts set title = $1, body = $2, status = $3 WHERE id = $4", &[&title, &body, &action, &id]
     ).unwrap();
-    let mut tag_ids_param: Vec<i32> = Vec::new();
-    let mut tag_ids: Vec<i32> = Vec::new();
-    for mut tag in tags.split(",") {
-        tag = tag.trim();
-        if tag != "" {
-            match models::tag::select_or_create_tag_id(&conn, tag) {
-                Ok(tag_id) => {
-                    match models::tag::get_tags_by_post_id(&conn, &id) {
-                        Ok(tags) => {
-                            for t in tags {
-                                tag_ids.push(t.id);
-                            }
-                            if !tag_ids.contains(&tag_id) {
-                                &conn.query("INSERT INTO taggings (tag_id, post_id) VALUES ($1, $2);", &[&tag_id, &id]).unwrap();
-                            }
-                        },
-                        Err(e) => {
-                            println!("Errored: {:?}", e);
-                        }
-                    }
-                    tag_ids_param.push(tag_id);
-                },
-                Err(e) => {
-                    println!("Errored: {:?}", e);
+    let mut old_tag_ids: Vec<i32> = models::tag::get_tags_by_post_id(&conn, &id)
+        .or::<Vec<tag::Tag>>(Ok(Vec::<tag::Tag>::new()))
+        .unwrap().into_iter().map(|t|t.id).collect();
+
+    let mut new_tag_ids:Vec<i32> = tags.split(",").filter_map::<i32, _>(|tag| {
+        let tag = tag.trim();
+        if tag == "" {
+            return None;
+        }
+        return models::tag::select_or_create_tag_id(&conn, tag)
+            .or_else(|e| Err(e))
+            .ok().or(None)
+            .and_then(|tag_id|{
+                if old_tag_ids.contains(&tag_id) {
+                    old_tag_ids.iter().position(|r| r == &tag_id).and_then(|index|{
+                        old_tag_ids.remove(index);
+                        return Some(index);
+                    });
+                    return None;
                 }
-            }
-        }
+                return Some(tag_id);
+            });
+        }).collect();
+    new_tag_ids.dedup();
+    for tag_id in  new_tag_ids.iter() {
+        &conn.query(r#"INSERT INTO taggings (tag_id, post_id)
+            SELECT $1, $2
+            WHERE NOT EXISTS (SELECT * FROM taggings WHERE tag_id = $3 AND post_id = $4)"#,
+            &[&tag_id, &id, &tag_id, &id]).unwrap();
     }
-    for tag_id in &tag_ids {
-        if !tag_ids_param.contains(&tag_id) {
-            &conn.query("DELETE FROM taggings where tag_id = $1 and post_id = $2;", &[&tag_id, &id]).unwrap();
-        }
+    for tag_id in &old_tag_ids {
+        &conn.query("DELETE FROM taggings where tag_id = $1 and post_id = $2;", &[&tag_id, &id]).unwrap();
     }
     Ok(())
 }
