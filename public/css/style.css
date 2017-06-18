@@ -172,8 +172,8 @@ footer {
   font-weight: normal;
 }
 .post-tags {
-  margin-top: 5px;
-  margin-bottom: 10px;
+  margin-top: 0px;
+  margin-bottom: 8px;
 }
 .tag-label {
   background: #d6e5ff;

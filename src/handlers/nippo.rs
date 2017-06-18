@@ -7,6 +7,7 @@ use iron::modifiers::Redirect;
 use hbs::handlebars::to_json;
 use iron::Url;
 use iron::prelude::IronResult;
+use diff;
 
 use db;
 use helper;
@@ -382,6 +383,8 @@ pub fn update_handler(req: &mut Request) -> IronResult<Response> {
     let tags: String;
     let action: String;
 
+    let old_post: models::post::Post;
+
     use params::{Params, Value};
     let map = req.get_ref::<Params>().unwrap();
 
@@ -423,7 +426,8 @@ pub fn update_handler(req: &mut Request) -> IronResult<Response> {
 
     match models::post::get_by_id(&conn, &id) {
         Ok(post_db) => {
-            if post_db.user_id != login_id {
+            old_post = post_db;
+            if old_post.user_id != login_id {
                 return Ok(Response::with((status::Forbidden)));
             }
         }
@@ -435,6 +439,21 @@ pub fn update_handler(req: &mut Request) -> IronResult<Response> {
 
     match models::post::update(&conn, &id, &title, &body, &tags, &action) {
         Ok(_) => {
+            let title = String::from("Edit nippo");
+            let left = &old_post.body;
+            let right = &body;
+            let mut diff_body = String::from("");
+            for diff in diff::lines(left, right) {
+                match diff {
+                    diff::Result::Left(l)    => diff_body += &format!("-{}\n", l),
+                    diff::Result::Both(l, _) => print!(" {}\n", l),
+                    diff::Result::Right(r)   => diff_body += &format!("+{}\n", r)
+                }
+            }
+            if action == "publish" {
+                helper::post_to_slack(&conn, &login_id, &title, &diff_body, &id);
+            }
+
             let url = Url::parse(&format!("{}/{}/{}", helper::get_domain(), "nippo/show", id)
                                      .to_string())
                     .unwrap();

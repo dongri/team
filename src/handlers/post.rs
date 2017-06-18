@@ -464,7 +464,7 @@ pub fn update_handler(req: &mut Request) -> IronResult<Response> {
                     diff::Result::Right(r)   => diff_body += &format!("+{}\n", r)
                 }
             }
-            if diff_body != "" && action == "publish" {
+            if action == "publish" {
                 helper::post_to_slack(&conn, &login_id, &title, &diff_body, &id);
             }
 

@@ -20,13 +20,15 @@
           </div>
           <div class="post-title">
             <a href="/nippo/show/{{id}}">{{title}}</a>
-            <div class="item-created">{{created}}</div>
           </div>
+          {{#if tags}}
           <div class="post-tags">
             {{#each tags}}
               <span class="tag-label"><a href="/tag/?name={{name}}">{{name}}</a></span>
             {{/each}}
           </div>
+          {{/if}}
+          <div class="item-created">{{created}}</div>
         </div>
       </div>
     </li>
