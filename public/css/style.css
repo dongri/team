@@ -249,6 +249,8 @@ h1.title {
 .header-user-icon {
   border-radius: 3px;
   width: 24px;
+  height: 24px;
+  background: black;
   background: #FFF;
   border: 1px solid #FFF;
   position: relative;
