@@ -1,8 +1,8 @@
 {{#*inline "title"}}
-  Posts - Team
+  Draft posts - Team
 {{/inline}}
 {{#*inline "page"}}
-  <button class="mui-btn mui-btn--small mui-btn--primary post-button" onClick="location.href='/post/new'">Post Know-how</button>
+  <h3 class="stock_name">Draft posts</h3>
   <ul class="post-items">
   {{#each posts}}
     <li>
@@ -33,9 +33,9 @@
   {{/each}}
   </ul>
   <div class="paginates">
-    <a href="/post/list?page={{prev_page}}">Previous</a>
+    <a href="/stocked/list?page={{prev_page}}">Previous</a>
     {{current_page}} of {{total_page}}
-    <a href="/post/list?page={{next_page}}">Next</a>
+    <a href="/stocked/list?page={{next_page}}">Next</a>
   </div>
 {{/inline}}
 {{~> layout ~}}

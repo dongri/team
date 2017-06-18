@@ -8,7 +8,7 @@ pub fn create_router() -> Router {
     let mut router = Router::new();
     router.get("/", index::index_handler, "index");
     router.get("/search", index::search_handler, "search");
-    router.get("/tag/:name", index::tag_handler, "tag");
+    router.get("/tag", index::tag_handler, "tag");
 
     router.get("/signup", account::get_signup_handler, "account/get_signup");
     router.post("/signup", account::post_signup_handler, "account/post_signup");
@@ -39,6 +39,11 @@ pub fn create_router() -> Router {
     router.post("/post/update", post::update_handler, "post/update");
     router.post("/post/comment", post::comment_handler, "post/comment");
 
+    router.post("/post/stock/:id", post::stock_handler, "post/stock");
+    router.post("/post/unstock/:id", post::unstock_handler, "post/unstock");
+
+    router.get("/stocked/list", post::stocked_list_handler, "stocked/list");
+    router.get("/draft/list", post::draft_list_handler, "draft/list");
 
     return router;
 }

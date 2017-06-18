@@ -5,30 +5,29 @@
   <ul class="post-items">
   {{#each feeds}}
     <li>
-      <div class="post-item-left">
-        {{#if user.icon_url}}
-          <img src="{{user.icon_url}}" class="user-icon">
-        {{else}}
-          <canvas width="50" height="50" data-jdenticon-hash="{{user.username_hash}}" class="user-icon"></canvas>
-        {{/if}}
-      </div>
-      <div class="post-item-right">
-        <div class="post-item">
-          <div class="post-username">
-            @{{user.username}}<br/>
-          </div>
-          <div class="post-title">
-            <a href="/{{kind}}/show/{{id}}">{{title}}</a>
-            {{#if body}}
-              <div class="feed-comment">{{body}}</div>
-            {{/if}}
-          </div>
-          <div class="post-tags">
-            {{#each tags}}
-              <span class="tag-label"><a href="/tag/{{name}}">{{name}}</a></span>
-            {{/each}}
-          </div>
+      <div class="feed-item">
+        <div class="feed-user-icon">
+          {{#if user.icon_url}}
+            <img src="{{user.icon_url}}" class="feed-user-icon-img">
+          {{else}}
+            <canvas width="30" height="30" data-jdenticon-hash="{{user.username_hash}}" class="feed-user-icon-img"></canvas>
+          {{/if}}
         </div>
+
+        <div class="feed-post">
+          {{#if body}}
+            <div class="feed-item-detail">
+              @{{user.username}} commented on <a href="/{{kind}}/show/{{id}}">{{title}}</a>
+            </div>
+            <div class="feed-comment">"{{body}}"</div>
+          {{else}}
+            <div class="feed-item-detail">
+              @{{user.username}} created new post
+            </div>
+            <div class="feed-comment"><a href="/{{kind}}/show/{{id}}">{{title}}</a></div>
+          {{/if}}
+        </div>
+
       </div>
     </li>
   {{/each}}

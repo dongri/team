@@ -15,17 +15,15 @@
       <div class="post-item-right">
         <div class="post-item">
           <div class="post-username">
-            @{{user.username}}<br/>
+            @{{user.username}}
           </div>
           <div class="post-title">
             <a href="/{{kind}}/show/{{id}}">{{title}}</a>
-            {{#if body}}
-              <div class="feed-comment">{{body}}</div>
-            {{/if}}
+            <div class="item-created">{{created}}</div>
           </div>
           <div class="post-tags">
             {{#each tags}}
-              <span class="tag-label"><a href="/tag/{{name}}">{{name}}</a></span>
+              <span class="tag-label"><a href="/tag/?name={{name}}">{{name}}</a></span>
             {{/each}}
           </div>
         </div>

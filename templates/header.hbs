@@ -14,8 +14,24 @@
               <li><a href="/">Feed</a></li>
               <li><a href="/post/list">Post</a></li>
               <li><a href="/nippo/list">Nippo</a></li>
-              <li><a href="/account/settings">Settings</a></li>
-              <li><a href="/signout">Sign Out</a></li>
+              <li>
+                <div class="mui-dropdown">
+                  <div data-mui-toggle="dropdown" class="dropdown-menu">
+                    {{#if login_user.icon_url}}
+                      <img src="{{login_user.icon_url}}" class="header-user-icon">
+                    {{else}}
+                      <canvas width="24" height="24" data-jdenticon-hash="{{login_user.username_hash}}" class="header-user-icon"></canvas>
+                    {{/if}}
+                    <span class="mui-caret"></span>
+                  </div>
+                  <ul class="mui-dropdown__menu mui-dropdown__menu--right">
+                    <li><a href="/stocked/list">Stocked</a></li>
+                    <li><a href="/draft/list">Draft</a></li>
+                    <li><a href="/account/settings">Settings</a></li>
+                    <li><a href="/signout">Sign out</a></li>
+                  </ul>
+                </div>
+              </li>
             {{else}}
               <li><a href="/signin">Sign In</a></li>
               <li><a href="/signup">Sign Up</a></li>

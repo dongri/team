@@ -16,6 +16,7 @@ create table posts (
   user_id       serial REFERENCES users (id) ON DELETE CASCADE NOT NULL,
   title         varchar(255) NOT NULL,
   body          text NOT NULL,
+  status        varchar(255) NOT NULL,
   created       timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated       timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -39,6 +40,14 @@ create table tags (
 create table taggings (
   id            serial primary key,
   tag_id        serial REFERENCES tags (id) ON DELETE CASCADE NOT NULL,
+  post_id       serial REFERENCES posts (id) ON DELETE CASCADE NOT NULL,
+  created       timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated       timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+create table stocks (
+  id            serial primary key,
+  user_id        serial REFERENCES users (id) ON DELETE CASCADE NOT NULL,
   post_id       serial REFERENCES posts (id) ON DELETE CASCADE NOT NULL,
   created       timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated       timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP

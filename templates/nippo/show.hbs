@@ -2,21 +2,27 @@
   Nippo - Team
 {{/inline}}
 {{#*inline "page"}}
-  {{#if post.user.icon_url}}
-    <img src="{{post.user.icon_url}}" class="user-icon">
-  {{else}}
-    <canvas width="50" height="50" data-jdenticon-hash="{{post.user.username_hash}}" class="user-icon"></canvas>
-  {{/if}}
-  <div class="post-username">
+  <h1 class="title">{{post.title}}</h1>
+  <div class="post-item-time">
+    {{post.created}}
+  </div>
+  {{#each post.tags}}
+    <span class="tag-label"><a href="/tag/?name={{name}}">{{name}}</a></span>
+  {{/each}}
+
+  <div class="post-item-icon">
+    {{#if post.user.icon_url}}
+      <img src="{{post.user.icon_url}}" class="post-user-icon">
+    {{else}}
+      <canvas width="20" height="20" data-jdenticon-hash="{{post.user.username_hash}}" class="post-user-icon"></canvas>
+    {{/if}}
+  </div>
+  <div class="post-item-username">
     @{{post.user.username}}<br/>
   </div>
-  <form class="mui-form" action="/nippo/create" method="post">
-    <h1>{{post.title}}</h1>
-    {{#each post.tags}}
-      <span class="tag-label"><a href="/tag/{{name}}">{{name}}</a></span>
-    {{/each}}
-    <div class="mui-textfield marked">{{post.body}}</div>
-  </form>
+
+  <div class="mui-textfield marked">{{post.body}}</div>
+
   <div class="post-action">
     {{#if editable}}
       <a href="/nippo/edit/{{post.id}}">Edit</a> |
@@ -40,7 +46,7 @@
             <div class="post-username">
               @{{user.username}}<br/>
             </div>
-            <div class="post-body marked">{{body}}</div>
+            <div class="post-comment-body marked">{{body}}</div>
           </div>
         </div>
       </li>

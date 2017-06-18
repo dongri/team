@@ -5,6 +5,9 @@ use crypto::digest::Digest;
 use slack_hook::{Slack, PayloadBuilder};
 use std::env;
 
+use db;
+use models;
+
 const SALT: &str = "6jpmgwMiTzFtFoF";
 
 pub fn get_env(key: &str) -> String {
@@ -34,6 +37,19 @@ pub fn username_hash(username: String) -> String {
     let mut sha256 = Sha256::new();
     sha256.input_str(&format!("{}", username));
     return sha256.result_str();
+}
+
+pub fn post_to_slack(conn: &db::PostgresConnection, user_id: &i32, title: &String, body: &String, post_id: &i32) {
+    match models::user::get_by_id(&conn, &user_id) {
+        Ok(user) => {
+            let link = format!("{}/{}/{}", get_domain(), "post/show", post_id).to_string();
+            let text = format!("{} by @{}\n{}\n{}", title, user.username, body, link).to_string();
+            slack(text);
+        }
+        Err(e) => {
+            println!("Errored: {:?}", e);
+        }
+    }
 }
 
 pub fn slack(text: String) {
