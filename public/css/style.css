@@ -86,8 +86,10 @@ footer {
 }
 .user-icon {
   width: 40px;
+  height: 40px;
   border: 1px solid #CCC;
   border-radius: 5px;
+  background: black;
 }
 .post-username {
   font-size: 13px;
@@ -228,8 +230,10 @@ h1.title {
 }
 .feed-user-icon-img {
   width: 40px;
+  height: 40px;
   border: 1px solid #CCC;
   border-radius: 5px;
+  background: black;
 }
 .feed-item-detail {
   display: inline-block;
