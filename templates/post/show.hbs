@@ -74,6 +74,8 @@
   <script>
     $(".marked").each(function(index, element){
       var markdownText = $(element).text();
+      markdownText = markdownText.replace("<iframe", "&lt;iframe", -1)
+      markdownText = markdownText.replace("</iframe>", "&lt;/iframe>", -1)
       var htmlText = marked(markdownText);
       $(element).html(htmlText);
       $('pre code', element).each(function(i, e) {
