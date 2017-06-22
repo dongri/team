@@ -87,8 +87,8 @@ pub fn slack(text: String) {
 }
 
 pub fn webhook(username: String, title: String, body: String, url: String) {
-    let webhookURL = get_webhook_url();
-    if (webhookURL == "") {
+    let webhook_url = get_webhook_url();
+    if webhook_url == "" {
         return
     }
 
@@ -99,7 +99,7 @@ pub fn webhook(username: String, title: String, body: String, url: String) {
     let b = format!(r#"{:?}"#, body);
     let json = format!(r#"{{"username": "{}", "title": "{}", "body": {}, "url": "{}"}}"#, username, title, b, url);
 
-    let uri = webhookURL.parse().unwrap();
+    let uri = webhook_url.parse().unwrap();
     let mut req = Request::new(Method::Post, uri);
     req.headers_mut().set(ContentType::json());
     req.headers_mut().set(ContentLength(json.len() as u64));
@@ -115,8 +115,7 @@ pub fn webhook(username: String, title: String, body: String, url: String) {
                 .map_err(From::from)
             })
     });
-
-    core.run(post);
+    let _ = core.run(post);
 }
 
 
