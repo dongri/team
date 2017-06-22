@@ -95,13 +95,16 @@ pub fn create_handler(req: &mut Request) -> IronResult<Response> {
 
     match models::post::create(&conn, POST_KIND, &login_id, &action, &title, &body, &tags) {
         Ok(id) => {
+            let urlStr = format!("{}/{}/{}", helper::get_domain(), "nippo/show", id)
+                                     .to_string();
+            let url = Url::parse(&urlStr).unwrap();
+
             if action == "publish" {
                 let title = String::from("New nippo");
                 helper::post_to_slack(&conn, &login_id, &title, &body, &id);
+                helper::webhook(login_user.username, title, body, urlStr);
             }
-            let url = Url::parse(&format!("{}/{}/{}", helper::get_domain(), "nippo/show", id)
-                                     .to_string())
-                    .unwrap();
+
             return Ok(Response::with((status::Found, Redirect(url))));
         }
         Err(e) => {

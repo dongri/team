@@ -27,6 +27,10 @@ extern crate chrono;
 
 extern crate diff;
 
+extern crate futures;
+extern crate hyper;
+extern crate tokio_core;
+
 use std::error::Error;
 use std::path::Path;
 

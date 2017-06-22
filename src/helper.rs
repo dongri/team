@@ -5,6 +5,15 @@ use crypto::digest::Digest;
 use slack_hook::{Slack, PayloadBuilder};
 use std::env;
 
+// hyper
+use std::io::{self, Write};
+use futures::{Future, Stream};
+use hyper::Client;
+use tokio_core::reactor::Core;
+
+use hyper::{Method, Request};
+use hyper::header::{ContentLength, ContentType};
+
 use db;
 use models;
 
@@ -21,6 +30,11 @@ pub fn get_env(key: &str) -> String {
 pub fn get_domain() -> String {
     let domain = get_env("TEAM_DOMAIN");
     return domain;
+}
+
+pub fn get_webhook_url() -> String {
+    let url = get_env("TEAM_WEBHOOK_URL");
+    return url;
 }
 
 pub fn template<T: Serialize>(name: &str, data: T) -> Template {
@@ -71,6 +85,40 @@ pub fn slack(text: String) {
         _ => println!("can not connect to slack(env TEAM_SLACK={})", url),
     }
 }
+
+pub fn webhook(username: String, title: String, body: String, url: String) {
+    let webhookURL = get_webhook_url();
+    if (webhookURL == "") {
+        return
+    }
+
+    let mut core = Core::new().unwrap();
+    let handle = core.handle();
+    let client = Client::new(&handle);
+
+    let b = format!(r#"{:?}"#, body);
+    let json = format!(r#"{{"username": "{}", "title": "{}", "body": {}, "url": "{}"}}"#, username, title, b, url);
+
+    let uri = webhookURL.parse().unwrap();
+    let mut req = Request::new(Method::Post, uri);
+    req.headers_mut().set(ContentType::json());
+    req.headers_mut().set(ContentLength(json.len() as u64));
+    req.set_body(json);
+
+    let post = client.request(req).and_then(|res| {
+        println!("POST: {}", res.status());
+        //res.body().concat2()
+        res.body().for_each(|chunk| {
+            io::stdout()
+                .write_all(&chunk)
+                .map(|_| ())
+                .map_err(From::from)
+            })
+    });
+
+    core.run(post);
+}
+
 
 use iron::status;
 use params::{Map, Value};
