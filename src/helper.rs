@@ -6,9 +6,8 @@ use slack_hook::{Slack, PayloadBuilder};
 use std::env;
 
 // hyper
-use std::io::{self, Write};
-use futures::{Future, Stream};
 use hyper::Client;
+use hyper_tls::HttpsConnector;
 use tokio_core::reactor::Core;
 
 use hyper::{Method, Request};
@@ -94,7 +93,9 @@ pub fn webhook(username: String, title: String, body: String, url: String) {
 
     let mut core = Core::new().unwrap();
     let handle = core.handle();
-    let client = Client::new(&handle);
+    let client = Client::configure()
+        .connector(HttpsConnector::new(4, &handle).unwrap())
+        .build(&handle);
 
     let b = format!(r#"{:?}"#, body);
     let json = format!(r#"{{"username": "{}", "title": "{}", "body": {}, "url": "{}"}}"#, username, title, b, url);
@@ -105,17 +106,9 @@ pub fn webhook(username: String, title: String, body: String, url: String) {
     req.headers_mut().set(ContentLength(json.len() as u64));
     req.set_body(json);
 
-    let post = client.request(req).and_then(|res| {
-        println!("POST: {}", res.status());
-        //res.body().concat2()
-        res.body().for_each(|chunk| {
-            io::stdout()
-                .write_all(&chunk)
-                .map(|_| ())
-                .map_err(From::from)
-            })
-    });
-    let _ = core.run(post);
+    let post = client.request(req);
+    let res = core.run(post);
+    println!("{:?}", res);
 }
 
 
