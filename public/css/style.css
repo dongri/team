@@ -255,3 +255,32 @@ h1.title {
   position: relative;
   top: 6px;
 }
+
+.emoji {
+  width: 40px;
+}
+
+ul.textcomplete-dropdown {
+  list-style: none;
+  padding-left: 0px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding: 5px;
+  background: white;
+}
+
+ul.textcomplete-dropdown li.active {
+  background: #2196F3 !important;
+}
+
+ul.textcomplete-dropdown li.active a {
+  color: white;
+}
+
+li.textcomplete-item a {
+  font-size: 12px;
+  text-decoration: none;
+}
+.emoji-suggest {
+  width: 20px;
+}
