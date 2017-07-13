@@ -286,6 +286,7 @@ li.textcomplete-item a {
 }
 
 code {
+  border-radius: 3px;
   padding: 3px;
   background: #EEE;
   color: red;
