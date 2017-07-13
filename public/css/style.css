@@ -284,3 +284,8 @@ li.textcomplete-item a {
 .emoji-suggest {
   width: 20px;
 }
+
+code {
+  background: #EEE;
+  color: red;
+}
