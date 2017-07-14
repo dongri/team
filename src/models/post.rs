@@ -32,7 +32,7 @@ pub fn create(conn: &db::PostgresConnection, kind: &str, user_id: &i32, action: 
                     &conn.query("INSERT INTO taggings (tag_id, post_id) VALUES ($1, $2);", &[&tag_id, &post_id]).unwrap();
                 },
                 Err(e) => {
-                    println!("Errored: {:?}", e);
+                    error!("Errored: {:?}", e);
                 }
             }
         }
@@ -67,7 +67,7 @@ pub fn list(conn: &db::PostgresConnection, kind: &str, offset: &i32, limit: &i32
                 });
             },
             Err(e) => {
-                println!("Errored: {:?}", e);
+                error!("Errored: {:?}", e);
             }
         }
     }
@@ -145,7 +145,7 @@ pub fn get_by_id(conn: &db::PostgresConnection, id: &i32) -> Result<Post, Error>
             Ok(post)
         },
         Err(e) => {
-            println!("Errored: {:?}", e);
+            error!("Errored: {:?}", e);
             Err(e)
         }
     }
@@ -231,7 +231,7 @@ pub fn get_feeds(conn: &db::PostgresConnection, offset: &i32, limit: &i32) -> Re
                 });
             },
             Err(e) => {
-                println!("Errored: {:?}", e);
+                error!("Errored: {:?}", e);
             }
         }
     }
@@ -276,7 +276,7 @@ pub fn search(conn: &db::PostgresConnection, keyword: &String, offset: &i32, lim
                 });
             },
             Err(e) => {
-                println!("Errored: {:?}", e);
+                error!("Errored: {:?}", e);
             }
         }
     }
@@ -327,7 +327,7 @@ pub fn stocked_list(conn: &db::PostgresConnection, user_id: &i32, offset: &i32, 
                 });
             },
             Err(e) => {
-                println!("Errored: {:?}", e);
+                error!("Errored: {:?}", e);
             }
         }
     }
@@ -383,7 +383,7 @@ pub fn draft_list(conn: &db::PostgresConnection, user_id: &i32) -> Result<Vec<Po
                 });
             },
             Err(e) => {
-                println!("Errored: {:?}", e);
+                error!("Errored: {:?}", e);
             }
         }
     }

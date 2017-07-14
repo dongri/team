@@ -79,7 +79,7 @@ pub fn post_signup_handler(req: &mut Request) -> IronResult<Response> {
                                       Redirect(url_for!(req, "account/get_signin")))));
         }
         Err(e) => {
-            println!("Errored: {:?}", e);
+            info!("Errored: {:?}", e);
             return Ok(Response::with((status::InternalServerError)));
         }
     }
@@ -132,7 +132,7 @@ pub fn post_signin_handler(req: &mut Request) -> IronResult<Response> {
             }
         }
         Err(e) => {
-            println!("Errored: {:?}", e);
+            error!("Errored: {:?}", e);
             return Ok(Response::with((status::InternalServerError)));
         }
     }
@@ -148,7 +148,7 @@ pub fn get_settings_handler(req: &mut Request) -> IronResult<Response> {
     let mut login_user: models::user::User = models::user::User{..Default::default()};
     match handlers::account::current_user(req, &conn) {
         Ok(user) => { login_user = user; }
-        Err(e) => { println!("Errored: {:?}", e); }
+        Err(e) => { error!("Errored: {:?}", e); }
     }
     let login_id = login_user.id;
     if login_id == 0 {
@@ -171,7 +171,7 @@ pub fn get_settings_handler(req: &mut Request) -> IronResult<Response> {
             user = user_obj;
         }
         Err(e) => {
-            println!("Errored: {:?}", e);
+            error!("Errored: {:?}", e);
             return Ok(Response::with((status::InternalServerError)));
         }
     }
@@ -191,7 +191,7 @@ pub fn post_settings_handler(req: &mut Request) -> IronResult<Response> {
     let mut login_user: models::user::User = models::user::User{..Default::default()};
     match handlers::account::current_user(req, &conn) {
         Ok(user) => { login_user = user; }
-        Err(e) => { println!("Errored: {:?}", e); }
+        Err(e) => { error!("Errored: {:?}", e); }
     }
     let login_id = login_user.id;
     if login_id == 0 {
@@ -217,7 +217,7 @@ pub fn post_settings_handler(req: &mut Request) -> IronResult<Response> {
                                       Redirect(url_for!(req, "account/get_settings")))));
         }
         Err(e) => {
-            println!("Errored: {:?}", e);
+            error!("Errored: {:?}", e);
             return Ok(Response::with((status::InternalServerError)));
         }
     }
@@ -229,7 +229,7 @@ pub fn post_password_update(req: &mut Request) -> IronResult<Response> {
     let mut login_user: models::user::User = models::user::User{..Default::default()};
     match handlers::account::current_user(req, &conn) {
         Ok(user) => { login_user = user; }
-        Err(e) => { println!("Errored: {:?}", e); }
+        Err(e) => { error!("Errored: {:?}", e); }
     }
     let login_id = login_user.id;
     if login_id == 0 {
@@ -281,7 +281,7 @@ pub fn post_password_update(req: &mut Request) -> IronResult<Response> {
                                       Redirect(url_for!(req, "account/get_settings")))));
         }
         Err(e) => {
-            println!("Errored: {:?}", e);
+            error!("Errored: {:?}", e);
             return Ok(Response::with((status::InternalServerError)));
         }
     }
@@ -293,7 +293,7 @@ pub fn post_username_update(req: &mut Request) -> IronResult<Response> {
     let mut login_user: models::user::User = models::user::User{..Default::default()};
     match handlers::account::current_user(req, &conn) {
         Ok(user) => { login_user = user; }
-        Err(e) => { println!("Errored: {:?}", e); }
+        Err(e) => { error!("Errored: {:?}", e); }
     }
     let login_id = login_user.id;
     if login_id == 0 {
@@ -316,7 +316,7 @@ pub fn post_username_update(req: &mut Request) -> IronResult<Response> {
                                       Redirect(url_for!(req, "account/get_settings")))));
         }
         Err(e) => {
-            println!("Errored: {:?}", e);
+            error!("Errored: {:?}", e);
             return Ok(Response::with((status::InternalServerError)));
         }
     }
@@ -353,7 +353,7 @@ pub fn current_user(req: &mut Request, conn: &db::PostgresConnection) -> Result<
                 Ok(user)
             }
             Err(e) => {
-                println!("Errored: {:?}", e);
+                error!("Errored: {:?}", e);
                 Err(format!("{}", e))
             }
         }
