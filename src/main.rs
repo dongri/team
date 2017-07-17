@@ -124,9 +124,14 @@ fn main() {
     }
     chain.link_after(hbse);
 
-    let conn_string: String = helper::get_env("TEAM_DATABASE_URL");
-    let pool = db::get_pool(&conn_string);
-    chain.link(PRead::<db::PostgresDB>::both(pool));
+    let conn_string = helper::get_env("TEAM_DATABASE_URL");
+    match db::get_pool(&conn_string) {
+        Ok(pool) => chain.link(PRead::<db::PostgresDB>::both(pool)),
+        Err(err) => {
+            error!("postgres: {}", err);
+            std::process::exit(-1);
+        },
+    };
 
     let secret = b"FLEo9NZJDhZbBaT".to_vec();
     chain.link_around(SessionStorage::new(SignedCookieBackend::new(secret)));

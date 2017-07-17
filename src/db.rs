@@ -1,3 +1,4 @@
+use std::error::Error;
 use r2d2;
 use r2d2_postgres::{PostgresConnectionManager, TlsMode};
 use iron::typemap::Key;
@@ -6,7 +7,9 @@ pub type PostgresPool = r2d2::Pool<PostgresConnectionManager>;
 pub type PostgresConnection = r2d2::PooledConnection<PostgresConnectionManager>;
 
 pub struct PostgresDB;
-impl Key for PostgresDB { type Value = PostgresPool;}
+impl Key for PostgresDB {
+    type Value = PostgresPool;
+}
 
 macro_rules! get_pg_connection {
     ($req:expr) => (match $req.get::<persistent::Read<db::PostgresDB>>() {
@@ -24,8 +27,8 @@ macro_rules! get_pg_connection {
     })
 }
 
-pub fn get_pool(uri: &str) -> PostgresPool {
-    let manager = PostgresConnectionManager::new(uri, TlsMode::None).unwrap();
-
-    r2d2::Pool::new(r2d2::Config::default(), manager).unwrap()
+pub fn get_pool(uri: &str) -> Result<PostgresPool, Box<Error>> {
+    let manager = try!(PostgresConnectionManager::new(uri, TlsMode::None));
+    let pool = try!(r2d2::Pool::new(r2d2::Config::default(), manager));
+    Ok(pool)
 }
