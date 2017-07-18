@@ -10,6 +10,7 @@ use iron::prelude::IronResult;
 use diff;
 
 use db;
+use env::CONFIG;
 use helper;
 use models;
 use handlers;
@@ -99,7 +100,7 @@ pub fn create_handler(req: &mut Request) -> IronResult<Response> {
                 let title = String::from("New post");
                 helper::post_to_slack(&conn, &login_id, &title, &body, &id);
             }
-            let url = Url::parse(&format!("{}/{}/{}", helper::get_domain(), "post/show", id)
+            let url = Url::parse(&format!("{}/{}/{}", &CONFIG.team_domain, "post/show", id)
                                      .to_string())
                     .unwrap();
             return Ok(Response::with((status::Found, Redirect(url))));
@@ -468,7 +469,7 @@ pub fn update_handler(req: &mut Request) -> IronResult<Response> {
                 helper::post_to_slack(&conn, &login_id, &title, &diff_body, &id);
             }
 
-            let url = Url::parse(&format!("{}/{}/{}", helper::get_domain(), "post/show", id)
+            let url = Url::parse(&format!("{}/{}/{}", &CONFIG.team_domain, "post/show", id)
                                      .to_string())
                     .unwrap();
             return Ok(Response::with((status::Found, Redirect(url))));
@@ -517,7 +518,7 @@ pub fn comment_handler(req: &mut Request) -> IronResult<Response> {
             let title = String::from("New comment");
             helper::post_to_slack(&conn, &login_id, &title, &body, &id);
 
-            let url = Url::parse(&format!("{}/{}/{}", helper::get_domain(), "post/show", id)
+            let url = Url::parse(&format!("{}/{}/{}", &CONFIG.team_domain, "post/show", id)
                                      .to_string())
                     .unwrap();
             return Ok(Response::with((status::Found, Redirect(url))));
@@ -550,7 +551,7 @@ pub fn stock_handler(req: &mut Request) -> IronResult<Response> {
 
     match models::post::stock_post(&conn, &login_id, &id) {
         Ok(_) => {
-            let url = Url::parse(&format!("{}/{}/{}", helper::get_domain(), "post/show", id)
+            let url = Url::parse(&format!("{}/{}/{}", &CONFIG.team_domain, "post/show", id)
                     .to_string())
                     .unwrap();
             return Ok(Response::with((status::Found, Redirect(url))));
@@ -583,7 +584,7 @@ pub fn unstock_handler(req: &mut Request) -> IronResult<Response> {
 
     match models::post::stock_remove(&conn, &login_id, &id) {
         Ok(_) => {
-            let url = Url::parse(&format!("{}/{}/{}", helper::get_domain(), "post/show", id)
+            let url = Url::parse(&format!("{}/{}/{}", &CONFIG.team_domain, "post/show", id)
                     .to_string())
                     .unwrap();
             return Ok(Response::with((status::Found, Redirect(url))));

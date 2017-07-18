@@ -42,5 +42,8 @@ tokio-core = "0.1.8"
 log = "0.3"
 fern = "0.4"
 
+envy = "0.3"
+lazy_static = "0.2.8"
+
 [features]
 integration_tests = []
