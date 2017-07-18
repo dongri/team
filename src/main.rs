@@ -87,7 +87,7 @@ impl AroundMiddleware for Logger {
     }
 }
 
-fn setup_fern(level: log::LogLevelFilter) {
+fn setup_fern(level: log::LogLevelFilter, verbose: bool) {
     fern::Dispatch::new()
         .format(|out, message, record| {
             out.finish(format_args!("[{}][{}/{}:{}][{}] {}",
@@ -100,12 +100,13 @@ fn setup_fern(level: log::LogLevelFilter) {
         })
         .level(level)
         .chain(std::io::stdout())
+        .filter(move |meta: &log::LogMetadata| verbose || meta.target() == "team")
         .apply()
-        .unwrap();
+        .unwrap()
 }
 
 fn main() {
-    setup_fern(log::LogLevelFilter::Debug);
+    setup_fern(log::LogLevelFilter::Debug, false);
     let router = handlers::router::create_router();
 
     let mut mount = Mount::new();
