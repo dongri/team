@@ -11,6 +11,7 @@ use diff;
 
 use db;
 use helper;
+use env::CONFIG;
 use models;
 use handlers;
 
@@ -95,7 +96,7 @@ pub fn create_handler(req: &mut Request) -> IronResult<Response> {
 
     match models::post::create(&conn, POST_KIND, &login_id, &action, &title, &body, &tags) {
         Ok(id) => {
-            let url_str = format!("{}/{}/{}", helper::get_domain(), "nippo/show", id)
+            let url_str = format!("{}/{}/{}", &CONFIG.team_domain, "nippo/show", id)
                                      .to_string();
             let url = Url::parse(&url_str).unwrap();
 
@@ -458,7 +459,7 @@ pub fn update_handler(req: &mut Request) -> IronResult<Response> {
                 helper::post_to_slack(&conn, &login_id, &title, &diff_body, &id);
             }
 
-            let url = Url::parse(&format!("{}/{}/{}", helper::get_domain(), "nippo/show", id)
+            let url = Url::parse(&format!("{}/{}/{}", CONFIG.team_domain, "nippo/show", id)
                                      .to_string())
                     .unwrap();
             return Ok(Response::with((status::Found, Redirect(url))));
@@ -507,7 +508,7 @@ pub fn comment_handler(req: &mut Request) -> IronResult<Response> {
             let title = String::from("New comment");
             helper::post_to_slack(&conn, &login_id, &title, &body, &id);
 
-            let url = Url::parse(&format!("{}/{}/{}", helper::get_domain(), "nippo/show", id)
+            let url = Url::parse(&format!("{}/{}/{}", &CONFIG.team_domain, "nippo/show", id)
                                      .to_string())
                     .unwrap();
             return Ok(Response::with((status::Found, Redirect(url))));

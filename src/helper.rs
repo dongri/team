@@ -3,7 +3,6 @@ use serde::ser::Serialize;
 use crypto::sha2::Sha256;
 use crypto::digest::Digest;
 use slack_hook::{Slack, PayloadBuilder};
-use std::env;
 
 // hyper
 use hyper::Client;
@@ -14,27 +13,10 @@ use hyper::{Method, Request};
 use hyper::header::{ContentLength, ContentType};
 
 use db;
+use env::CONFIG;
 use models;
 
 const SALT: &str = "6jpmgwMiTzFtFoF";
-
-pub fn get_env(key: &str) -> String {
-    let value: String = match env::var(key) {
-        Ok(val) => val,
-        Err(_) => "".to_string(),
-    };
-    return value;
-}
-
-pub fn get_domain() -> String {
-    let domain = get_env("TEAM_DOMAIN");
-    return domain;
-}
-
-pub fn get_webhook_url() -> String {
-    let url = get_env("TEAM_WEBHOOK_URL");
-    return url;
-}
 
 pub fn template<T: Serialize>(name: &str, data: T) -> Template {
     return Template::new(name, &data);
@@ -55,7 +37,7 @@ pub fn username_hash(username: String) -> String {
 pub fn post_to_slack(conn: &db::PostgresConnection, user_id: &i32, title: &String, body: &String, post_id: &i32) {
     match models::user::get_by_id(&conn, &user_id) {
         Ok(user) => {
-            let link = format!("{}/{}/{}", get_domain(), "post/show", post_id).to_string();
+            let link = format!("{}/{}/{}", &CONFIG.team_domain, "post/show", post_id).to_string();
             let text = format!("{} by @{}\n{}\n{}", title, user.username, body, link).to_string();
             slack(text);
         }
@@ -66,7 +48,10 @@ pub fn post_to_slack(conn: &db::PostgresConnection, user_id: &i32, title: &Strin
 }
 
 pub fn slack(text: String) {
-    let slack_url = get_env("TEAM_SLACK");
+    let slack_url = &CONFIG.team_slack;
+    if slack_url == "" {
+        return;
+    }
     let url = slack_url.as_str();
     let slack = Slack::new(url);
     match slack {
@@ -86,7 +71,7 @@ pub fn slack(text: String) {
 }
 
 pub fn webhook(username: String, title: String, body: String, url: String) {
-    let webhook_url = get_webhook_url();
+    let webhook_url = &CONFIG.team_webhook_url;
     if webhook_url == "" {
         return
     }

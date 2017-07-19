@@ -15,6 +15,8 @@ extern crate r2d2_postgres;
 
 extern crate serde;
 extern crate serde_json;
+extern crate envy;
+
 #[macro_use]
 extern crate serde_derive;
 
@@ -31,6 +33,9 @@ extern crate hyper;
 extern crate hyper_tls;
 extern crate futures;
 extern crate tokio_core;
+
+#[macro_use]
+extern crate lazy_static;
 
 #[macro_use]
 extern crate log;
@@ -55,6 +60,7 @@ mod db;
 mod handlers;
 mod models;
 mod helper;
+mod env;
 
 struct LoggerHandler<H: Handler> {
     logger: Logger,
@@ -125,13 +131,12 @@ fn main() {
     }
     chain.link_after(hbse);
 
-    let conn_string = helper::get_env("TEAM_DATABASE_URL");
-    match db::get_pool(&conn_string) {
+    match db::get_pool(&env::CONFIG.team_database_url.as_str()) {
         Ok(pool) => chain.link(PRead::<db::PostgresDB>::both(pool)),
         Err(err) => {
             error!("postgres: {}", err);
             std::process::exit(-1);
-        },
+        }
     };
 
     let secret = b"FLEo9NZJDhZbBaT".to_vec();
@@ -139,11 +144,7 @@ fn main() {
 
     chain.around(Logger);
 
-    let mut port = helper::get_env("PORT");
-    if port == "" {
-        port = "3000".to_string();
-    }
-    let listen = format!("{}:{}", "0.0.0.0", port);
+    let listen = format!("{}:{}", "0.0.0.0", &env::CONFIG.port);
     info!("Listen {:?}", listen);
     Iron::new(chain).http(listen).unwrap();
 }
