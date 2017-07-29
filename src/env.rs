@@ -14,11 +14,15 @@ fn default_empty_string() -> String {
     String::from("")
 }
 
+fn default_database_url() -> String {
+    String::from("postgres://root:@postgres:5432/team")
+}
 
 #[derive(Deserialize, Debug)]
 pub struct Config {
     #[serde(default="default_port")]
     pub port: String, // PORT
+    #[serde(default="default_database_url")]
     pub team_database_url: String, // TEAM_DATABASE_URL
     #[serde(default="default_empty_string")]
     pub team_domain: String, // TEAM_DOMAIN

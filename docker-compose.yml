@@ -1,0 +1,25 @@
+version: "3"
+services:
+  team:
+    container_name: team
+    build:
+      context: .
+      dockerfile: devDockerfile
+    environment:
+      - TEAM_DOMAIN=${TEAM_DOMAIN}
+      - TEAM_SLACK=${TEAM_SLACK}
+    volumes:
+      - .:/source
+    logging:
+      options:
+        max-size: "500k"
+    ports:
+      - "3000:3000"
+    external_links:
+      - postgres
+    networks:
+      - origami_docker
+
+networks:
+  origami_docker:
+    external: true

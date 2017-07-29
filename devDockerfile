@@ -1,0 +1,8 @@
+FROM dongri/rust:1.19.0
+MAINTAINER Dongri Jin <dongrify@gmail.com>
+
+ADD . /source
+WORKDIR /source
+RUN cargo install cargo-watch
+EXPOSE 3000
+CMD cargo watch -x 'run'
