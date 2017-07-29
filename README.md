@@ -8,7 +8,28 @@ username: user
 password: test
 ```
 
-# Development
+# Development (Docker)
+
+### env
+```
+$ vim ~/.bashrc
+export TEAM_DATABASE_URL=postgres://root:@localhost:5432/team
+export TEAM_DOMAIN=http://localhost:3000
+export TEAM_SLACK=https://hooks.slack.com/services/xxxx/xxxxxxxx
+```
+
+### database
+```
+$ createdb team
+```
+ddl.sql
+
+### compose
+```
+$ docker-compose up
+```
+
+# Development (Mac)
 
 ### env
 ```
@@ -18,6 +39,12 @@ export TEAM_DATABASE_URL=postgres://root:@localhost:5432/team
 export TEAM_DOMAIN=http://localhost:3000
 export TEAM_SLACK=https://hooks.slack.com/services/xxxx/xxxxxxxx
 ```
+
+### database
+```
+$ createdb team
+```
+ddl.sql
 
 ### cargo-watch
 ```
