@@ -28,6 +28,7 @@ ddl.sql
 ```
 $ docker-compose up
 ```
+http://localhost:3000
 
 # Development (Mac)
 
@@ -55,6 +56,7 @@ $ cargo install cargo-watch
 ```
 $ cargo watch -x 'run'
 ```
+http://localhost:3000
 
 # Production
 ```
