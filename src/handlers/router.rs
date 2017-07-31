@@ -29,7 +29,7 @@ pub fn create_router() -> Router {
     router.get("/nippo/edit/:id", nippo::edit_handler, "nippo/edit");
     router.post("/nippo/update", nippo::update_handler, "nippo/update");
     router.post("/nippo/comment", nippo::comment_handler, "nippo/comment");
-    router.post("/nippo/comment/:id", post::comment_update_handler, "nippo/comment/update");
+    router.post("/nippo/comment/:id", nippo::comment_update_handler, "nippo/comment/update");
 
     router.get("/post/new", post::new_handler, "post/new");
     router.post("/post/create", post::create_handler, "post/create");

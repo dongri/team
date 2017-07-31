@@ -536,7 +536,6 @@ pub fn comment_handler(req: &mut Request) -> IronResult<Response> {
     }
 }
 
-
 pub fn comment_update_handler(req: &mut Request) -> IronResult<Response> {
     let conn = get_pg_connection!(req);
     let mut login_user: models::user::User = models::user::User{..Default::default()};

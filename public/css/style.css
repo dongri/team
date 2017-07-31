@@ -53,6 +53,7 @@ footer {
 }
 .mui-appbar{
   background: #4285f4;
+  box-shadow: none;
 }
 .appbar-height {
   height: 90px;
