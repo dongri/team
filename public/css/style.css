@@ -297,4 +297,7 @@ code {
 
 blockquote {
   white-space: pre;
+  padding: 0em 0em 0em 1em;
+  border-left: 5px solid #CCC;
+  border-radius: 2px;
 }
