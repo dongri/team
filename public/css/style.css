@@ -83,6 +83,7 @@ footer {
 .post-item-right {
   display: inline-block;
   vertical-align: top;
+  width: 100%;
 }
 .user-icon {
   width: 40px;
@@ -292,4 +293,8 @@ code {
   padding: 3px;
   background: #EEE;
   color: red;
+}
+
+blockquote {
+  white-space: pre;
 }

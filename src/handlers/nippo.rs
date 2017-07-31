@@ -220,13 +220,19 @@ pub fn show_handler(req: &mut Request) -> IronResult<Response> {
         .unwrap_or("/");
     let id = id_str.parse::<i32>().unwrap();
 
+    #[derive(Serialize, Debug, Default)]
+    struct PostComment {
+        comment: models::post::Comment,
+        editable: bool,
+    }
+
     #[derive(Serialize)]
     struct Data {
         logged_in: bool,
         login_user: models::user::User,
         post: models::post::Post,
         editable: bool,
-        comments: Vec<models::post::Comment>,
+        comments: Vec<PostComment>,
     }
 
     let post: models::post::Post;
@@ -252,13 +258,23 @@ pub fn show_handler(req: &mut Request) -> IronResult<Response> {
         }
     }
 
+    let mut post_comments: Vec<PostComment> = Vec::new();
+    for comment in comments {
+        let owner_id = comment.user_id;
+        let pc = PostComment{
+            comment: comment,
+            editable: owner_id == login_id
+        };
+        post_comments.push(pc);
+    }
+
     let owner_id = post.user_id;
     let data = Data {
         logged_in: login_id != 0,
         login_user: login_user,
         post: post,
         editable: owner_id == login_id,
-        comments: comments,
+        comments: post_comments,
     };
 
     resp.set_mut(Template::new("nippo/show", to_json(&data)))
@@ -518,4 +534,90 @@ pub fn comment_handler(req: &mut Request) -> IronResult<Response> {
             return Ok(Response::with((status::InternalServerError)));
         }
     }
+}
+
+
+pub fn comment_update_handler(req: &mut Request) -> IronResult<Response> {
+    let conn = get_pg_connection!(req);
+    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    match handlers::account::current_user(req, &conn) {
+        Ok(user) => { login_user = user; }
+        Err(e) => { error!("Errored: {:?}", e); }
+    }
+    let login_id = login_user.id;
+    if login_id == 0 {
+        return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
+    }
+
+    let id: i32;
+    let action: String;
+    let body: String;
+    let comment: models::post::Comment;
+
+    {
+        let ref id_str = req.extensions
+            .get::<Router>()
+            .unwrap()
+            .find("id")
+            .unwrap_or("/");
+        id = id_str.parse::<i32>().unwrap();
+    }
+
+    use params::{Params, Value};
+    let map = req.get_ref::<Params>().unwrap();
+
+    match map.find(&["action"]) {
+        Some(&Value::String(ref name)) => {
+            action = name.to_string();
+        }
+        _ => return Ok(Response::with((status::BadRequest))),
+    }
+
+    match map.find(&["body"]) {
+        Some(&Value::String(ref name)) => {
+            body = name.to_string();
+        }
+        _ => return Ok(Response::with((status::BadRequest))),
+    }
+
+    match models::post::get_comment_by_id(&conn, &id) {
+        Ok(db_comment) => {
+            comment = db_comment;
+            if comment.user_id != login_id {
+                return Ok(Response::with((status::Forbidden)));
+            }
+        }
+        Err(e) => {
+            error!("Errored: {:?}", e);
+            return Ok(Response::with((status::InternalServerError)));
+        }
+    }
+
+    if action == "update" {
+        match models::post::update_comment_by_id(&conn, &id, &body) {
+            Ok(_) => {
+                let url = Url::parse(&format!("{}/{}/{}", &CONFIG.team_domain, "nippo/show", comment.post_id)
+                                         .to_string()).unwrap();
+                return Ok(Response::with((status::Found, Redirect(url))));
+            }
+            Err(e) => {
+                error!("Errored: {:?}", e);
+                return Ok(Response::with((status::InternalServerError)));
+            }
+        }
+    }
+    if action == "delete" {
+        match models::post::delete_comment_by_id(&conn, &id) {
+            Ok(_) => {
+                let url = Url::parse(&format!("{}/{}/{}", &CONFIG.team_domain, "nippo/show", comment.post_id)
+                                         .to_string()).unwrap();
+                return Ok(Response::with((status::Found, Redirect(url))));
+            }
+            Err(e) => {
+                error!("Errored: {:?}", e);
+                return Ok(Response::with((status::InternalServerError)));
+            }
+        }
+    }
+    return Ok(Response::with((status::InternalServerError)));
 }

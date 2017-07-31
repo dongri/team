@@ -29,6 +29,7 @@ pub fn create_router() -> Router {
     router.get("/nippo/edit/:id", nippo::edit_handler, "nippo/edit");
     router.post("/nippo/update", nippo::update_handler, "nippo/update");
     router.post("/nippo/comment", nippo::comment_handler, "nippo/comment");
+    router.post("/nippo/comment/:id", post::comment_update_handler, "nippo/comment/update");
 
     router.get("/post/new", post::new_handler, "post/new");
     router.post("/post/create", post::create_handler, "post/create");
@@ -38,6 +39,7 @@ pub fn create_router() -> Router {
     router.get("/post/edit/:id", post::edit_handler, "post/edit");
     router.post("/post/update", post::update_handler, "post/update");
     router.post("/post/comment", post::comment_handler, "post/comment");
+    router.post("/post/comment/:id", post::comment_update_handler, "post/comment/update");
 
     router.post("/post/stock/:id", post::stock_handler, "post/stock");
     router.post("/post/unstock/:id", post::unstock_handler, "post/unstock");

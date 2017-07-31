@@ -35,18 +35,30 @@
     {{#each comments}}
       <li>
         <div class="post-item-left">
-          {{#if user.icon_url}}
-            <img src="{{user.icon_url}}" class="user-icon">
+          {{#if comment.user.icon_url}}
+            <img src="{{comment.user.icon_url}}" class="user-icon">
           {{else}}
-            <canvas width="50" height="50" data-jdenticon-hash="{{user.username_hash}}" class="user-icon"></canvas>
+            <canvas width="50" height="50" data-jdenticon-hash="{{comment.user.username_hash}}" class="user-icon"></canvas>
           {{/if}}
         </div>
         <div class="post-item-right">
           <div class="post-item">
             <div class="post-username">
-              @{{user.username}}<br/>
+              @{{comment.user.username}}<br/>
+              {{#if editable}}
+                <a href="javascript:edit({{comment.id}})">Edit</a>
+                 |
+                <a href="javascript:remove({{comment.id}})">Delete</a>
+              {{/if}}
             </div>
-            <div class="post-comment-body marked">{{body}}</div>
+            <div class="post-comment-body marked" id="comment_view_{{comment.id}}">{{comment.body}}</div>
+            <form class="mui-form" action="/post/comment/{{comment.id}}" method="post" id="comment_input_{{comment.id}}" style="display:none;">
+              <input type="hidden" name="action" value="update" id="comment_action_{{comment.id}}">
+              <div class="mui-textfield">
+                <textarea placeholder="comment" name="body" id="input-comment">{{comment.body}}</textarea>
+              </di>
+              <button type="submit" class="mui-btn mui-btn--raised">Update</button>
+            </form>
           </div>
         </div>
       </li>
@@ -73,6 +85,17 @@
           hljs.highlightBlock(e, e.className);
       });
     });
+    function edit(comment_id) {
+      $("#comment_view_"+comment_id).hide();
+      $("#comment_input_"+comment_id).show();
+    }
+    function remove(comment_id) {
+      var confirmed = confirm('Are you sure?');
+      if (confirmed) {
+        $("#comment_action_"+comment_id).val("delete");
+        $("#comment_input_"+comment_id).submit();
+      }
+    }
   </script>
 {{/inline}}
 {{~> layout ~}}
