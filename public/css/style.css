@@ -3,7 +3,8 @@
 html,
 body {
   height: 100%;
-  font-family: 'Noto Sans JP', sans-serif;
+  /*font-family: 'Noto Sans JP', sans-serif;*/
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
   font-size: 16px;
 }
 
@@ -34,6 +35,13 @@ header a {
   text-decoration: none !important;
 }
 
+a {
+  color: #0366d6
+}
+.mui-container {
+  min-width: 780px;
+}
+
 #content-wrapper {
   min-height: 100%;
   box-sizing: border-box;
@@ -46,13 +54,14 @@ footer {
   background-color: #eee;
   border-top: 1px solid #e0e0e0;
   padding-top: 35px;
-}
-footer {
   background: white;
   border: 0px;
+  margin-bottom: 30px;
 }
+
 .mui-appbar{
-  background: #4285f4;
+  /*background: #4285f4;*/
+  background: #24292e;
   box-shadow: none;
 }
 .appbar-height {
@@ -157,11 +166,11 @@ footer {
   border-radius: 3px;
   border: none;
   height: 30px;
-  background: #6499ef;
+  background: #403f4e;
   padding-left: 7px;
-  color: white;
+  color: #FFF;
   width: 250px;
-  border: 1px solid #7daaf2;
+  border: 1px solid #403f4e;
 }
 .search-input::-webkit-input-placeholder {
   color: #EEE;
@@ -250,10 +259,9 @@ h1.title {
 }
 .header-user-icon {
   border-radius: 3px;
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   background: black;
-  border: 1px solid #FFF;
   position: relative;
   top: 6px;
 }
