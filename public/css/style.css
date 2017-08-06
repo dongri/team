@@ -222,6 +222,14 @@ h1.title {
   padding: 0px;
   margin-top: -20px;
 }
+.marked th {
+  border: 1px solid #DDD;
+  padding: 5px;
+}
+.marked td {
+  border: 1px solid #DDD;
+  padding: 5px;
+}
 .post-comment-body {
   margin-top: 0px;
 }
