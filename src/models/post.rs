@@ -214,12 +214,13 @@ pub fn get_feeds(conn: &db::PostgresConnection, offset: &i32, limit: &i32) -> Re
         order by created desc offset $1::int limit $2::int", &[&offset, &limit]).unwrap() {
         match models::tag::get_tags_by_post_id(&conn, &row.get("id")) {
             Ok(tags) => {
+                let body: String = row.get("body");
                 feeds.push(Feed {
                     id: row.get("id"),
                     kind: row.get("kind"),
                     user_id: row.get("user_id"),
                     title: row.get("title"),
-                    body: row.get("body"),
+                    body: body.as_str()[0..100].to_string(),
                     created: row.get("created"),
                     user: models::user::User{
                         id: row.get("user_id"),
