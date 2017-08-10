@@ -223,7 +223,7 @@ pub fn get_feeds(conn: &db::PostgresConnection, offset: &i32, limit: &i32) -> Re
                     kind: row.get("kind"),
                     user_id: row.get("user_id"),
                     title: row.get("title"),
-                    body: body,
+                    body: row.get("body"), // TODO
                     created: row.get("created"),
                     user: models::user::User{
                         id: row.get("user_id"),
