@@ -214,10 +214,10 @@ pub fn get_feeds(conn: &db::PostgresConnection, offset: &i32, limit: &i32) -> Re
         order by created desc offset $1::int limit $2::int", &[&offset, &limit]).unwrap() {
         match models::tag::get_tags_by_post_id(&conn, &row.get("id")) {
             Ok(tags) => {
-                let mut body: String = row.get("body");
-                if body.len() > 100 {
-                    body = body.as_str()[0..100].to_string()
-                }
+                // let mut body: String = row.get("body");
+                // if body.len() > 100 {
+                //     body = body.as_str()[0..100].to_string()
+                // }
                 feeds.push(Feed {
                     id: row.get("id"),
                     kind: row.get("kind"),
