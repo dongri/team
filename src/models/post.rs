@@ -423,3 +423,45 @@ pub fn delete_comment_by_id(conn: &db::PostgresConnection, id: &i32) -> Result<(
     ).unwrap();
     Ok(())
 }
+
+pub fn user_posts(conn: &db::PostgresConnection, username: &str, offset: &i32, limit: &i32) -> Result<Vec<Post>, Error> {
+    let mut posts: Vec<Post> = Vec::new();
+    for row in &conn.query("
+        SELECT p.id, p.kind, p.user_id, p.title, p.body, p.created, u.username, u.icon_url
+        from posts as p
+        join users as u on u.id = p.user_id
+        where p.status = 'publish' and u.username = $1
+        order by p.id desc offset $2::int limit $3::int", &[&username, &offset, &limit]).unwrap() {
+        match models::tag::get_tags_by_post_id(&conn, &row.get("id")) {
+            Ok(tags) => {
+                posts.push(Post {
+                    id: row.get("id"),
+                    kind: row.get("kind"),
+                    user_id: row.get("user_id"),
+                    title: row.get("title"),
+                    body: row.get("body"),
+                    created: row.get("created"),
+                    user: models::user::User{
+                        id: row.get("user_id"),
+                        username: row.get("username"),
+                        icon_url: row.get("icon_url"),
+                        username_hash: helper::username_hash(row.get("username")),
+                    },
+                    tags: tags,
+                });
+            },
+            Err(e) => {
+                error!("Errored: {:?}", e);
+            }
+        }
+    }
+    Ok(posts)
+}
+
+pub fn user_posts_count(conn: &db::PostgresConnection, username: &str) -> Result<i32, Error> {
+    let rows = &conn.query("SELECT count(*)::int as count from posts as p join users as u on u.id=
+    p.user_id where p.status = 'publish' and u.username = $1", &[&username]).unwrap();
+    let row = rows.get(0);
+    let count = row.get("count");
+    Ok(count)
+}

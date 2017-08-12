@@ -11,11 +11,13 @@
   {{/each}}
 
   <div class="post-item-icon">
+  <a href="/{{post.user.username}}">
     {{#if post.user.icon_url}}
       <img src="{{post.user.icon_url}}" class="post-user-icon">
     {{else}}
       <canvas width="20" height="20" data-jdenticon-hash="{{post.user.username_hash}}" class="post-user-icon"></canvas>
     {{/if}}
+  </a>
   </div>
   <div class="post-item-username">
     @{{post.user.username}}<br/>

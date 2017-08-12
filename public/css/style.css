@@ -75,7 +75,9 @@ footer {
 .header-ul {
   font-size: 18px;
 }
-
+.page-title {
+  margin-top: 0px;
+}
 .post-items {
   list-style: none;
   padding: 0px;
@@ -101,6 +103,19 @@ footer {
   border: 1px solid #CCC;
   border-radius: 5px;
   background: black;
+}
+.user-large-icon {
+  width: 80px;
+  height: 80px;
+  border: 1px solid #CCC;
+  border-radius: 5px;
+  background: black;
+}
+.user-profile {
+  margin-bottom: 20px;
+}
+.usr-profile-username {
+  margin-top: 0px;
 }
 .post-username {
   font-size: 13px;

@@ -47,5 +47,7 @@ pub fn create_router() -> Router {
     router.get("/stocked/list", post::stocked_list_handler, "stocked/list");
     router.get("/draft/list", post::draft_list_handler, "draft/list");
 
+    router.get("/:username", account::profile_handler, "user/profile");
+
     return router;
 }
