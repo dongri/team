@@ -1,9 +1,11 @@
 {{#*inline "title"}}
-  Nippos - Team
+  Posts - Team
 {{/inline}}
 {{#*inline "page"}}
-  <h2 class="page-title">Nippo</h2>
-  <button class="mui-btn mui-btn--small mui-btn--primary post-button" onClick="location.href='/nippo/new'">Post Nippo</button>
+  <div class="user-profile">
+    <img src="{{user.icon_url}}" class="user-large-icon">
+    <h3 class="usr-profile-username">@{{user.username}}</h3>
+  </div>
   <ul class="post-items">
   {{#each posts}}
     <li>
@@ -22,7 +24,7 @@
             @{{user.username}}
           </div>
           <div class="post-title">
-            <a href="/nippo/show/{{id}}">{{title}}</a>
+            <a href="/post/show/{{id}}">{{title}}</a>
           </div>
           {{#if tags}}
           <div class="post-tags">
@@ -38,9 +40,9 @@
   {{/each}}
   </ul>
   <div class="paginates">
-    <a href="/nippo/list?page={{prev_page}}">Previous</a>
+    <a href="/{{user.username}}?page={{prev_page}}">Previous</a>
     {{current_page}} of {{total_page}}
-    <a href="/nippo/list?page={{next_page}}">Next</a>
+    <a href="/{{user.username}}?page={{next_page}}">Next</a>
   </div>
 {{/inline}}
 {{~> layout ~}}

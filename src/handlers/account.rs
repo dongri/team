@@ -2,6 +2,7 @@ use iron::{Request, status};
 use iron::modifiers::Redirect;
 use iron::prelude::IronResult;
 use iron::prelude::*;
+use router::Router;
 use hbs::Template;
 use persistent;
 use hbs::handlebars::to_json;
@@ -13,6 +14,8 @@ use db;
 use models;
 use helper;
 use handlers;
+
+const PAGINATES_PER: i32 = 10;
 
 #[derive(Serialize, Debug, Default)]
 pub struct Login {
@@ -358,4 +361,106 @@ pub fn current_user(req: &mut Request, conn: &db::PostgresConnection) -> Result<
             }
         }
     }
+}
+
+pub fn profile_handler(req: &mut Request) -> IronResult<Response> {
+    let conn = get_pg_connection!(req);
+    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    match handlers::account::current_user(req, &conn) {
+        Ok(user) => { login_user = user; }
+        Err(e) => { error!("Errored: {:?}", e); }
+    }
+    let login_id = login_user.id;
+    if login_id == 0 {
+        return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
+    }
+
+    let mut resp = Response::new();
+
+    let page_param: String;
+
+    {
+        use params::{Params, Value};
+        let map = req.get_ref::<Params>().unwrap();
+        match map.get("page") {
+            Some(&Value::String(ref name)) => {
+                page_param = name.to_string();
+            }
+            _ => page_param = "1".to_string(),
+        }
+    }
+
+    let ref username = req.extensions
+        .get::<Router>()
+        .unwrap()
+        .find("username")
+        .unwrap_or("/");
+
+    #[derive(Serialize, Debug)]
+    struct Data {
+        logged_in: bool,
+        login_user: models::user::User,
+        user: models::user::User,
+        posts: Vec<models::post::Post>,
+        current_page: i32,
+        total_page: i32,
+        next_page: i32,
+        prev_page: i32,
+    }
+
+    let mut page = page_param.parse::<i32>().unwrap();
+    let offset = (page - 1) * PAGINATES_PER;
+    let limit = PAGINATES_PER;
+
+    let user: models::user::User;
+    let posts: Vec<models::post::Post>;
+    let count: i32;
+
+    match models::user::get_by_username(&conn, &username) {
+        Ok(user_db) => {
+            user = user_db;
+        }
+        Err(e) => {
+            error!("Errored: {:?}", e);
+            return Ok(Response::with((status::InternalServerError)));
+        }
+    }
+
+    match models::post::user_posts(&conn, &username, &offset, &limit) {
+        Ok(posts_db) => {
+            posts = posts_db;
+        }
+        Err(e) => {
+            error!("Errored: {:?}", e);
+            return Ok(Response::with((status::InternalServerError)));
+        }
+    }
+
+    match models::post::user_posts_count(&conn, username) {
+        Ok(count_db) => {
+            count = count_db;
+        }
+        Err(e) => {
+            error!("Errored: {:?}", e);
+            return Ok(Response::with((status::InternalServerError)));
+        }
+    }
+
+    if page == 0 {
+        page = 1;
+    }
+    let data = Data {
+        logged_in: login_id != 0,
+        login_user: login_user,
+        user: user,
+        posts: posts,
+        current_page: page,
+        total_page: count / PAGINATES_PER + 1,
+        next_page: page + 1,
+        prev_page: page - 1,
+    };
+
+    resp.set_mut(Template::new("account/profile", to_json(&data)))
+        .set_mut(status::Ok);
+    return Ok(resp);
 }
