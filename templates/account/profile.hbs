@@ -3,7 +3,11 @@
 {{/inline}}
 {{#*inline "page"}}
   <div class="user-profile">
-    <img src="{{user.icon_url}}" class="user-large-icon">
+    {{#if user.icon_url}}
+      <img src="{{user.icon_url}}" class="user-large-icon">
+    {{else}}
+      <canvas width="50" height="50" data-jdenticon-hash="{{user.username_hash}}" class="user-large-icon"></canvas>
+    {{/if}}
     <h3 class="usr-profile-username">@{{user.username}}</h3>
   </div>
   <ul class="post-items">
