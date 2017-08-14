@@ -7,11 +7,13 @@
     <li>
       <div class="feed-item">
         <div class="feed-user-icon">
+        <a href="/{{user.username}}">
           {{#if user.icon_url}}
             <img src="{{user.icon_url}}" class="feed-user-icon-img">
           {{else}}
             <canvas width="30" height="30" data-jdenticon-hash="{{user.username_hash}}" class="feed-user-icon-img"></canvas>
           {{/if}}
+        </a>
         </div>
 
         <div class="feed-post">
