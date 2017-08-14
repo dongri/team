@@ -83,3 +83,16 @@ pub fn update_username(conn: &db::PostgresConnection, id: &i32, username: &Strin
         "UPDATE users set username = $2 WHERE id = $1", &[&id, &username]
     ).map(|_| ())
 }
+
+pub fn get_by_username(conn: &db::PostgresConnection, username: &str) -> Result<User, Error> {
+    let mut user: User = User{..Default::default()};
+    for row in &conn.query("SELECT id, username, icon_url from users where username = $1", &[&username]).unwrap() {
+        user = User {
+            id: row.get("id"),
+            username: row.get("username"),
+            icon_url: row.get("icon_url"),
+            username_hash: helper::username_hash(row.get("username")),
+        };
+    }
+    Ok(user)
+}

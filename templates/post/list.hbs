@@ -2,16 +2,19 @@
   Posts - Team
 {{/inline}}
 {{#*inline "page"}}
+  <h2 class="page-title">Post</h2>
   <button class="mui-btn mui-btn--small mui-btn--primary post-button" onClick="location.href='/post/new'">Post Know-how</button>
   <ul class="post-items">
   {{#each posts}}
     <li>
       <div class="post-item-left">
+      <a href="/{{user.username}}">
         {{#if user.icon_url}}
           <img src="{{user.icon_url}}" class="user-icon">
         {{else}}
           <canvas width="50" height="50" data-jdenticon-hash="{{user.username_hash}}" class="user-icon"></canvas>
         {{/if}}
+      </a>
       </div>
       <div class="post-item-right">
         <div class="post-item">
