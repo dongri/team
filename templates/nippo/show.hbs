@@ -23,7 +23,7 @@
     @{{post.user.username}}<br/>
   </div>
 
-  <div class="mui-textfield marked">{{post.body}}</div>
+  <div class="mui-textfield marked" style="display:none;">{{post.body}}</div>
 
   <div class="post-action">
     {{#if editable}}
@@ -53,7 +53,7 @@
                 <a href="javascript:remove({{comment.id}})">Delete</a>
               {{/if}}
             </div>
-            <div class="post-comment-body marked" id="comment_view_{{comment.id}}">{{comment.body}}</div>
+            <div class="post-comment-body marked"  style="display:none;" id="comment_view_{{comment.id}}">{{comment.body}}</div>
             <form class="mui-form" action="/post/comment/{{comment.id}}" method="post" id="comment_input_{{comment.id}}" style="display:none;">
               <input type="hidden" name="action" value="update" id="comment_action_{{comment.id}}">
               <div class="mui-textfield">
@@ -86,6 +86,7 @@
       $('pre code', element).each(function(i, e) {
           hljs.highlightBlock(e, e.className);
       });
+      $(element).show();
     });
     function edit(comment_id) {
       $("#comment_view_"+comment_id).hide();
