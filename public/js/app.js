@@ -1,4 +1,15 @@
 
+marked.setOptions({
+  renderer: new marked.Renderer(),
+  gfm: true,
+  tables: true,
+  breaks: true,
+  pedantic: true,
+  sanitize: true,
+  smartLists: true,
+  smartypants: false
+});
+
 $(document).ready(function(){
   emojify.setConfig({
     img_dir : '/img/emoji', // Directory for emoji images
