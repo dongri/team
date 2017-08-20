@@ -5,7 +5,7 @@
   <div class="post-item-action">
     <div class="post-item-shared">
       {{# if shared}}
-        Co-editing
+        <i class="fa fa-users fa-2x" aria-hidden="true"></i>
       {{else}}
         {{# if deletable}}
         <form method="post" action="/post/share/{{post.id}}">
@@ -25,13 +25,19 @@
       </form>
       {{/if}}
     </div>
-    </br>
-    {{# if editable}}
-      <a href="/post/edit/{{post.id}}">Edit</a>
-    {{/if}}
-    {{# if deletable}}
-      <a href="/post/delete/{{post.id}}">Delete</a>
-    {{/if}}
+    <br/>
+    <div class="post-item-ed">
+      {{# if editable}}
+        <a href="/post/edit/{{post.id}}">
+          <i class="fa fa-pencil-square-o" aria-hidden="true"></i>
+        </a>
+      {{/if}}
+      {{# if deletable}}
+        <a href="/post/delete/{{post.id}}">
+          <i class="fa fa-trash-o" aria-hidden="true"></i>
+        </a>
+      {{/if}}
+    </div>
   </div>
 
   <h1 class="title">{{post.title}}</h1>
@@ -71,9 +77,12 @@
             <div class="post-username">
               @{{comment.user.username}}<br/>
               {{#if editable}}
-                <a href="javascript:edit({{comment.id}})">Edit</a>
-                 |
-                <a href="javascript:remove({{comment.id}})">Delete</a>
+                <a href="javascript:edit({{comment.id}})">
+                  <i class="fa fa-pencil-square-o" aria-hidden="true"></i>
+                </a>
+                <a href="javascript:remove({{comment.id}})">
+                  <i class="fa fa-trash-o" aria-hidden="true"></i>
+                </a>
               {{/if}}
             </div>
             <div class="post-comment-body marked" style="display:none;" id="comment_view_{{comment.id}}">{{comment.body}}</div>

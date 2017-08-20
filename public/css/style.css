@@ -233,6 +233,9 @@ h3.stock_name {
 .post-item-shared {
   display: inline-block;
 }
+.post-item-ed {
+  float: right;
+}
 .post-item-time {
   margin-bottom: 10px;
 }
