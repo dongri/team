@@ -43,6 +43,7 @@ pub fn create_router() -> Router {
 
     router.post("/post/stock/:id", post::stock_handler, "post/stock");
     router.post("/post/unstock/:id", post::unstock_handler, "post/unstock");
+    router.post("/post/share/:id", post::share_handler, "post/share");
 
     router.get("/stocked/list", post::stocked_list_handler, "stocked/list");
     router.get("/draft/list", post::draft_list_handler, "draft/list");

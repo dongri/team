@@ -52,3 +52,5 @@ create table stocks (
   created       timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated       timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+ALTER TABLE posts ADD COLUMN shared boolean DEFAULT false;

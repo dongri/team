@@ -14,6 +14,7 @@ pub struct Post {
     pub created: NaiveDateTime,
     pub user: models::user::User,
     pub tags: Vec<models::tag::Tag>,
+    pub shared: bool,
 }
 
 pub fn create(conn: &db::PostgresConnection, kind: &str, user_id: &i32, action: &String, title: &String, body: &String, tags: &String) -> Result<(i32), Error> {
@@ -43,7 +44,7 @@ pub fn create(conn: &db::PostgresConnection, kind: &str, user_id: &i32, action: 
 pub fn list(conn: &db::PostgresConnection, kind: &str, offset: &i32, limit: &i32) -> Result<Vec<Post>, Error> {
     let mut posts: Vec<Post> = Vec::new();
     for row in &conn.query("
-        SELECT p.id, p.kind, p.user_id, p.title, p.body, p.created, u.username, u.icon_url
+        SELECT p.id, p.kind, p.user_id, p.title, p.body, p.created, p.shared, u.username, u.icon_url
         from posts as p
         join users as u on u.id = p.user_id
         where p.status = 'publish' and p.kind = $1
@@ -57,6 +58,7 @@ pub fn list(conn: &db::PostgresConnection, kind: &str, offset: &i32, limit: &i32
                     title: row.get("title"),
                     body: row.get("body"),
                     created: row.get("created"),
+                    shared: row.get("shared"),
                     user: models::user::User{
                         id: row.get("user_id"),
                         username: row.get("username"),
@@ -123,7 +125,7 @@ pub fn update(conn: &db::PostgresConnection, id: &i32, title: &String, body: &St
 }
 
 pub fn get_by_id(conn: &db::PostgresConnection, id: &i32) -> Result<Post, Error> {
-    let rows = &conn.query("SELECT p.id, p.kind, p.user_id, p.title, p.body, p.created, u.username, u.icon_url from posts as p join users as u on u.id=p.user_id where p.id = $1", &[&id]).unwrap();
+    let rows = &conn.query("SELECT p.id, p.kind, p.user_id, p.title, p.body, p.created, p.shared, u.username, u.icon_url from posts as p join users as u on u.id=p.user_id where p.id = $1", &[&id]).unwrap();
     let row = rows.get(0);
     match models::tag::get_tags_by_post_id(&conn, &row.get("id")) {
         Ok(tags) => {
@@ -134,6 +136,7 @@ pub fn get_by_id(conn: &db::PostgresConnection, id: &i32) -> Result<Post, Error>
                 title: row.get("title"),
                 body: row.get("body"),
                 created: row.get("created"),
+                shared: row.get("shared"),
                 user: models::user::User{
                     id: row.get("user_id"),
                     username: row.get("username"),
@@ -255,7 +258,7 @@ pub fn get_feed_count(conn: &db::PostgresConnection) -> Result<i32, Error> {
 pub fn search(conn: &db::PostgresConnection, keyword: &String, offset: &i32, limit: &i32) -> Result<Vec<Post>, Error> {
     let mut posts: Vec<Post> = Vec::new();
     for row in &conn.query("
-        SELECT p.id, p.kind, p.user_id, p.title, p.body, p.created, u.username, u.icon_url from posts as p
+        SELECT p.id, p.kind, p.user_id, p.title, p.body, p.created, p.shared, u.username, u.icon_url from posts as p
         join users as u on u.id = p.user_id
         where p.status = 'publish' and (p.title like '%' || $1 || '%' or p.body like '%' || $1 || '%')
         order by p.id desc offset $2::int limit $3::int", &[&keyword, &offset, &limit]).unwrap() {
@@ -268,6 +271,7 @@ pub fn search(conn: &db::PostgresConnection, keyword: &String, offset: &i32, lim
                     title: row.get("title"),
                     body: row.get("body"),
                     created: row.get("created"),
+                    shared: row.get("shared"),
                     user: models::user::User{
                         id: row.get("user_id"),
                         username: row.get("username"),
@@ -304,7 +308,7 @@ pub fn stock_post(conn: &db::PostgresConnection, user_id: &i32, post_id: &i32) -
 pub fn stocked_list(conn: &db::PostgresConnection, user_id: &i32, offset: &i32, limit: &i32) -> Result<Vec<Post>, Error> {
     let mut posts: Vec<Post> = Vec::new();
     for row in &conn.query("
-        SELECT p.id, p.kind, p.user_id, p.title, p.body, p.created, u.username, u.icon_url
+        SELECT p.id, p.kind, p.user_id, p.title, p.body, p.created, p.shared, u.username, u.icon_url
         from posts as p
         join stocks as s on s.post_id = p.id
         join users as u on u.id = p.user_id
@@ -319,6 +323,7 @@ pub fn stocked_list(conn: &db::PostgresConnection, user_id: &i32, offset: &i32, 
                     title: row.get("title"),
                     body: row.get("body"),
                     created: row.get("created"),
+                    shared: row.get("shared"),
                     user: models::user::User{
                         id: row.get("user_id"),
                         username: row.get("username"),
@@ -361,7 +366,7 @@ pub fn stock_remove(conn: &db::PostgresConnection, user_id: &i32, post_id: &i32)
 pub fn draft_list(conn: &db::PostgresConnection, user_id: &i32) -> Result<Vec<Post>, Error> {
     let mut posts: Vec<Post> = Vec::new();
     for row in &conn.query("
-        SELECT p.id, p.kind, p.user_id, p.title, p.body, p.created, u.username, u.icon_url
+        SELECT p.id, p.kind, p.user_id, p.title, p.body, p.created, p.shared, u.username, u.icon_url
         from posts as p
         join users as u on u.id = p.user_id
         where p.status = 'draft' and p.user_id = $1
@@ -375,6 +380,7 @@ pub fn draft_list(conn: &db::PostgresConnection, user_id: &i32) -> Result<Vec<Po
                     title: row.get("title"),
                     body: row.get("body"),
                     created: row.get("created"),
+                    shared: row.get("shared"),
                     user: models::user::User{
                         id: row.get("user_id"),
                         username: row.get("username"),
@@ -427,7 +433,7 @@ pub fn delete_comment_by_id(conn: &db::PostgresConnection, id: &i32) -> Result<(
 pub fn user_posts(conn: &db::PostgresConnection, username: &str, offset: &i32, limit: &i32) -> Result<Vec<Post>, Error> {
     let mut posts: Vec<Post> = Vec::new();
     for row in &conn.query("
-        SELECT p.id, p.kind, p.user_id, p.title, p.body, p.created, u.username, u.icon_url
+        SELECT p.id, p.kind, p.user_id, p.title, p.body, p.created, p.shared, u.username, u.icon_url
         from posts as p
         join users as u on u.id = p.user_id
         where p.status = 'publish' and u.username = $1
@@ -441,6 +447,7 @@ pub fn user_posts(conn: &db::PostgresConnection, username: &str, offset: &i32, l
                     title: row.get("title"),
                     body: row.get("body"),
                     created: row.get("created"),
+                    shared: row.get("shared"),
                     user: models::user::User{
                         id: row.get("user_id"),
                         username: row.get("username"),
@@ -464,4 +471,11 @@ pub fn user_posts_count(conn: &db::PostgresConnection, username: &str) -> Result
     let row = rows.get(0);
     let count = row.get("count");
     Ok(count)
+}
+
+pub fn share_post(conn: &db::PostgresConnection, post_id: &i32) -> Result<(), Error> {
+    conn.execute(
+        "update posts set shared = true where id = $1",
+        &[&post_id]
+    ).map(|_| ())
 }
