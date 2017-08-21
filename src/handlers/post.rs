@@ -278,16 +278,10 @@ pub fn show_handler(req: &mut Request) -> IronResult<Response> {
         post_comments.push(pc);
     }
 
-    let mut editable = false;
-    let mut deletable = false;
     let shared = post.shared;
     let owner_id = post.user_id;
-    if owner_id == login_id || post.shared {
-        editable = true;
-    }
-    if owner_id == login_id {
-        deletable = true;
-    }
+    let deletable = owner_id == login_id || post.shared;
+    let editable = owner_id == login_id;
     let data = Data {
         logged_in: login_id != 0,
         login_user: login_user,
@@ -311,8 +305,7 @@ pub fn delete_handler(req: &mut Request) -> IronResult<Response> {
         Ok(user) => { login_user = user; }
         Err(e) => { error!("Errored: {:?}", e); }
     }
-    let login_id = login_user.id;
-    if login_id == 0 {
+    if login_user.id == 0 {
         return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
     }
 
@@ -325,7 +318,7 @@ pub fn delete_handler(req: &mut Request) -> IronResult<Response> {
 
     match models::post::get_by_id(&conn, &id) {
         Ok(post) => {
-            if post.user_id != login_id {
+            if post.user_id != login_user.id {
                 return Ok(Response::with((status::Forbidden)));
             }
         }
