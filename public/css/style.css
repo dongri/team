@@ -224,7 +224,16 @@ h3.stock_name {
   margin-top: 0px;
   margin-bottom: 20px;
 }
+.post-item-action {
+  float: right;
+}
 .post-item-stock {
+  display: inline-block;
+}
+.post-item-shared {
+  display: inline-block;
+}
+.post-item-ed {
   float: right;
 }
 .post-item-time {

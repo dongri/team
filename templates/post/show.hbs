@@ -2,7 +2,19 @@
   Post - Team
 {{/inline}}
 {{#*inline "page"}}
-  <div class="post-item-stock">
+  <div class="post-item-action">
+    <div class="post-item-shared">
+      {{# if shared}}
+        <i class="fa fa-users fa-2x" aria-hidden="true"></i>
+      {{else}}
+        {{# if deletable}}
+        <form method="post" action="/post/share/{{post.id}}">
+          <button class="mui-btn mui-btn--small mui-btn--primary post-button">Co-editing</button>
+        </form>
+        {{/if}}
+      {{/if}}
+    </div>
+    <div class="post-item-stock">
       {{# if stocked}}
       <form method="post" action="/post/unstock/{{post.id}}">
         <button class="mui-btn mui-btn--small mui-btn--primary post-button">Stocked</button>
@@ -12,7 +24,20 @@
         <button class="mui-btn mui-btn--small mui-btn--primary post-button">Stock</button>
       </form>
       {{/if}}
-    </form>
+    </div>
+    <br/>
+    <div class="post-item-ed">
+      {{# if editable}}
+        <a href="/post/edit/{{post.id}}">
+          <i class="fa fa-pencil-square-o" aria-hidden="true"></i>
+        </a>
+      {{/if}}
+      {{# if deletable}}
+        <a href="/post/delete/{{post.id}}">
+          <i class="fa fa-trash-o" aria-hidden="true"></i>
+        </a>
+      {{/if}}
+    </div>
   </div>
 
   <h1 class="title">{{post.title}}</h1>
@@ -36,11 +61,6 @@
   </div>
   <div class="mui-textfield marked" style="display:none;">{{post.body}}</div>
 
-  {{#if editable}}
-    <a href="/post/edit/{{post.id}}">Edit</a> |
-    <a href="/post/delete/{{post.id}}">Delete</a>
-  {{/if}}
-
   <div class="comments">
     <ul class="post-items">
     {{#each comments}}
@@ -57,9 +77,12 @@
             <div class="post-username">
               @{{comment.user.username}}<br/>
               {{#if editable}}
-                <a href="javascript:edit({{comment.id}})">Edit</a>
-                 |
-                <a href="javascript:remove({{comment.id}})">Delete</a>
+                <a href="javascript:edit({{comment.id}})">
+                  <i class="fa fa-pencil-square-o" aria-hidden="true"></i>
+                </a>
+                <a href="javascript:remove({{comment.id}})">
+                  <i class="fa fa-trash-o" aria-hidden="true"></i>
+                </a>
               {{/if}}
             </div>
             <div class="post-comment-body marked" style="display:none;" id="comment_view_{{comment.id}}">{{comment.body}}</div>

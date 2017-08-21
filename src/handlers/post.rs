@@ -228,6 +228,8 @@ pub fn show_handler(req: &mut Request) -> IronResult<Response> {
         login_user: models::user::User,
         post: models::post::Post,
         editable: bool,
+        deletable: bool,
+        shared: bool,
         comments: Vec<PostComment>,
         stocked: bool,
     }
@@ -276,12 +278,17 @@ pub fn show_handler(req: &mut Request) -> IronResult<Response> {
         post_comments.push(pc);
     }
 
+    let shared = post.shared;
     let owner_id = post.user_id;
+    let deletable = owner_id == login_id || post.shared;
+    let editable = owner_id == login_id;
     let data = Data {
         logged_in: login_id != 0,
         login_user: login_user,
         post: post,
-        editable: owner_id == login_id,
+        editable: editable,
+        deletable: deletable,
+        shared: shared,
         comments: post_comments,
         stocked: stocked,
     };
@@ -298,8 +305,7 @@ pub fn delete_handler(req: &mut Request) -> IronResult<Response> {
         Ok(user) => { login_user = user; }
         Err(e) => { error!("Errored: {:?}", e); }
     }
-    let login_id = login_user.id;
-    if login_id == 0 {
+    if login_user.id == 0 {
         return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
     }
 
@@ -312,7 +318,7 @@ pub fn delete_handler(req: &mut Request) -> IronResult<Response> {
 
     match models::post::get_by_id(&conn, &id) {
         Ok(post) => {
-            if post.user_id != login_id {
+            if post.user_id != login_user.id {
                 return Ok(Response::with((status::Forbidden)));
             }
         }
@@ -365,7 +371,7 @@ pub fn edit_handler(req: &mut Request) -> IronResult<Response> {
 
     match models::post::get_by_id(&conn, &id) {
         Ok(post_obj) => {
-            if post_obj.user_id != login_id {
+            if post_obj.user_id != login_id && post_obj.shared == false {
                 return Ok(Response::with((status::Forbidden)));
             }
             post = post_obj;
@@ -456,7 +462,7 @@ pub fn update_handler(req: &mut Request) -> IronResult<Response> {
     match models::post::get_by_id(&conn, &id) {
         Ok(post_obj) => {
             old_post = post_obj;
-            if old_post.user_id != login_id {
+            if old_post.user_id != login_id && old_post.shared == false {
                 return Ok(Response::with((status::Forbidden)));
             }
         }
@@ -684,6 +690,39 @@ pub fn unstock_handler(req: &mut Request) -> IronResult<Response> {
     let id = id_str.parse::<i32>().unwrap();
 
     match models::post::stock_remove(&conn, &login_id, &id) {
+        Ok(_) => {
+            let url = Url::parse(&format!("{}/{}/{}", &CONFIG.team_domain, "post/show", id)
+                    .to_string())
+                    .unwrap();
+            return Ok(Response::with((status::Found, Redirect(url))));
+        }
+        Err(e) => {
+            error!("Errored: {:?}", e);
+            return Ok(Response::with((status::InternalServerError)));
+        }
+    }
+}
+
+pub fn share_handler(req: &mut Request) -> IronResult<Response> {
+    let conn = get_pg_connection!(req);
+    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    match handlers::account::current_user(req, &conn) {
+        Ok(user) => { login_user = user; }
+        Err(e) => { error!("Errored: {:?}", e); }
+    }
+    let login_id = login_user.id;
+    if login_id == 0 {
+        return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
+    }
+
+    let ref id_str = req.extensions
+        .get::<Router>()
+        .unwrap()
+        .find("id")
+        .unwrap_or("/");
+    let id = id_str.parse::<i32>().unwrap();
+
+    match models::post::share_post(&conn, &id) {
         Ok(_) => {
             let url = Url::parse(&format!("{}/{}/{}", &CONFIG.team_domain, "post/show", id)
                     .to_string())
