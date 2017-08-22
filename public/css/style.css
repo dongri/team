@@ -328,10 +328,15 @@ li.textcomplete-item a {
 }
 
 p code {
-  margin: 3px;
   border: 1px solid #DDD;
   border-radius: 3px;
-  padding: 3px;
+  background: #FEFEFE;
+  color: #FA5858;
+}
+
+li code {
+  border: 1px solid #DDD;
+  border-radius: 3px;
   background: #FEFEFE;
   color: #FA5858;
 }
