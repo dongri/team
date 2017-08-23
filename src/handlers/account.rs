@@ -79,7 +79,7 @@ pub fn post_signup_handler(req: &mut Request) -> IronResult<Response> {
     match models::user::create(&conn, &username, &password) {
         Ok(_) => {
             return Ok(Response::with((status::Found,
-                                      Redirect(url_for!(req, "account/get_signin")))));
+                                      Redirect(helper::redirect_url("/signin")))));
         }
         Err(e) => {
             info!("Errored: {:?}", e);
@@ -92,7 +92,7 @@ pub fn get_signin_handler(req: &mut Request) -> IronResult<Response> {
     let mut resp = Response::new();
     if try!(req.session().get::<Login>()).is_some() {
         // Already logged in
-        return Ok(Response::with((status::Found, Redirect(url_for!(req, "index")))));
+        return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/")))));
     }
     resp.set_mut(Template::new("account/signin", {}))
         .set_mut(status::Ok);
@@ -128,10 +128,10 @@ pub fn post_signin_handler(req: &mut Request) -> IronResult<Response> {
         Ok(user) => {
             if user.username != "" {
                 try!(req.session().set(Login { id: user.id.to_string() }));
-                return Ok(Response::with((status::Found, Redirect(url_for!(req, "index")))));
+                return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/")))));
             } else {
                 return Ok(Response::with((status::Found,
-                                          Redirect(url_for!(req, "account/get_signin")))));
+                                          Redirect(helper::redirect_url("/signin")))));
             }
         }
         Err(e) => {
@@ -143,7 +143,7 @@ pub fn post_signin_handler(req: &mut Request) -> IronResult<Response> {
 
 pub fn get_signout_handler(req: &mut Request) -> IronResult<Response> {
     try!(req.session().clear());
-    return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
+    return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/signin")))));
 }
 
 pub fn get_settings_handler(req: &mut Request) -> IronResult<Response> {
@@ -155,7 +155,7 @@ pub fn get_settings_handler(req: &mut Request) -> IronResult<Response> {
     }
     let login_id = login_user.id;
     if login_id == 0 {
-        return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
+        return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/signin")))));
     }
 
     let mut resp = Response::new();
@@ -198,7 +198,7 @@ pub fn post_settings_handler(req: &mut Request) -> IronResult<Response> {
     }
     let login_id = login_user.id;
     if login_id == 0 {
-        return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
+        return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/signin")))));
     }
 
     let icon_url: String;
@@ -217,7 +217,7 @@ pub fn post_settings_handler(req: &mut Request) -> IronResult<Response> {
     match models::user::update_icon_url(&conn, &login_id, &icon_url) {
         Ok(_) => {
             return Ok(Response::with((status::Found,
-                                      Redirect(url_for!(req, "account/get_settings")))));
+                                      Redirect(helper::redirect_url("/account/settings")))));
         }
         Err(e) => {
             error!("Errored: {:?}", e);
@@ -236,7 +236,7 @@ pub fn post_password_update(req: &mut Request) -> IronResult<Response> {
     }
     let login_id = login_user.id;
     if login_id == 0 {
-        return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
+        return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/signin")))));
     }
 
     let current_password: String;
@@ -281,7 +281,7 @@ pub fn post_password_update(req: &mut Request) -> IronResult<Response> {
     match models::user::update_password(&conn, &login_id, &helper::encrypt_password(new_password)) {
         Ok(_) => {
             return Ok(Response::with((status::Found,
-                                      Redirect(url_for!(req, "account/get_settings")))));
+                                      Redirect(helper::redirect_url("/account/settings")))));
         }
         Err(e) => {
             error!("Errored: {:?}", e);
@@ -300,7 +300,7 @@ pub fn post_username_update(req: &mut Request) -> IronResult<Response> {
     }
     let login_id = login_user.id;
     if login_id == 0 {
-        return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
+        return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/signin")))));
     }
 
     let username: String;
@@ -316,7 +316,7 @@ pub fn post_username_update(req: &mut Request) -> IronResult<Response> {
     match models::user::update_username(&conn, &login_id, &username) {
         Ok(_) => {
             return Ok(Response::with((status::Found,
-                                      Redirect(url_for!(req, "account/get_settings")))));
+                                      Redirect(helper::redirect_url("/account/settings")))));
         }
         Err(e) => {
             error!("Errored: {:?}", e);
@@ -372,7 +372,7 @@ pub fn profile_handler(req: &mut Request) -> IronResult<Response> {
     }
     let login_id = login_user.id;
     if login_id == 0 {
-        return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
+        return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/signin")))));
     }
 
     let mut resp = Response::new();

@@ -107,3 +107,11 @@ pub fn get_param(map: &Map, name: &str) -> Result<String, status::Status> {
         _ => return Err(status::BadRequest),
     }
 }
+
+use iron::Url;
+pub fn redirect_url(path: &str) -> Url {
+    let url = Url::parse(&format!("{}{}", &CONFIG.team_domain, path)
+            .to_string())
+            .unwrap();
+    return url
+}

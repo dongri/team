@@ -27,7 +27,7 @@ pub fn new_handler(req: &mut Request) -> IronResult<Response> {
     }
     let login_id = login_user.id;
     if login_id == 0 {
-        return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
+        return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/signin")))));
     }
 
     let mut resp = Response::new();
@@ -55,7 +55,7 @@ pub fn create_handler(req: &mut Request) -> IronResult<Response> {
     }
     let login_id = login_user.id;
     if login_id == 0 {
-        return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
+        return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/signin")))));
     }
 
     let action: String;
@@ -125,7 +125,7 @@ pub fn list_handler(req: &mut Request) -> IronResult<Response> {
     }
     let login_id = login_user.id;
     if login_id == 0 {
-        return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
+        return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/signin")))));
     }
 
     let page_param: String;
@@ -208,7 +208,7 @@ pub fn show_handler(req: &mut Request) -> IronResult<Response> {
     }
     let login_id = login_user.id;
     if login_id == 0 {
-        return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
+        return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/signin")))));
     }
 
     let mut resp = Response::new();
@@ -291,7 +291,7 @@ pub fn delete_handler(req: &mut Request) -> IronResult<Response> {
     }
     let login_id = login_user.id;
     if login_id == 0 {
-        return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
+        return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/signin")))));
     }
 
     let ref id_str = req.extensions
@@ -315,7 +315,7 @@ pub fn delete_handler(req: &mut Request) -> IronResult<Response> {
 
     match models::post::delete_by_id(&conn, &id) {
         Ok(_) => {
-            return Ok(Response::with((status::Found, Redirect(url_for!(req, "nippo/list")))));
+            return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/nippo/list")))));
         }
         Err(e) => {
             error!("Errored: {:?}", e);
@@ -333,7 +333,7 @@ pub fn edit_handler(req: &mut Request) -> IronResult<Response> {
     }
     let login_id = login_user.id;
     if login_id == 0 {
-        return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
+        return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/signin")))));
     }
 
     let mut resp = Response::new();
@@ -395,7 +395,7 @@ pub fn update_handler(req: &mut Request) -> IronResult<Response> {
     }
     let login_id = login_user.id;
     if login_id == 0 {
-        return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
+        return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/signin")))));
     }
 
     let id: i32;
@@ -496,7 +496,7 @@ pub fn comment_handler(req: &mut Request) -> IronResult<Response> {
     }
     let login_id = login_user.id;
     if login_id == 0 {
-        return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
+        return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/signin")))));
     }
 
     use params::{Params, Value};
@@ -545,7 +545,7 @@ pub fn comment_update_handler(req: &mut Request) -> IronResult<Response> {
     }
     let login_id = login_user.id;
     if login_id == 0 {
-        return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
+        return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/signin")))));
     }
 
     let id: i32;

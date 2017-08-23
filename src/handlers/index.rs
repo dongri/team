@@ -21,7 +21,7 @@ pub fn index_handler(req: &mut Request) -> IronResult<Response> {
     }
     let login_id = login_user.id;
     if login_id == 0 {
-        return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
+        return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/signin")))));
     }
 
     let page_param: String;
@@ -104,7 +104,7 @@ pub fn search_handler(req: &mut Request) -> IronResult<Response> {
     }
     let login_id = login_user.id;
     if login_id == 0 {
-        return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
+        return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/signin")))));
     }
 
     let keyword_param: String;
@@ -199,7 +199,7 @@ pub fn tag_handler(req: &mut Request) -> IronResult<Response> {
     }
     let login_id = login_user.id;
     if login_id == 0 {
-        return Ok(Response::with((status::Found, Redirect(url_for!(req, "account/get_signin")))));
+        return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/signin")))));
     }
 
     let page_param: String;
