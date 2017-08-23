@@ -1,0 +1,16 @@
+{{#*inline "title"}}
+  Tags - Team
+{{/inline}}
+{{#*inline "page"}}
+  <h2 class="page-title">Tags</h2>
+  <ul class="tag-items">
+  {{#each tags}}
+    <li>
+      <div class="tag-item">
+        <a href="/tag?name={{name}}">{{name}}</a>
+      </div>
+    </li>
+  {{/each}}
+  </ul>
+{{/inline}}
+{{~> layout ~}}

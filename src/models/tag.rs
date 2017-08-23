@@ -69,3 +69,14 @@ pub fn tag_count(conn: &db::PostgresConnection, tag_name: &String) -> Result<i32
     let count = row.get("count");
     Ok(count)
 }
+
+pub fn tag_list(conn: &db::PostgresConnection) -> Result<Vec<Tag>, Error> {
+    let mut tags: Vec<Tag> = Vec::new();
+    for row in &conn.query("select * from tags order by id desc", &[]).unwrap() {
+        tags.push(Tag {
+            id: row.get("id"),
+            name: row.get("name"),
+        });
+    }
+    Ok(tags)
+}
