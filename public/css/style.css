@@ -354,7 +354,7 @@ blockquote {
   padding: 0px;
 }
 .tag-item {
-  padding-top: 20px;
-  padding-bottom: 20px;
+  padding-top: 10px;
+  padding-bottom: 10px;
   border-bottom: 1px solid #EEE;
 }
