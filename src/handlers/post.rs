@@ -281,7 +281,7 @@ pub fn show_handler(req: &mut Request) -> IronResult<Response> {
     let shared = post.shared;
     let owner_id = post.user_id;
     let deletable = owner_id == login_id || post.shared;
-    let editable = owner_id == login_id;
+    let editable = owner_id == login_id || post.shared;
     let data = Data {
         logged_in: login_id != 0,
         login_user: login_user,
