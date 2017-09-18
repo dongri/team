@@ -16,7 +16,7 @@ use models;
 use handlers;
 
 const PAGINATES_PER: i32 = 10;
-const POST_KIND: &str = "post";
+// const POST_KIND: &str = "post";
 
 pub fn new_handler(req: &mut Request) -> IronResult<Response> {
     let conn = get_pg_connection!(req);
@@ -30,16 +30,24 @@ pub fn new_handler(req: &mut Request) -> IronResult<Response> {
         return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/signin")))));
     }
 
+    let ref kind = req.extensions
+        .get::<Router>()
+        .unwrap()
+        .find("kind")
+        .unwrap_or("/");
+
     let mut resp = Response::new();
 
     #[derive(Serialize)]
     struct Data {
         logged_in: bool,
         login_user: models::user::User,
+        kind: String,
     }
     let data = Data {
         logged_in: login_id != 0,
         login_user: login_user,
+        kind: kind.to_string(),
     };
     resp.set_mut(helper::template("post/form", to_json(&data)))
         .set_mut(status::Ok);
@@ -94,13 +102,23 @@ pub fn create_handler(req: &mut Request) -> IronResult<Response> {
         }
     }
 
-    match models::post::create(&conn, POST_KIND, &login_id, &action, &title, &body, &tags) {
+    let ref kind = req.extensions
+        .get::<Router>()
+        .unwrap()
+        .find("kind")
+        .unwrap_or("/");
+
+    match models::post::create(&conn, kind, &login_id, &action, &title, &body, &tags) {
         Ok(id) => {
+            let url_str = format!("{}/{}/show/{}", &CONFIG.team_domain, kind, id)
+                         .to_string();
+
             if action == "publish" {
                 let title = String::from("New post");
                 helper::post_to_slack(&conn, &login_id, &title, &body, &id);
+                helper::webhook(login_user.username, title, body, url_str);
             }
-            let url = Url::parse(&format!("{}/{}/{}", &CONFIG.team_domain, "post/show", id)
+            let url = Url::parse(&format!("{}/{}/show/{}", &CONFIG.team_domain, kind, id)
                                      .to_string())
                     .unwrap();
             return Ok(Response::with((status::Found, Redirect(url))));
@@ -137,6 +155,12 @@ pub fn list_handler(req: &mut Request) -> IronResult<Response> {
         }
     }
 
+    let ref kind = req.extensions
+        .get::<Router>()
+        .unwrap()
+        .find("kind")
+        .unwrap_or("/");
+
     let mut resp = Response::new();
 
     #[derive(Serialize, Debug)]
@@ -148,6 +172,8 @@ pub fn list_handler(req: &mut Request) -> IronResult<Response> {
         total_page: i32,
         next_page: i32,
         prev_page: i32,
+        kind: String,
+        new_title: String,
     }
 
     let mut page = page_param.parse::<i32>().unwrap();
@@ -157,7 +183,7 @@ pub fn list_handler(req: &mut Request) -> IronResult<Response> {
     let posts: Vec<models::post::Post>;
     let count: i32;
 
-    match models::post::list(&conn, POST_KIND, &offset, &limit) {
+    match models::post::list(&conn, kind, &offset, &limit) {
         Ok(posts_db) => {
             posts = posts_db;
         }
@@ -167,7 +193,7 @@ pub fn list_handler(req: &mut Request) -> IronResult<Response> {
         }
     }
 
-    match models::post::count(&conn, POST_KIND) {
+    match models::post::count(&conn, kind) {
         Ok(count_db) => {
             count = count_db;
         }
@@ -180,6 +206,15 @@ pub fn list_handler(req: &mut Request) -> IronResult<Response> {
     if page == 0 {
         page = 1;
     }
+
+    let new_title = if kind == &"post" {
+        "Post Know-how"
+    } else if kind == &"nippo" {
+        "Post Nippo"
+    } else {
+        ""
+    };
+
     let data = Data {
         logged_in: login_id != 0,
         login_user: login_user,
@@ -188,6 +223,8 @@ pub fn list_handler(req: &mut Request) -> IronResult<Response> {
         total_page: count / PAGINATES_PER + 1,
         next_page: page + 1,
         prev_page: page - 1,
+        kind: kind.to_string(),
+        new_title: new_title.to_string(),
     };
 
     resp.set_mut(Template::new("post/list", to_json(&data)))
@@ -216,10 +253,17 @@ pub fn show_handler(req: &mut Request) -> IronResult<Response> {
         .unwrap_or("/");
     let id = id_str.parse::<i32>().unwrap();
 
+    let ref kind = req.extensions
+        .get::<Router>()
+        .unwrap()
+        .find("kind")
+        .unwrap_or("/");
+
     #[derive(Serialize, Debug, Default)]
     struct PostComment {
         comment: models::post::Comment,
         editable: bool,
+        kind: String,
     }
 
     #[derive(Serialize)]
@@ -232,6 +276,7 @@ pub fn show_handler(req: &mut Request) -> IronResult<Response> {
         shared: bool,
         comments: Vec<PostComment>,
         stocked: bool,
+        kind: String,
     }
 
     let post: models::post::Post;
@@ -273,7 +318,8 @@ pub fn show_handler(req: &mut Request) -> IronResult<Response> {
         let owner_id = comment.user_id;
         let pc = PostComment{
             comment: comment,
-            editable: owner_id == login_id
+            editable: owner_id == login_id,
+            kind: kind.to_string(),
         };
         post_comments.push(pc);
     }
@@ -291,6 +337,7 @@ pub fn show_handler(req: &mut Request) -> IronResult<Response> {
         shared: shared,
         comments: post_comments,
         stocked: stocked,
+        kind: kind.to_string(),
     };
 
     resp.set_mut(Template::new("post/show", to_json(&data)))
@@ -414,7 +461,6 @@ pub fn update_handler(req: &mut Request) -> IronResult<Response> {
     }
 
     use params::{Params, Value};
-    let map = req.get_ref::<Params>().unwrap();
 
     let id: i32;
     let title: String;
@@ -423,41 +469,49 @@ pub fn update_handler(req: &mut Request) -> IronResult<Response> {
     let action: String;
 
     let old_post: models::post::Post;
-
-    match map.find(&["id"]) {
-        Some(&Value::String(ref name)) => {
-            id = name.to_string().parse::<i32>().unwrap();
+    {
+        let map = req.get_ref::<Params>().unwrap();
+        match map.find(&["id"]) {
+            Some(&Value::String(ref name)) => {
+                id = name.to_string().parse::<i32>().unwrap();
+            }
+            _ => return Ok(Response::with((status::BadRequest))),
         }
-        _ => return Ok(Response::with((status::BadRequest))),
-    }
 
-    match map.find(&["title"]) {
-        Some(&Value::String(ref name)) => {
-            title = name.to_string();
+        match map.find(&["title"]) {
+            Some(&Value::String(ref name)) => {
+                title = name.to_string();
+            }
+            _ => return Ok(Response::with((status::BadRequest))),
         }
-        _ => return Ok(Response::with((status::BadRequest))),
-    }
 
-    match map.find(&["body"]) {
-        Some(&Value::String(ref name)) => {
-            body = name.to_string();
+        match map.find(&["body"]) {
+            Some(&Value::String(ref name)) => {
+                body = name.to_string();
+            }
+            _ => return Ok(Response::with((status::BadRequest))),
         }
-        _ => return Ok(Response::with((status::BadRequest))),
+
+        match map.find(&["tags"]) {
+            Some(&Value::String(ref name)) => {
+                tags = name.to_string();
+            },
+            _ => return Ok(Response::with((status::BadRequest))),
+        }
+
+        match map.find(&["action"]) {
+            Some(&Value::String(ref name)) => {
+                action = name.to_string();
+            },
+            _ => return Ok(Response::with((status::BadRequest))),
+        }
     }
 
-    match map.find(&["tags"]) {
-        Some(&Value::String(ref name)) => {
-            tags = name.to_string();
-        },
-        _ => return Ok(Response::with((status::BadRequest))),
-    }
-
-    match map.find(&["action"]) {
-        Some(&Value::String(ref name)) => {
-            action = name.to_string();
-        },
-        _ => return Ok(Response::with((status::BadRequest))),
-    }
+    let ref kind = req.extensions
+        .get::<Router>()
+        .unwrap()
+        .find("kind")
+        .unwrap_or("/");
 
     match models::post::get_by_id(&conn, &id) {
         Ok(post_obj) => {
@@ -471,7 +525,6 @@ pub fn update_handler(req: &mut Request) -> IronResult<Response> {
             return Ok(Response::with((status::InternalServerError)));
         }
     }
-
 
     match models::post::update(&conn, &id, &title, &body, &tags, &action) {
         Ok(_) => {
@@ -491,7 +544,7 @@ pub fn update_handler(req: &mut Request) -> IronResult<Response> {
                 helper::post_to_slack(&conn, &login_id, &title, &diff_body, &id);
             }
 
-            let url = Url::parse(&format!("{}/{}/{}", &CONFIG.team_domain, "post/show", id)
+            let url = Url::parse(&format!("{}/{}/show/{}", &CONFIG.team_domain, kind, id)
                                      .to_string())
                     .unwrap();
             return Ok(Response::with((status::Found, Redirect(url))));
@@ -515,32 +568,40 @@ pub fn comment_handler(req: &mut Request) -> IronResult<Response> {
         return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/signin")))));
     }
 
-    use params::{Params, Value};
-    let map = req.get_ref::<Params>().unwrap();
-
     let id: i32;
     let body: String;
 
-    match map.find(&["id"]) {
-        Some(&Value::String(ref name)) => {
-            id = name.parse::<i32>().unwrap();
+    use params::{Params, Value};
+    {
+        let map = req.get_ref::<Params>().unwrap();
+
+        match map.find(&["id"]) {
+            Some(&Value::String(ref name)) => {
+                id = name.parse::<i32>().unwrap();
+            }
+            _ => return Ok(Response::with((status::BadRequest))),
         }
-        _ => return Ok(Response::with((status::BadRequest))),
+
+        match map.find(&["body"]) {
+            Some(&Value::String(ref name)) => {
+                body = name.to_string();
+            }
+            _ => return Ok(Response::with((status::BadRequest))),
+        }
     }
 
-    match map.find(&["body"]) {
-        Some(&Value::String(ref name)) => {
-            body = name.to_string();
-        }
-        _ => return Ok(Response::with((status::BadRequest))),
-    }
+    let ref kind = req.extensions
+        .get::<Router>()
+        .unwrap()
+        .find("kind")
+        .unwrap_or("/");
 
     match models::post::add_comment(&conn, &login_id, &id, &body) {
         Ok(_) => {
             let title = String::from("New comment");
             helper::post_to_slack(&conn, &login_id, &title, &body, &id);
 
-            let url = Url::parse(&format!("{}/{}/{}", &CONFIG.team_domain, "post/show", id)
+            let url = Url::parse(&format!("{}/{}/show/{}", &CONFIG.team_domain, kind, id)
                                      .to_string())
                     .unwrap();
             return Ok(Response::with((status::Found, Redirect(url))));
@@ -579,21 +640,29 @@ pub fn comment_update_handler(req: &mut Request) -> IronResult<Response> {
     }
 
     use params::{Params, Value};
-    let map = req.get_ref::<Params>().unwrap();
+    {
+        let map = req.get_ref::<Params>().unwrap();
 
-    match map.find(&["action"]) {
-        Some(&Value::String(ref name)) => {
-            action = name.to_string();
+        match map.find(&["action"]) {
+            Some(&Value::String(ref name)) => {
+                action = name.to_string();
+            }
+            _ => return Ok(Response::with((status::BadRequest))),
         }
-        _ => return Ok(Response::with((status::BadRequest))),
+
+        match map.find(&["body"]) {
+            Some(&Value::String(ref name)) => {
+                body = name.to_string();
+            }
+            _ => return Ok(Response::with((status::BadRequest))),
+        }
     }
 
-    match map.find(&["body"]) {
-        Some(&Value::String(ref name)) => {
-            body = name.to_string();
-        }
-        _ => return Ok(Response::with((status::BadRequest))),
-    }
+    let ref kind = req.extensions
+        .get::<Router>()
+        .unwrap()
+        .find("kind")
+        .unwrap_or("/");
 
     match models::post::get_comment_by_id(&conn, &id) {
         Ok(db_comment) => {
@@ -611,7 +680,7 @@ pub fn comment_update_handler(req: &mut Request) -> IronResult<Response> {
     if action == "update" {
         match models::post::update_comment_by_id(&conn, &id, &body) {
             Ok(_) => {
-                let url = Url::parse(&format!("{}/{}/{}", &CONFIG.team_domain, "post/show", comment.post_id)
+                let url = Url::parse(&format!("{}/{}/show/{}", &CONFIG.team_domain, kind, comment.post_id)
                                          .to_string()).unwrap();
                 return Ok(Response::with((status::Found, Redirect(url))));
             }
@@ -624,7 +693,7 @@ pub fn comment_update_handler(req: &mut Request) -> IronResult<Response> {
     if action == "delete" {
         match models::post::delete_comment_by_id(&conn, &id) {
             Ok(_) => {
-                let url = Url::parse(&format!("{}/{}/{}", &CONFIG.team_domain, "post/show", comment.post_id)
+                let url = Url::parse(&format!("{}/{}/show/{}", &CONFIG.team_domain, kind, comment.post_id)
                                          .to_string()).unwrap();
                 return Ok(Response::with((status::Found, Redirect(url))));
             }
@@ -649,6 +718,12 @@ pub fn stock_handler(req: &mut Request) -> IronResult<Response> {
         return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/signin")))));
     }
 
+    let ref kind = req.extensions
+        .get::<Router>()
+        .unwrap()
+        .find("kind")
+        .unwrap_or("/");
+
     let ref id_str = req.extensions
         .get::<Router>()
         .unwrap()
@@ -658,7 +733,7 @@ pub fn stock_handler(req: &mut Request) -> IronResult<Response> {
 
     match models::post::stock_post(&conn, &login_id, &id) {
         Ok(_) => {
-            let url = Url::parse(&format!("{}/{}/{}", &CONFIG.team_domain, "post/show", id)
+            let url = Url::parse(&format!("{}/{}/show/{}", &CONFIG.team_domain, kind, id)
                     .to_string())
                     .unwrap();
             return Ok(Response::with((status::Found, Redirect(url))));
@@ -682,6 +757,12 @@ pub fn unstock_handler(req: &mut Request) -> IronResult<Response> {
         return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/signin")))));
     }
 
+    let ref kind = req.extensions
+        .get::<Router>()
+        .unwrap()
+        .find("kind")
+        .unwrap_or("/");
+
     let ref id_str = req.extensions
         .get::<Router>()
         .unwrap()
@@ -691,7 +772,7 @@ pub fn unstock_handler(req: &mut Request) -> IronResult<Response> {
 
     match models::post::stock_remove(&conn, &login_id, &id) {
         Ok(_) => {
-            let url = Url::parse(&format!("{}/{}/{}", &CONFIG.team_domain, "post/show", id)
+            let url = Url::parse(&format!("{}/{}/show/{}", &CONFIG.team_domain, kind, id)
                     .to_string())
                     .unwrap();
             return Ok(Response::with((status::Found, Redirect(url))));
@@ -715,6 +796,12 @@ pub fn share_handler(req: &mut Request) -> IronResult<Response> {
         return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/signin")))));
     }
 
+    let ref kind = req.extensions
+        .get::<Router>()
+        .unwrap()
+        .find("kind")
+        .unwrap_or("/");
+
     let ref id_str = req.extensions
         .get::<Router>()
         .unwrap()
@@ -724,7 +811,7 @@ pub fn share_handler(req: &mut Request) -> IronResult<Response> {
 
     match models::post::share_post(&conn, &id) {
         Ok(_) => {
-            let url = Url::parse(&format!("{}/{}/{}", &CONFIG.team_domain, "post/show", id)
+            let url = Url::parse(&format!("{}/{}/show/{}", &CONFIG.team_domain, kind, id)
                     .to_string())
                     .unwrap();
             return Ok(Response::with((status::Found, Redirect(url))));
