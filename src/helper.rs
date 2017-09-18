@@ -34,11 +34,17 @@ pub fn username_hash(username: String) -> String {
     return sha256.result_str();
 }
 
-pub fn post_to_slack(conn: &db::PostgresConnection, user_id: &i32, title: &String, body: &String, post_id: &i32) {
+pub fn post_to_slack(conn: &db::PostgresConnection, user_id: &i32, title: &String, body: &String, post_id: &i32, mentions: Vec<String>) {
     match models::user::get_by_id(&conn, &user_id) {
         Ok(user) => {
             let link = format!("{}/{}/{}", &CONFIG.team_domain, "post/show", post_id).to_string();
-            let text = format!("{} by @{}\n{}\n{}", title, user.username, body, link).to_string();
+            let mut mentions_str: String = "".to_owned();
+            for m in mentions {
+                mentions_str.push_str(&"@".to_owned());
+                mentions_str.push_str(&m.to_owned());
+                mentions_str.push_str(&" ".to_owned());
+            }
+            let text = format!("{} by @{}\n{}\n{}\n{}", title, user.username, body, link, mentions_str).to_string();
             slack(text);
         }
         Err(e) => {

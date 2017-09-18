@@ -115,7 +115,7 @@ pub fn create_handler(req: &mut Request) -> IronResult<Response> {
 
             if action == "publish" {
                 let title = String::from("New post");
-                helper::post_to_slack(&conn, &login_id, &title, &body, &id);
+                helper::post_to_slack(&conn, &login_id, &title, &body, &id, Vec::new());
                 helper::webhook(login_user.username, title, body, url_str);
             }
             let url = Url::parse(&format!("{}/{}/show/{}", &CONFIG.team_domain, kind, id)
@@ -541,7 +541,7 @@ pub fn update_handler(req: &mut Request) -> IronResult<Response> {
                 }
             }
             if action == "publish" {
-                helper::post_to_slack(&conn, &login_id, &title, &diff_body, &id);
+                helper::post_to_slack(&conn, &login_id, &title, &diff_body, &id, Vec::new());
             }
 
             let url = Url::parse(&format!("{}/{}/show/{}", &CONFIG.team_domain, kind, id)
@@ -596,14 +596,40 @@ pub fn comment_handler(req: &mut Request) -> IronResult<Response> {
         .find("kind")
         .unwrap_or("/");
 
+    let mut mentions = Vec::new();
+
+    match models::post::get_by_id(&conn, &id) {
+        Ok(post_obj) => {
+            mentions.push(post_obj.user.username);
+        }
+        Err(e) => {
+            error!("Errored: {:?}", e);
+            return Ok(Response::with((status::InternalServerError)));
+        }
+    }
+
+    match models::post::get_comments_by_post_id(&conn, &id) {
+        Ok(comments_obj) => {
+            for comment in comments_obj {
+                let username: String = comment.user.username;
+                if !mentions.contains(&username) {
+                    mentions.push(username)
+                }
+            }
+        }
+        Err(e) => {
+            error!("Errored: {:?}", e);
+            return Ok(Response::with((status::InternalServerError)));
+        }
+    }
+
+
     match models::post::add_comment(&conn, &login_id, &id, &body) {
         Ok(_) => {
             let title = String::from("New comment");
-            helper::post_to_slack(&conn, &login_id, &title, &body, &id);
-
+            helper::post_to_slack(&conn, &login_id, &title, &body, &id, mentions);
             let url = Url::parse(&format!("{}/{}/show/{}", &CONFIG.team_domain, kind, id)
-                                     .to_string())
-                    .unwrap();
+                                     .to_string()).unwrap();
             return Ok(Response::with((status::Found, Redirect(url))));
         }
         Err(e) => {
