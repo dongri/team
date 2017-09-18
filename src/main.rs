@@ -1,5 +1,4 @@
 extern crate iron;
-#[macro_use]
 extern crate router;
 extern crate handlebars_iron as hbs;
 extern crate params;

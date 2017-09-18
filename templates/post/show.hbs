@@ -1,5 +1,5 @@
 {{#*inline "title"}}
-  Post - Team
+  {{post.title}} - Team
 {{/inline}}
 {{#*inline "page"}}
   <div class="post-item-action">
@@ -8,7 +8,7 @@
         <i class="fa fa-users fa-2x" aria-hidden="true"></i>
       {{else}}
         {{# if deletable}}
-        <form method="post" action="/post/share/{{post.id}}">
+        <form method="post" action="/{{kind}}/share/{{post.id}}">
           <button class="mui-btn mui-btn--small mui-btn--primary post-button">Co-editing</button>
         </form>
         {{/if}}
@@ -16,11 +16,11 @@
     </div>
     <div class="post-item-stock">
       {{# if stocked}}
-      <form method="post" action="/post/unstock/{{post.id}}">
+      <form method="post" action="/{{kind}}/unstock/{{post.id}}">
         <button class="mui-btn mui-btn--small mui-btn--primary post-button">Stocked</button>
       </form>
       {{else}}
-      <form method="post" action="/post/stock/{{post.id}}">
+      <form method="post" action="/{{kind}}/stock/{{post.id}}">
         <button class="mui-btn mui-btn--small mui-btn--primary post-button">Stock</button>
       </form>
       {{/if}}
@@ -28,12 +28,12 @@
     <br/>
     <div class="post-item-ed">
       {{# if editable}}
-        <a href="/post/edit/{{post.id}}">
+        <a href="/{{kind}}/edit/{{post.id}}">
           <i class="fa fa-pencil-square-o" aria-hidden="true"></i>
         </a>
       {{/if}}
       {{# if deletable}}
-        <a href="/post/delete/{{post.id}}">
+        <a href="/{{kind}}/delete/{{post.id}}">
           <i class="fa fa-trash-o" aria-hidden="true"></i>
         </a>
       {{/if}}
@@ -86,7 +86,7 @@
               {{/if}}
             </div>
             <div class="post-comment-body marked" style="display:none;" id="comment_view_{{comment.id}}">{{comment.body}}</div>
-            <form class="mui-form" action="/post/comment/{{comment.id}}" method="post" id="comment_input_{{comment.id}}" style="display:none;">
+            <form class="mui-form" action="/{{kind}}/comment/{{comment.id}}" method="post" id="comment_input_{{comment.id}}" style="display:none;">
               <input type="hidden" name="action" value="update" id="comment_action_{{comment.id}}">
               <div class="mui-textfield">
                 <textarea placeholder="comment" name="body" id="input-comment">{{comment.body}}</textarea>
@@ -100,7 +100,7 @@
     </ul>
   </div>
 
-  <form class="mui-form" action="/post/comment" method="post">
+  <form class="mui-form" action="/{{kind}}/comment" method="post">
     <input type="hidden" name="id" value="{{post.id}}">
     <legend>Post a comment</legend>
     <div class="mui-textfield">

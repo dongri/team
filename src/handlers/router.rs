@@ -1,7 +1,6 @@
 use Router;
 use handlers::index;
 use handlers::account;
-use handlers::nippo;
 use handlers::post;
 
 pub fn create_router() -> Router {
@@ -21,29 +20,19 @@ pub fn create_router() -> Router {
     router.post("/account/password", account::post_password_update, "account/post_password");
     router.post("/account/username", account::post_username_update, "account/post_username");
 
-    router.get("/nippo/new", nippo::new_handler, "nippo/new");
-    router.post("/nippo/create", nippo::create_handler, "nippo/create");
-    router.get("/nippo/list", nippo::list_handler, "nippo/list");
-    router.get("/nippo/show/:id", nippo::show_handler, "nippo/show/:id");
-    router.get("/nippo/delete/:id", nippo::delete_handler, "nippo/delete");
-    router.get("/nippo/edit/:id", nippo::edit_handler, "nippo/edit");
-    router.post("/nippo/update", nippo::update_handler, "nippo/update");
-    router.post("/nippo/comment", nippo::comment_handler, "nippo/comment");
-    router.post("/nippo/comment/:id", nippo::comment_update_handler, "nippo/comment/update");
+    router.get("/:kind/new", post::new_handler, "post/new");
+    router.post("/:kind/create", post::create_handler, "post/create");
+    router.get("/:kind/list", post::list_handler, "post/list");
+    router.get("/:kind/show/:id", post::show_handler, "post/show/:id");
+    router.get("/:kind/delete/:id", post::delete_handler, "post/delete");
+    router.get("/:kind/edit/:id", post::edit_handler, "post/edit");
+    router.post("/:kind/update", post::update_handler, "post/update");
+    router.post("/:kind/comment", post::comment_handler, "post/comment");
+    router.post("/:kind/comment/:id", post::comment_update_handler, "post/comment/update");
 
-    router.get("/post/new", post::new_handler, "post/new");
-    router.post("/post/create", post::create_handler, "post/create");
-    router.get("/post/list", post::list_handler, "post/list");
-    router.get("/post/show/:id", post::show_handler, "post/show/:id");
-    router.get("/post/delete/:id", post::delete_handler, "post/delete");
-    router.get("/post/edit/:id", post::edit_handler, "post/edit");
-    router.post("/post/update", post::update_handler, "post/update");
-    router.post("/post/comment", post::comment_handler, "post/comment");
-    router.post("/post/comment/:id", post::comment_update_handler, "post/comment/update");
-
-    router.post("/post/stock/:id", post::stock_handler, "post/stock");
-    router.post("/post/unstock/:id", post::unstock_handler, "post/unstock");
-    router.post("/post/share/:id", post::share_handler, "post/share");
+    router.post("/:kind/stock/:id", post::stock_handler, "post/stock");
+    router.post("/:kind/unstock/:id", post::unstock_handler, "post/unstock");
+    router.post("/:kind/share/:id", post::share_handler, "post/share");
 
     router.get("/stocked/list", post::stocked_list_handler, "stocked/list");
     router.get("/draft/list", post::draft_list_handler, "draft/list");

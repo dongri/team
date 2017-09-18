@@ -1,8 +1,8 @@
 {{#*inline "title"}}
-  Update Post - Team
+  Update {{kind}} - Team
 {{/inline}}
 {{#*inline "page"}}
-  <form class="mui-form" action="/post/update" method="post">
+  <form class="mui-form" action="/{{kind}}/update" method="post">
     <input type="hidden" name="id" value="{{post.id}}">
     <div class="mui-textfield">
       <input type="text" placeholder="Title" name="title" value="{{post.title}}" class="input-title">

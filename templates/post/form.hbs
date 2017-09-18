@@ -1,13 +1,13 @@
 {{#*inline "title"}}
-  New Post - Team
+  New {{kind}} - Team
 {{/inline}}
 {{#*inline "page"}}
-  <form class="mui-form" action="/post/create" method="post">
+  <form class="mui-form" action="/{{kind}}/create" method="post">
     <div class="mui-textfield">
-      <input type="text" placeholder="Title" name="title" class="input-title">
+      <input type="text" placeholder="Title" name="title" class="input-title" id="{{kind}}-title">
     </div>
     <div class="mui-textfield">
-      <textarea placeholder="" name="body" id="mdeditor"></textarea>
+      <textarea placeholder="" name="body" id="{{kind}}-mdeditor"></textarea>
     </div>
     <div class="mui-textfield">
       <input type="text" placeholder="Tags (e.g. rust,tips,postgres)" name="tags" class="input-tags">
@@ -16,9 +16,29 @@
     <button type="submit" class="mui-btn mui-btn--raised" name='action' value="draft">Draft</button>
   </form>
   <script>
+    // Nippo teamplate
+    $("#nippo-mdeditor").val("# 本日の作業内容\n\n# 発生した問題\n\n# 明日の作業予定\n\n# 所感\n\n");
+
     var simplemde = new SimpleMDE({
-      element: document.getElementById("mdeditor"),
+      element: document.getElementById("{{kind}}-mdeditor"),
       spellChecker: false
+    });
+    $( document ).ready(function() {
+      // Today
+      var today = new Date();
+      var dd = today.getDate();
+      var mm = today.getMonth()+1; //January is 0!
+
+      var yyyy = today.getFullYear();
+      if(dd<10){
+          dd='0'+dd;
+      }
+      if(mm<10){
+          mm='0'+mm;
+      }
+      var today = yyyy + '/' + mm +'/' + dd;
+      $("#nippo-title").val(today);
+
     });
   </script>
 {{/inline}}
