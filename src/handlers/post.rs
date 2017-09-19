@@ -114,9 +114,14 @@ pub fn create_handler(req: &mut Request) -> IronResult<Response> {
                          .to_string();
 
             if action == "publish" {
-                let title = String::from("New post");
+                let mut title = String::from("New post");
+                if kind == &"nippo" {
+                    title = String::from("New nippot");
+                }
                 helper::post_to_slack(&conn, &login_id, &title, &body, &id, Vec::new());
-                helper::webhook(login_user.username, title, body, url_str);
+                if kind == &"nippo" {
+                    helper::webhook(login_user.username, title, body, url_str);
+                }
             }
             let url = Url::parse(&format!("{}/{}/show/{}", &CONFIG.team_domain, kind, id)
                                      .to_string())
