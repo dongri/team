@@ -20,24 +20,24 @@ pub fn create_router() -> Router {
     router.post("/account/password", account::post_password_update, "account/post_password");
     router.post("/account/username", account::post_username_update, "account/post_username");
 
-    router.get("/:kind/new", post::new_handler, "post/new");
-    router.post("/:kind/create", post::create_handler, "post/create");
-    router.get("/:kind/list", post::list_handler, "post/list");
-    router.get("/:kind/show/:id", post::show_handler, "post/show/:id");
-    router.get("/:kind/delete/:id", post::delete_handler, "post/delete");
-    router.get("/:kind/edit/:id", post::edit_handler, "post/edit");
-    router.post("/:kind/update", post::update_handler, "post/update");
-    router.post("/:kind/comment", post::comment_handler, "post/comment");
-    router.post("/:kind/comment/:id", post::comment_update_handler, "post/comment/update");
+    router.get("/:kind/new", post::post::new_handler, "post/new");
+    router.post("/:kind/create", post::post::create_handler, "post/create");
+    router.get("/:kind/list", post::post::list_handler, "post/list");
+    router.get("/:kind/show/:id", post::post::show_handler, "post/show/:id");
+    router.get("/:kind/delete/:id", post::post::delete_handler, "post/delete");
+    router.get("/:kind/edit/:id", post::post::edit_handler, "post/edit");
+    router.post("/:kind/update", post::post::update_handler, "post/update");
+    router.post("/:kind/comment", post::comment::comment_handler, "post/comment");
+    router.post("/:kind/comment/:id", post::comment::comment_update_handler, "post/comment/update");
 
-    router.post("/:kind/stock/:id", post::stock_handler, "post/stock");
-    router.post("/:kind/unstock/:id", post::unstock_handler, "post/unstock");
-    router.post("/:kind/share/:id", post::share_handler, "post/share");
+    router.post("/:kind/stock/:id", post::stock::stock_handler, "post/stock");
+    router.post("/:kind/unstock/:id", post::stock::unstock_handler, "post/unstock");
+    router.post("/:kind/share/:id", post::share::share_handler, "post/share");
 
-    router.get("/stocked/list", post::stocked_list_handler, "stocked/list");
-    router.get("/draft/list", post::draft_list_handler, "draft/list");
+    router.get("/stocked/list", post::stock::stocked_list_handler, "stocked/list");
+    router.get("/draft/list", post::draft::draft_list_handler, "draft/list");
 
-    router.get("/tag/list", post::tag_list_handler, "tag/list");
+    router.get("/tag/list", post::tag::tag_list_handler, "tag/list");
 
     router.get("/:username", account::profile_handler, "user/profile");
 
