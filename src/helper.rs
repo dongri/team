@@ -56,6 +56,7 @@ pub fn post_to_slack(conn: &db::PostgresConnection, user_id: &i32, title: &Strin
 pub fn slack(text: String) {
     let slack_url = &CONFIG.team_slack;
     if slack_url == "" {
+        debug!("TEAM_SLACK: {}", text);
         return;
     }
     let url = slack_url.as_str();
