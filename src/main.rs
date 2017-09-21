@@ -105,7 +105,7 @@ fn setup_fern(level: log::LogLevelFilter, verbose: bool) {
         })
         .level(level)
         .chain(std::io::stdout())
-        .filter(move |meta: &log::LogMetadata| verbose || meta.target() == "team")
+        .filter(move |meta: &log::LogMetadata| verbose || meta.target().starts_with("team"))
         .apply()
         .unwrap()
 }
