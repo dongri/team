@@ -410,6 +410,7 @@ pub fn edit_handler(req: &mut Request) -> IronResult<Response> {
         login_user: models::user::User,
         post: models::post::Post,
         tags: String,
+        kind: String,
     }
 
     let post: models::post::Post;
@@ -420,6 +421,12 @@ pub fn edit_handler(req: &mut Request) -> IronResult<Response> {
         .find("id")
         .unwrap_or("/");
     let id = id_str.parse::<i32>().unwrap();
+
+    let ref kind = req.extensions
+        .get::<Router>()
+        .unwrap()
+        .find("kind")
+        .unwrap_or("/");
 
     match models::post::get_by_id(&conn, &id) {
         Ok(post_obj) => {
@@ -447,6 +454,7 @@ pub fn edit_handler(req: &mut Request) -> IronResult<Response> {
         login_user: login_user,
         post: post,
         tags: tag_str,
+        kind: kind.to_string(),
     };
     resp.set_mut(Template::new("post/edit", to_json(&data)))
         .set_mut(status::Ok);
