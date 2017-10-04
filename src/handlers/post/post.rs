@@ -116,7 +116,7 @@ pub fn create_handler(req: &mut Request) -> IronResult<Response> {
             if action == "publish" {
                 let mut title = String::from("New post");
                 if kind == &"nippo" {
-                    title = String::from("New nippot");
+                    title = String::from("New 日報");
                 }
                 helper::post_to_slack(&conn, &login_id, &title, &body, &id, Vec::new());
                 if kind == &"nippo" {
