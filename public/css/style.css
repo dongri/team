@@ -254,6 +254,9 @@ h1.title {
   border: 1px solid #DDD;
   padding: 5px;
 }
+.marked img {
+  max-width: 50%;
+}
 .post-comment-body {
   margin-top: 0px;
 }
