@@ -385,3 +385,10 @@ pre > code {
   border-radius: 5px;
   padding: 5px;
 }
+
+.post-item-shared {
+  font-size: 11px;
+  position: relative;
+  top: -2px;
+  color: #2196F3;
+}
