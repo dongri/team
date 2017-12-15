@@ -375,3 +375,14 @@ pre > code {
   border-radius: 5px;
   border: #DDD 1px solid;
 }
+
+a > i {
+  text-decoration: none;
+}
+
+textarea, input {
+  border: 1px #CCC solid;
+  border-radius: 5px;
+  padding: 5px;
+}
+
