@@ -377,7 +377,7 @@ pre > code {
 }
 
 .icon-edit, .icon-delete {
-  text-decoration: none;
+  text-decoration: none !important;
 }
 
 .mui-textfield > textarea, .mui-textfield > input {
