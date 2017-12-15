@@ -333,8 +333,9 @@ li.textcomplete-item a {
 p code {
   border: 1px solid #DDD;
   border-radius: 3px;
-  background: #FEFEFE;
-  color: #FA5858;
+  background: #EEE;
+  color: #FF0000;
+  padding: 5px;
 }
 
 li code {
@@ -368,4 +369,9 @@ pre {
     white-space: -pre-wrap;      /* Opera 4-6 */
     white-space: -o-pre-wrap;    /* Opera 7 */
     word-wrap: break-word;       /* Internet Explorer 5.5+ */
+}
+
+pre > code {
+  border-radius: 5px;
+  border: #DDD 1px solid;
 }
