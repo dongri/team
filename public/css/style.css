@@ -376,13 +376,12 @@ pre > code {
   border: #DDD 1px solid;
 }
 
-a > i {
+.icon-edit, .icon-delete {
   text-decoration: none;
 }
 
-textarea, input {
+.mui-textfield > textarea, .mui-textfield > input {
   border: 1px #CCC solid;
   border-radius: 5px;
   padding: 5px;
 }
-

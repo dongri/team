@@ -28,12 +28,12 @@
     <br/>
     <div class="post-item-ed">
       {{# if editable}}
-        <a href="/{{kind}}/edit/{{post.id}}">
+        <a href="/{{kind}}/edit/{{post.id}}" class="icon-edit">
           <i class="fa fa-pencil-square-o" aria-hidden="true"></i>
         </a>
       {{/if}}
       {{# if deletable}}
-        <a href="/{{kind}}/delete/{{post.id}}">
+        <a href="/{{kind}}/delete/{{post.id}}" class="icon-delete">
           <i class="fa fa-trash-o" aria-hidden="true"></i>
         </a>
       {{/if}}
