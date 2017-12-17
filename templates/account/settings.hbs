@@ -4,7 +4,7 @@
   <div class="mui-textfield">
     <input type="text" id="username" name="username" value="{{user.username}}" placeholder="username">
   </div>
-  <button type="submit" class="mui-btn mui-btn--raised">Update</button>
+  <button type="submit" class="mui-btn mui-btn--raised mui-btn--primary">Update</button>
 </form>
 <hr />
 <form class="mui-form" action="/account/password" method="post">
@@ -21,7 +21,7 @@
   <div class="mui-textfield">
     <input type="password" id="confirm_password" name="confirm_password" placeholder="confirm">
   </div>
-  <button type="submit" class="mui-btn mui-btn--raised">Submit</button>
+  <button type="submit" class="mui-btn mui-btn--raised mui-btn--primary">Submit</button>
 </form>
 <hr />
 <form class="mui-form" action="/account/settings" method="post">
@@ -35,6 +35,6 @@
     <canvas width="80" height="80" data-jdenticon-hash="{{user.username_hash}}" class="user-icon"></canvas>
     {{/if}}
   </div>
-  <button type="submit" class="mui-btn mui-btn--raised">Submit</button>
+  <button type="submit" class="mui-btn mui-btn--raised mui-btn--primary">Submit</button>
 </form>
 {{/inline}} {{~> layout ~}}
