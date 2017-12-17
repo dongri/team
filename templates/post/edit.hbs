@@ -1,6 +1,9 @@
 {{#*inline "title"}}
   Update {{kind}} - Team
 {{/inline}}
+{{#*inline "page_head"}}
+{{> post/head}}
+{{/inline}}
 {{#*inline "page"}}
   <form class="mui-form" action="/{{kind}}/update" method="post">
     <input type="hidden" name="id" value="{{post.id}}">

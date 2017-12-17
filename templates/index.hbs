@@ -18,16 +18,23 @@
         </div>
 
         <div class="feed-post">
-          {{#if body}}
+          {{#if comment}}
             <div class="feed-item-detail">
               @{{user.username}} commented on <a href="/{{kind}}/show/{{id}}">{{title}}</a>
             </div>
             <div class="feed-comment">" {{body}} "</div>
-          {{else}}
+          {{/if}}
+          {{#if post}}
             <div class="feed-item-detail">
               @{{user.username}} created new post
             </div>
             <div class="feed-comment"><a href="/{{kind}}/show/{{id}}">{{title}}</a></div>
+          {{/if}}
+          {{#if gist}}
+            <div class="feed-item-detail">
+              @{{user.username}} created new gist
+            </div>
+            <div class="feed-comment"><a href="/gist/show/{{id}}">{{title}}</a></div>
           {{/if}}
         </div>
 

@@ -2,6 +2,7 @@ use Router;
 use handlers::index;
 use handlers::account;
 use handlers::post;
+use handlers::gist;
 
 pub fn create_router() -> Router {
     let mut router = Router::new();
@@ -19,6 +20,14 @@ pub fn create_router() -> Router {
     router.post("/account/settings", account::post_settings_handler, "account/post_settings");
     router.post("/account/password", account::post_password_update, "account/post_password");
     router.post("/account/username", account::post_username_update, "account/post_username");
+
+    router.get("/gist/new", gist::new_handler, "gist/new");
+    router.post("/gist/create", gist::create_handler, "gist/create");
+    router.get("/gist/list", gist::list_handler, "gist/list");
+    router.get("/gist/show/:id", gist::show_handler, "gist/show");
+    router.get("/gist/edit/:id", gist::edit_handler, "gist/edit");
+    router.post("/gist/update", gist::update_handler, "gist/update");
+    router.get("/gist/delete/:id", gist::delete_handler, "gist/delete");
 
     router.get("/:kind/new", post::post::new_handler, "post/new");
     router.post("/:kind/create", post::post::create_handler, "post/create");
