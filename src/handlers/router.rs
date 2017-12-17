@@ -21,15 +21,13 @@ pub fn create_router() -> Router {
     router.post("/account/password", account::post_password_update, "account/post_password");
     router.post("/account/username", account::post_username_update, "account/post_username");
 
-    router.get("/gist/new", post::post::new_handler, "gist/new");
-    router.get("/gist/create", post::post::new_handler, "gist/create");
-    router.get("/gist/list", post::post::list_handler, "gist/list");
-    router.get("/gist/show/:id", post::post::show_handler, "gist/show");
-    router.get("/gist/delete/:id", post::post::delete_handler, "gist/delete");
-    router.get("/gist/edit/:id", post::post::edit_handler, "gist/edit");
-    router.post("/gist/update", post::post::update_handler, "gist/update");
-    router.post("/gist/comment", post::comment::comment_handler, "gist/comment");
-    router.post("/gist/comment/:id", post::comment::comment_update_handler, "gist/comment/update");
+    router.get("/gist/new", gist::new_handler, "gist/new");
+    router.post("/gist/create", gist::create_handler, "gist/create");
+    router.get("/gist/list", gist::list_handler, "gist/list");
+    router.get("/gist/show/:id", gist::show_handler, "gist/show");
+    router.get("/gist/edit/:id", gist::edit_handler, "gist/edit");
+    router.post("/gist/update", gist::update_handler, "gist/update");
+    router.get("/gist/delete/:id", gist::delete_handler, "gist/delete");
 
     router.get("/:kind/new", post::post::new_handler, "post/new");
     router.post("/:kind/create", post::post::create_handler, "post/create");

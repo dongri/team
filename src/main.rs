@@ -119,6 +119,7 @@ fn main() {
     mount.mount("/js", Static::new(Path::new("./public/js/")));
     mount.mount("/img", Static::new(Path::new("./public/img/")));
     mount.mount("/fonts", Static::new(Path::new("./public/fonts/")));
+    mount.mount("/codemirror", Static::new(Path::new("./public/codemirror/")));
     mount.mount("/", router);
 
     let mut chain = Chain::new(mount);

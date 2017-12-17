@@ -1,0 +1,75 @@
+{{#*inline "title"}}
+  Gist - Team
+{{/inline}}
+{{#*inline "page_head"}}
+{{> gist/head }}
+{{/inline}}
+
+{{#*inline "page"}}
+
+  <form class="mui-form" id="gist-form" action="/gist/create" method="post">
+    <input type="hidden" value="" name="gist-code" id="gist-code">
+    <div class="mui-textfield">
+      <input type="text" placeholder="Gist description..." name="gist-description" class="input-title" id="title">
+    </div>
+    <div class="mui-textfield">
+      <input type="text" placeholder="Filename (hello.go)" name="gist-filename" class="input-gist-filename" id="mode">
+    </div>
+    <textarea id="code" name="code" style="display: none;">
+</textarea>
+    <button type="button" class="mui-btn mui-btn--raised mui-btn--primary" name='action' onclick="submitFunc()" value="publish">POST</button>
+  </form>
+  <script>
+
+    CodeMirror.modeURL = "/codemirror/mode/%N/%N.js";
+    
+    var editor = CodeMirror.fromTextArea(document.getElementById("code"), {
+      lineNumbers: true,
+      styleActiveLine: true,
+      matchBrackets: true
+    });
+    editor.setOption("theme", "blackboard");
+
+    editor.setOption("mode", "text/plain");
+    CodeMirror.autoLoadMode(editor, "null");
+  
+    var modeInput = document.getElementById("mode");
+    CodeMirror.on(modeInput, "blur", function(e) {
+      change();
+    });
+
+    function change() {
+      var val = modeInput.value, m, mode, spec;
+      if (m = /.+\.([^.]+)$/.exec(val)) {
+        var info = CodeMirror.findModeByExtension(m[1]);
+        if (info) {
+          mode = info.mode;
+          spec = info.mime;
+        }
+      } else if (/\//.test(val)) {
+        var info = CodeMirror.findModeByMIME(val);
+        if (info) {
+          mode = info.mode;
+          spec = val;
+        }
+      } else {
+        mode = spec = val;
+      }
+      if (mode) {
+        editor.setOption("mode", spec);
+        CodeMirror.autoLoadMode(editor, mode);
+      } else {
+        editor.setOption("mode", "text/plain");
+        CodeMirror.autoLoadMode(editor, "null");
+      }
+    }
+
+    function submitFunc() {
+      document.getElementById("gist-code").value = editor.getValue();
+      document.getElementById("gist-form").submit();
+    }
+
+  </script>
+
+{{/inline}}
+{{~> layout ~}}
