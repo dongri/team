@@ -1,0 +1,84 @@
+{{#*inline "title"}}
+  Gist - Team
+{{/inline}}
+{{#*inline "page_head"}}
+{{> gist/head}}
+{{/inline}}
+
+{{#*inline "page"}}
+  <div class="post-item-action">
+    <div class="post-item-ed">
+      {{# if editable}}
+        <a href="/gist/edit/{{gist.id}}" class="icon-edit">
+          <i class="fa fa-pencil-square-o" aria-hidden="true"></i>
+        </a>
+      {{/if}}
+      {{# if deletable}}
+        <a href="/gist/delete/{{gist.id}}" class="icon-delete">
+          <i class="fa fa-trash-o" aria-hidden="true"></i>
+        </a>
+      {{/if}}
+    </div>
+  </div>
+
+  <h1 class="title">{{gist.description}}</h1>
+  <div class="post-item-time">
+    {{gist.created}}
+  </div>
+  <div class="post-item-icon">
+  <a href="/{{gist.user.username}}">
+    {{#if gist.user.icon_url}}
+      <img src="{{gist.user.icon_url}}" class="post-user-icon">
+    {{else}}
+      <canvas width="20" height="20" data-jdenticon-hash="{{gist.user.username_hash}}" class="post-user-icon"></canvas>
+    {{/if}}
+  </a>
+  </div>
+  <div class="post-item-username">
+    @{{gist.user.username}}<br/>
+  </div>
+
+  <div class="filename" id="gist-filename">{{gist.filename}}</div>
+  <textarea id="code" name="code" style="display: none;">{{gist.code}}</textarea>
+
+  <script>
+    CodeMirror.modeURL = "/codemirror/mode/%N/%N.js";
+    var editor = CodeMirror.fromTextArea(document.getElementById("code"), {
+        lineNumbers: true,
+        matchBrackets: true,
+        readOnly: true
+    });
+    editor.setOption("theme", "blackboard");
+
+    var modeInput = document.getElementById("gist-filename");
+    change();
+    function change() {
+        var val = modeInput.innerText, m, mode, spec;
+        if (m = /.+\.([^.]+)$/.exec(val)) {
+            var info = CodeMirror.findModeByExtension(m[1]);
+            if (info) {
+                mode = info.mode;
+                spec = info.mime;
+            }
+        } else if (/\//.test(val)) {
+            var info = CodeMirror.findModeByMIME(val);
+            if (info) {
+                mode = info.mode;
+                spec = val;
+            }
+        } else {
+            mode = spec = val;
+        }
+        if (mode) {
+            editor.setOption("mode", spec);
+            CodeMirror.autoLoadMode(editor, mode);
+        } else {
+            editor.setOption("mode", "text/plain");
+            CodeMirror.autoLoadMode(editor, "null");
+        }
+    }
+
+  </script>
+
+{{/inline}}
+{{~> layout ~}}

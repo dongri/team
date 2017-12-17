@@ -168,10 +168,8 @@ footer {
   padding-top: 0px;
   font-size: 1.15em;
 }
-#marked h1 {
-  border-bottom: solid 3px #eee;
-  font-size: 1.7em;
-  line-height: 1.2;
+.marked > h1 {
+  border-bottom: solid 3px #eee !important;
 }
 .feed-comment {
   font-size: 20px;
@@ -384,6 +382,11 @@ pre > code {
   border: 1px #CCC solid;
   border-radius: 5px;
   padding: 5px;
+  padding-left: 10px;
+}
+
+.input-gist-filename {
+  height: 20px;
 }
 
 .post-item-shared {
@@ -391,4 +394,15 @@ pre > code {
   position: relative;
   top: -2px;
   color: #2196F3;
+}
+
+.CodeMirror {
+  padding: 0px !important;
+  height: auto !important;
+  min-height: 100px;
+}
+
+.filename {
+  margin-bottom: 10px;
+  color: blue !important;
 }

@@ -115,10 +115,11 @@ pub fn create_handler(req: &mut Request) -> IronResult<Response> {
 
             if action == "publish" {
                 let mut title = String::from("New post");
+                let path = String::from("post");
                 if kind == &"nippo" {
                     title = String::from("New 日報");
                 }
-                helper::post_to_slack(&conn, &login_id, &title, &body, &id, Vec::new());
+                helper::post_to_slack(&conn, &login_id, &title, &body, &id, Vec::new(), &path);
                 if kind == &"nippo" {
                     helper::webhook(login_user.username, title, body, url_str);
                 }
@@ -542,7 +543,7 @@ pub fn update_handler(req: &mut Request) -> IronResult<Response> {
     match models::post::update(&conn, &id, &title, &body, &tags, &action) {
         Ok(_) => {
             let title = String::from("Edit post");
-
+            let path = String::from("post");
             let left = &old_post.body;
             let right = &body;
             let mut diff_body = String::from("");
@@ -554,7 +555,7 @@ pub fn update_handler(req: &mut Request) -> IronResult<Response> {
                 }
             }
             if action == "publish" {
-                helper::post_to_slack(&conn, &login_id, &title, &diff_body, &id, Vec::new());
+                helper::post_to_slack(&conn, &login_id, &title, &diff_body, &id, Vec::new(), &path);
             }
 
             let url = Url::parse(&format!("{}/{}/show/{}", &CONFIG.team_domain, kind, id)

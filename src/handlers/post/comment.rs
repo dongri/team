@@ -82,7 +82,8 @@ pub fn comment_handler(req: &mut Request) -> IronResult<Response> {
     match models::post::add_comment(&conn, &login_id, &id, &body) {
         Ok(_) => {
             let title = String::from("New comment");
-            helper::post_to_slack(&conn, &login_id, &title, &body, &id, mentions);
+            let path = String::from("post");
+            helper::post_to_slack(&conn, &login_id, &title, &body, &id, mentions, &path);
             let url = Url::parse(&format!("{}/{}/show/{}", &CONFIG.team_domain, kind, id)
                                      .to_string()).unwrap();
             return Ok(Response::with((status::Found, Redirect(url))));

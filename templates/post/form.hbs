@@ -1,6 +1,9 @@
 {{#*inline "title"}}
   New {{kind}} - Team
 {{/inline}}
+{{#*inline "page_head"}}
+{{> post/head}}
+{{/inline}}
 {{#*inline "page"}}
   <form class="mui-form" action="/{{kind}}/create" method="post">
     <div class="mui-textfield">
@@ -12,8 +15,8 @@
     <div class="mui-textfield">
       <input type="text" placeholder="Tags (e.g. rust,tips,postgres)" name="tags" class="input-tags">
     </div>
-    <button type="submit" class="mui-btn mui-btn--raised" name='action' value="publish">publish</button>
-    <button type="submit" class="mui-btn mui-btn--raised" name='action' value="draft">Draft</button>
+    <button type="submit" class="mui-btn mui-btn--raised mui-btn--primary" name='action' value="publish">publish</button>
+    <button type="submit" class="mui-btn mui-btn--raised mui-btn--primary" name='action' value="draft">Draft</button>
   </form>
   <script>
     // Nippo teamplate

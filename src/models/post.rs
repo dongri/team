@@ -199,6 +199,9 @@ pub fn get_comments_by_post_id(conn: &db::PostgresConnection, id: &i32) -> Resul
 #[derive(Serialize, Debug)]
 pub struct Feed {
     id: i32,
+    pub post: String,
+    pub comment: String,
+    pub gist: String,
     pub kind: String,
     pub user_id: i32,
     title: String,
@@ -211,9 +214,11 @@ pub struct Feed {
 pub fn get_feeds(conn: &db::PostgresConnection, offset: &i32, limit: &i32) -> Result<Vec<Feed>, Error> {
     let mut feeds: Vec<Feed> = Vec::new();
     for row in &conn.query("
-        (select p.id, p.kind, p.user_id, p.title, '' as body, u.username, u.icon_url, p.created from posts as p join users as u on u.id=p.user_id where p.status = 'publish')
+        (select '' as comment, '' as gist, 'post' as post, p.id, p.kind, p.user_id, p.title, '' as body, u.username, u.icon_url, p.created from posts as p join users as u on u.id=p.user_id where p.status = 'publish')
         union
-        (select c.post_id, p.kind, c.user_id, p.title as title, c.body, u.username, u.icon_url, c.created from post_comments as c join users as u on u.id=c.user_id join posts as p on c.post_id=p.id)
+        (select 'comment' as comment, '' as gist, '' as post,  c.post_id, p.kind, c.user_id, p.title as title, c.body, u.username, u.icon_url, c.created from post_comments as c join users as u on u.id=c.user_id join posts as p on c.post_id=p.id)
+        union
+        (select  '' as comment, 'gist' as gist, '' as post, g.id, '' as kind, g.user_id, g.filename as title, '' as body, u.username, u.icon_url, g.created from gists as g join users as u on u.id=g.user_id)
         order by created desc offset $1::int limit $2::int", &[&offset, &limit]).unwrap() {
         match models::tag::get_tags_by_post_id(&conn, &row.get("id")) {
             Ok(tags) => {
@@ -221,6 +226,9 @@ pub fn get_feeds(conn: &db::PostgresConnection, offset: &i32, limit: &i32) -> Re
                 body = body.as_str().chars().skip(0).take(50).collect();
                 feeds.push(Feed {
                     id: row.get("id"),
+                    post: row.get("post"),
+                    comment: row.get("comment"),
+                    gist: row.get("gist"),
                     kind: row.get("kind"),
                     user_id: row.get("user_id"),
                     title: row.get("title"),
