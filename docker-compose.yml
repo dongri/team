@@ -1,11 +1,22 @@
 version: "3"
+
 services:
-  team:
-    container_name: team
+
+  team_postgres:
+    image: postgres:latest
+    container_name: team_postgres
+    volumes:
+      - /tmp/postgres:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  team_server:
+    container_name: team_server
     build:
       context: .
       dockerfile: devDockerfile
     environment:
+      - TEAM_DATABASE_URL=postgres://postgres:@team_postgres:5432/team
       - TEAM_DOMAIN=${TEAM_DOMAIN}
       - TEAM_SLACK=${TEAM_SLACK}
     volumes:
@@ -16,10 +27,4 @@ services:
     ports:
       - "3000:3000"
     external_links:
-      - postgres
-    networks:
-      - origami_docker
-
-networks:
-  origami_docker:
-    external: true
+      - team_postgres
