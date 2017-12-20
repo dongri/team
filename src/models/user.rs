@@ -19,11 +19,11 @@ pub struct UserWithPassword {
     pub password: String,
 }
 
-pub fn create(conn: &db::PostgresConnection, username: &String, password: &String) -> Result<(), Error> {
-    conn.execute(
-        "INSERT INTO users (username, password) VALUES ($1, $2);",
-        &[&username, &password]
-    ).map(|_| ())
+pub fn create(conn: &db::PostgresConnection, username: &String, password: &String) -> Result<(i32), Error> {
+    let rows = &conn.query("INSERT INTO users (username, password) VALUES ($1, $2) returning id;", &[&username, &password]).unwrap();
+    let row = rows.get(0);
+    let user_id: i32 = row.get("id");
+    Ok(user_id)
 }
 
 pub fn get_by_username_password(conn: &db::PostgresConnection, username: &String, password: &String) -> Result<User, Error> {

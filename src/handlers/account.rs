@@ -77,9 +77,9 @@ pub fn post_signup_handler(req: &mut Request) -> IronResult<Response> {
 
     password = helper::encrypt_password(password);
     match models::user::create(&conn, &username, &password) {
-        Ok(_) => {
-            return Ok(Response::with((status::Found,
-                                      Redirect(helper::redirect_url("/signin")))));
+        Ok(user_id) => {
+            try!(req.session().set(Login { id: user_id.to_string() }));
+            return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/")))));
         }
         Err(e) => {
             info!("Errored: {:?}", e);
