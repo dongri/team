@@ -41,6 +41,53 @@
   <div class="filename" id="gist-filename">{{gist.filename}}</div>
   <textarea id="code" name="code" style="display: none;">{{gist.code}}</textarea>
 
+  <div class="comments">
+    <ul class="post-items">
+      {{#each comments}}
+      <li>
+        <div class="post-item-left">
+          {{#if comment.user.icon_url}}
+          <img src="{{comment.user.icon_url}}" class="user-icon"> {{else}}
+          <canvas width="50" height="50" data-jdenticon-hash="{{comment.user.username_hash}}" class="user-icon"></canvas>
+          {{/if}}
+        </div>
+        <div class="post-item-right">
+          <div class="post-item">
+            <div class="post-username">
+              @{{comment.user.username}}
+              <br/> {{#if editable}}
+              <a href="javascript:edit({{comment.id}})" class="icon-edit">
+                <i class="fa fa-pencil-square-o" aria-hidden="true"></i>
+              </a>
+              <a href="javascript:remove({{comment.id}})" class="icon-delete">
+                <i class="fa fa-trash-o" aria-hidden="true"></i>
+              </a>
+              {{/if}}
+            </div>
+            <div class="post-comment-body marked" style="display:none;" id="comment_view_{{comment.id}}">{{comment.body}}</div>
+            <form class="mui-form" action="/gist/comment/{{comment.id}}" method="post" id="comment_input_{{comment.id}}" style="display:none;">
+              <input type="hidden" name="action" value="update" id="comment_action_{{comment.id}}">
+              <div class="mui-textfield">
+                <textarea placeholder="comment" name="body" id="input-comment">{{comment.body}}</textarea>
+                </di>
+                <button type="submit" class="mui-btn mui-btn--raised mui-btn--primary">Update</button>
+            </form>
+            </div>
+          </div>
+      </li>
+      {{/each}}
+    </ul>
+  </div>
+
+  <form class="mui-form" action="/gist/comment" method="post">
+    <input type="hidden" name="id" value="{{gist.id}}">
+    <legend>Post a comment</legend>
+    <div class="mui-textfield">
+      <textarea placeholder="comment" name="body" id="input-comment"></textarea>
+    </div>
+    <button type="submit" class="mui-btn mui-btn--raised mui-btn--primary">Submit</button>
+  </form>
+
   <script>
     CodeMirror.modeURL = "/codemirror/mode/%N/%N.js";
     var editor = CodeMirror.fromTextArea(document.getElementById("code"), {
@@ -76,6 +123,31 @@
             editor.setOption("mode", "text/plain");
             CodeMirror.autoLoadMode(editor, "null");
         }
+    }
+
+    $(".marked").each(function (index, element) {
+      var markdownText = $(element).text();
+      markdownText = markdownText.replace(/<iframe/g, "&lt;iframe")
+      markdownText = markdownText.replace(/<\/iframe>/g, "&lt;/iframe>")
+      var htmlText = marked(markdownText);
+      $(element).html(htmlText);
+      $('pre code', element).each(function (i, e) {
+        hljs.highlightBlock(e, e.className);
+      });
+      $(element).show();
+    });
+
+    function edit(comment_id) {
+      $("#comment_view_" + comment_id).hide();
+      $("#comment_input_" + comment_id).show();
+    }
+
+    function remove(comment_id) {
+      var confirmed = confirm('Are you sure?');
+      if (confirmed) {
+        $("#comment_action_" + comment_id).val("delete");
+        $("#comment_input_" + comment_id).submit();
+      }
     }
 
   </script>

@@ -208,6 +208,12 @@ pub fn show_handler(req: &mut Request) -> IronResult<Response> {
         .unwrap_or("/");
     let id = id_str.parse::<i32>().unwrap();
 
+    #[derive(Serialize, Debug, Default)]
+    struct GistComment {
+        comment: models::gist::Comment,
+        editable: bool,
+    }
+
     #[derive(Serialize)]
     struct Data {
         logged_in: bool,
@@ -215,9 +221,11 @@ pub fn show_handler(req: &mut Request) -> IronResult<Response> {
         gist: models::gist::Gist,
         editable: bool,
         deletable: bool,
+        comments: Vec<GistComment>,
     }
 
     let gist: models::gist::Gist;
+    let comments: Vec<models::gist::Comment>;
 
     match models::gist::get_by_id(&conn, &id) {
         Ok(gist_obj) => {
@@ -229,6 +237,26 @@ pub fn show_handler(req: &mut Request) -> IronResult<Response> {
         }
     }
 
+    match models::gist::get_comments_by_gist_id(&conn, &id) {
+        Ok(comments_obj) => {
+            comments = comments_obj;
+        }
+        Err(e) => {
+            error!("Errored: {:?}", e);
+            return Ok(Response::with((status::InternalServerError)));
+        }
+    }
+
+    let mut gist_comments: Vec<GistComment> = Vec::new();
+    for comment in comments {
+        let owner_id = comment.user_id;
+        let pc = GistComment{
+            comment: comment,
+            editable: owner_id == login_id,
+        };
+        gist_comments.push(pc);
+    }
+
     let owner_id = gist.user_id;
     let deletable = owner_id == login_id;
     let editable = owner_id == login_id;
@@ -238,6 +266,7 @@ pub fn show_handler(req: &mut Request) -> IronResult<Response> {
         gist: gist,
         editable: editable,
         deletable: deletable,
+        comments: gist_comments,
     };
 
     resp.set_mut(Template::new("gist/show", to_json(&data)))
@@ -417,4 +446,169 @@ pub fn delete_handler(req: &mut Request) -> IronResult<Response> {
             Ok(Response::with((status::InternalServerError)))
         }
     }
+}
+
+pub fn comment_handler(req: &mut Request) -> IronResult<Response> {
+    let conn = get_pg_connection!(req);
+    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    match handlers::account::current_user(req, &conn) {
+        Ok(user) => { login_user = user; }
+        Err(e) => { error!("Errored: {:?}", e); }
+    }
+    let login_id = login_user.id;
+    if login_id == 0 {
+        return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/signin")))));
+    }
+
+    let id: i32;
+    let body: String;
+
+    use params::{Params, Value};
+    {
+        let map = req.get_ref::<Params>().unwrap();
+
+        match map.find(&["id"]) {
+            Some(&Value::String(ref name)) => {
+                id = name.parse::<i32>().unwrap();
+            }
+            _ => return Ok(Response::with((status::BadRequest))),
+        }
+
+        match map.find(&["body"]) {
+            Some(&Value::String(ref name)) => {
+                body = name.to_string();
+            }
+            _ => return Ok(Response::with((status::BadRequest))),
+        }
+    }
+
+    let mut mentions = Vec::new();
+
+    match models::gist::get_by_id(&conn, &id) {
+        Ok(post_obj) => {
+            mentions.push(post_obj.user.username);
+        }
+        Err(e) => {
+            error!("Errored: {:?}", e);
+            return Ok(Response::with((status::InternalServerError)));
+        }
+    }
+
+    match models::gist::get_comments_by_gist_id(&conn, &id) {
+        Ok(comments_obj) => {
+            for comment in comments_obj {
+                let username: String = comment.user.username;
+                if !mentions.contains(&username) {
+                    mentions.push(username)
+                }
+            }
+        }
+        Err(e) => {
+            error!("Errored: {:?}", e);
+            return Ok(Response::with((status::InternalServerError)));
+        }
+    }
+
+
+    match models::gist::add_comment(&conn, &login_id, &id, &body) {
+        Ok(_) => {
+            let title = String::from("New comment");
+            let path = String::from("gist");
+            helper::post_to_slack(&conn, &login_id, &title, &body, &id, mentions, &path);
+            let url = Url::parse(&format!("{}/gist/show/{}", &CONFIG.team_domain, id)
+                                     .to_string()).unwrap();
+            return Ok(Response::with((status::Found, Redirect(url))));
+        }
+        Err(e) => {
+            error!("Errored: {:?}", e);
+            return Ok(Response::with((status::InternalServerError)));
+        }
+    }
+}
+
+pub fn comment_update_handler(req: &mut Request) -> IronResult<Response> {
+    let conn = get_pg_connection!(req);
+    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    match handlers::account::current_user(req, &conn) {
+        Ok(user) => { login_user = user; }
+        Err(e) => { error!("Errored: {:?}", e); }
+    }
+    let login_id = login_user.id;
+    if login_id == 0 {
+        return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/signin")))));
+    }
+
+    let id: i32;
+    let action: String;
+    let body: String;
+    let comment: models::gist::Comment;
+
+    {
+        let ref id_str = req.extensions
+            .get::<Router>()
+            .unwrap()
+            .find("id")
+            .unwrap_or("/");
+        id = id_str.parse::<i32>().unwrap();
+    }
+
+    use params::{Params, Value};
+    {
+        let map = req.get_ref::<Params>().unwrap();
+
+        match map.find(&["action"]) {
+            Some(&Value::String(ref name)) => {
+                action = name.to_string();
+            }
+            _ => return Ok(Response::with((status::BadRequest))),
+        }
+
+        match map.find(&["body"]) {
+            Some(&Value::String(ref name)) => {
+                body = name.to_string();
+            }
+            _ => return Ok(Response::with((status::BadRequest))),
+        }
+    }
+
+    match models::gist::get_comment_by_id(&conn, &id) {
+        Ok(db_comment) => {
+            comment = db_comment;
+            if comment.user_id != login_id {
+                return Ok(Response::with((status::Forbidden)));
+            }
+        }
+        Err(e) => {
+            error!("Errored: {:?}", e);
+            return Ok(Response::with((status::InternalServerError)));
+        }
+    }
+
+    if action == "update" {
+        match models::gist::update_comment_by_id(&conn, &id, &body) {
+            Ok(_) => {
+                let url = Url::parse(&format!("{}/gist/show/{}", &CONFIG.team_domain, comment.gist_id)
+                                         .to_string()).unwrap();
+                return Ok(Response::with((status::Found, Redirect(url))));
+            }
+            Err(e) => {
+                error!("Errored: {:?}", e);
+                return Ok(Response::with((status::InternalServerError)));
+            }
+        }
+    }
+    if action == "delete" {
+        match models::gist::delete_comment_by_id(&conn, &id) {
+            Ok(_) => {
+                let url = Url::parse(&format!("{}/gist/show/{}", &CONFIG.team_domain, comment.gist_id)
+                                         .to_string()).unwrap();
+                return Ok(Response::with((status::Found, Redirect(url))));
+            }
+            Err(e) => {
+                error!("Errored: {:?}", e);
+                return Ok(Response::with((status::InternalServerError)));
+            }
+        }
+    }
+    return Ok(Response::with((status::InternalServerError)));
 }

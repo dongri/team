@@ -28,6 +28,8 @@ pub fn create_router() -> Router {
     router.get("/gist/edit/:id", gist::edit_handler, "gist/edit");
     router.post("/gist/update", gist::update_handler, "gist/update");
     router.get("/gist/delete/:id", gist::delete_handler, "gist/delete");
+    router.post("/gist/comment", gist::comment_handler, "gist/comment");
+    router.post("/gist/comment/:id", gist::comment_update_handler, "gist/comment/update");
 
     router.get("/:kind/new", post::post::new_handler, "post/new");
     router.post("/:kind/create", post::post::create_handler, "post/create");
