@@ -64,3 +64,12 @@ create table gists (
   created       timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated       timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+create table gist_comments (
+  id            serial primary key,
+  user_id       serial REFERENCES users (id) ON DELETE CASCADE NOT NULL,
+  gist_id       serial REFERENCES gists (id) ON DELETE CASCADE NOT NULL,
+  body          text NOT NULL,
+  created       timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated       timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
