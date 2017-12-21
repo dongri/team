@@ -268,7 +268,7 @@ pub fn search(conn: &db::PostgresConnection, keyword: &String, offset: &i32, lim
     for row in &conn.query("
         SELECT p.id, p.kind, p.user_id, p.title, p.body, p.created, p.shared, u.username, u.icon_url from posts as p
         join users as u on u.id = p.user_id
-        where p.status = 'publish' and (p.title like '%' || $1 || '%' or p.body like '%' || $1 || '%')
+        where p.status = 'publish' and (p.title ilike '%' || $1 || '%' or p.body ilike '%' || $1 || '%')
         order by p.id desc offset $2::int limit $3::int", &[&keyword, &offset, &limit]).unwrap() {
         match models::tag::get_tags_by_post_id(&conn, &row.get("id")) {
             Ok(tags) => {
@@ -299,7 +299,7 @@ pub fn search(conn: &db::PostgresConnection, keyword: &String, offset: &i32, lim
 
 pub fn search_count(conn: &db::PostgresConnection, keyword: &String) -> Result<i32, Error> {
     let rows = &conn.query("
-        SELECT count(*)::int as count from posts where status = 'publish' and (title like '%' || $1 || '%' or body like '%' || $1 || '%')", &[&keyword]).unwrap();
+        SELECT count(*)::int as count from posts where status = 'publish' and (title ilike '%' || $1 || '%' or body ilike '%' || $1 || '%')", &[&keyword]).unwrap();
     let row = rows.get(0);
     let count = row.get("count");
     Ok(count)
