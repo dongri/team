@@ -50,7 +50,9 @@ pub fn create_router() -> Router {
 
     router.get("/tag/list", post::tag::tag_list_handler, "tag/list");
 
-    router.get("/:username", account::profile_handler, "user/profile");
+    router.get("/:username", account::profile_post_handler, "user/profile");
+    router.get("/:username/post", account::profile_post_handler, "user/profile_post");
+    router.get("/:username/nippo", account::profile_nippo_handler, "user/profile_nippo");
 
     return router;
 }

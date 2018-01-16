@@ -9,6 +9,7 @@
       <canvas width="50" height="50" data-jdenticon-hash="{{user.username_hash}}" class="user-large-icon"></canvas>
     {{/if}}
     <h3 class="usr-profile-username">@{{user.username}}</h3>
+    <h4><a href="/{{user.username}}/post">Post</a> | <a href="/{{user.username}}/nippo">Nippo</a></h4>
   </div>
   <ul class="post-items">
   {{#each posts}}
