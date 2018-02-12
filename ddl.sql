@@ -1,3 +1,4 @@
+create database team;
 -- Tables
 
 create table users (

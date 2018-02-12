@@ -6,6 +6,7 @@ services:
     image: postgres:latest
     container_name: team_postgres
     volumes:
+      - ./ddl.sql:/docker-entrypoint-initdb.d/init.sql
       - /tmp/postgres:/var/lib/postgresql/data
     ports:
       - "5432:5432"
