@@ -1,4 +1,6 @@
 create database team;
+\c team
+
 -- Tables
 
 create table users (
