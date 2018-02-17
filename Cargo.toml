@@ -12,6 +12,8 @@ staticfile = "0.4.0"
 params = "0.6.0"
 iron-sessionstorage = "0.6.6"
 urlencoded = "0.5.0"
+url = "1.0"
+oauth2 = "1.2.1"
 
 postgres = { version = "0.14.1", features = ["with-chrono"] }
 

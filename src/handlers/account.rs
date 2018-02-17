@@ -566,3 +566,58 @@ pub fn profile_nippo_handler(req: &mut Request) -> IronResult<Response> {
         .set_mut(status::Ok);
     return Ok(resp);
 }
+
+use std::env;
+use oauth2::Config;
+use iron::Url;
+
+pub fn get_google_handler(req: &mut Request) -> IronResult<Response> {
+
+    let google_client_id = env::var("TEAM_GOOGLE_CLIENT_ID").expect("Missing the GOOGLE_CLIENT_ID environment variable.");
+    let google_client_secret = env::var("TEAM_GOOGLE_CLIENT_SECRET").expect("Missing the GOOGLE_CLIENT_SECRET environment variable.");
+    let auth_url = "https://accounts.google.com/o/oauth2/v2/auth";
+    let token_url = "https://www.googleapis.com/oauth2/v3/token";
+
+    let mut config = Config::new(google_client_id, google_client_secret, auth_url, token_url);
+
+    // config = config.add_scope("https://www.googleapis.com/auth/plus.me");
+    config = config.add_scope("https://www.googleapis.com/auth/userinfo.email");
+
+    config = config.set_redirect_url("http://localhost:3000/google");
+
+    config = config.set_state("hogehoge");
+
+    let authorize_url = config.authorize_url();
+
+    let code: String;
+    {
+        use params::{Params, Value};
+        let map = req.get_ref::<Params>().unwrap();
+        match map.get("code") {
+            Some(&Value::String(ref name)) => {
+                code = name.to_string();
+            }
+            _ => code = "".to_string(),
+        }
+    }
+
+    if code == "" {
+        println!("Open this URL in your browser:\n{}\n", authorize_url.to_string());
+        let url = Url::parse(&format!("{}",authorize_url).to_string()).unwrap();
+        return Ok(Response::with((status::Found, Redirect(url))));
+    } else {
+        let result = config.exchange_code(code);
+        match result {
+            Ok(token) => {
+                println!("token: {:?}\n", token.access_token);
+                let access_token = token.access_token;
+                println!("access_token: {:?}\n", access_token);
+            }
+            Err(err) => {
+                error!("error: {}", err);
+            }
+        }
+    };
+
+    return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/signin")))));
+}
