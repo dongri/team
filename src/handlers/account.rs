@@ -611,7 +611,8 @@ pub fn get_google_handler(req: &mut Request) -> IronResult<Response> {
             Ok(token) => {
                 println!("token: {:?}\n", token.access_token);
                 let access_token = token.access_token;
-                println!("access_token: {:?}\n", access_token);
+                let email = helper::token_info(access_token.to_string());
+                println!("access_token: {:?}\n", email);
             }
             Err(err) => {
                 error!("error: {}", err);

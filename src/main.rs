@@ -42,6 +42,7 @@ extern crate fern;
 
 extern crate url;
 extern crate oauth2;
+extern crate reqwest;
 
 use std::error::Error;
 use std::path::Path;

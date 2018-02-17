@@ -122,3 +122,34 @@ pub fn redirect_url(path: &str) -> Url {
             .unwrap();
     return url
 }
+
+// use std;
+use reqwest;
+
+pub fn token_info(access_token: String) -> String {
+    println!("Status: {}", access_token);
+    
+    let url = &format!("{}{}","https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=", access_token).to_string();
+
+    #[derive(Deserialize, Default, Debug)]
+    struct Ip {
+        email: String,
+    }
+
+    //let ip: Ip = Ip{..Default::default()};
+    let mut res = reqwest::get(url).unwrap();
+
+    println!("Status: {}", res.status());
+    println!("Headers:\n{}", res.headers());
+
+    // copy the response body directly to stdout
+    // let _ = std::io::copy(&mut res, &mut std::io::stdout());
+    // println!("aaaaa: {:?}", res.json());
+
+    if let Ok(ip) = res.json::<Ip>() {
+        println!("bbbbb: {:#?}", ip);
+        return ip.email
+    } else {
+        return "".to_string()
+    }
+}
