@@ -14,6 +14,7 @@ use db;
 use models;
 use helper;
 use handlers;
+use env;
 
 const PAGINATES_PER: i32 = 10;
 
@@ -565,4 +566,85 @@ pub fn profile_nippo_handler(req: &mut Request) -> IronResult<Response> {
     resp.set_mut(Template::new("account/profile", to_json(&data)))
         .set_mut(status::Ok);
     return Ok(resp);
+}
+
+use oauth2::Config;
+use iron::Url;
+
+pub fn get_auth_google_handler(req: &mut Request) -> IronResult<Response> {
+
+    let google_client_id = env::CONFIG.team_google_client_id.as_str();
+    let google_client_secret = env::CONFIG.team_google_client_secret.as_str();
+    let auth_url = "https://accounts.google.com/o/oauth2/v2/auth";
+    let token_url = "https://www.googleapis.com/oauth2/v3/token";
+    let mut config = Config::new(google_client_id, google_client_secret, auth_url, token_url);
+    // config = config.add_scope("https://www.googleapis.com/auth/plus.me");
+    config = config.add_scope("https://www.googleapis.com/auth/userinfo.email");
+    config = config.set_redirect_url(env::CONFIG.team_google_redirect_url.as_str());
+    config = config.set_state("S5nHXBzfeJBWmE9CmzLKLaFxfjwxqdvAyHPnFnS9");
+    let authorize_url = config.authorize_url();
+
+    let code: String;
+    {
+        use params::{Params, Value};
+        let map = req.get_ref::<Params>().unwrap();
+        match map.get("code") {
+            Some(&Value::String(ref name)) => {
+                code = name.to_string();
+            }
+            _ => code = "".to_string(),
+        }
+    }
+
+    if code == "" {
+        let url = Url::parse(&format!("{}",authorize_url).to_string()).unwrap();
+        return Ok(Response::with((status::Found, Redirect(url))));
+    } else {
+        let result = config.exchange_code(code);
+        match result {
+            Ok(token) => {
+                let allow_domain = env::CONFIG.team_google_allow_domain.as_str();
+                let email = helper::get_google_email(token.access_token.to_string());
+                let v: Vec<&str> = email.as_str().split("@").collect();
+                let username = v[0].to_string();
+                let domain = v[1];
+                if allow_domain != domain && allow_domain != "" {
+                    return Ok(Response::with((status::InternalServerError, "domain error")));
+                }
+
+                let conn = get_pg_connection!(req);
+                let user: models::user::UserWithEmail;
+                match models::user::get_by_email(&conn, &email) {
+                    Ok(user_db) => {
+                        user = user_db;
+                        println!("{:?}", user);
+                    }
+                    Err(e) => {
+                        error!("Errored: {:?}", e);
+                        return Ok(Response::with((status::InternalServerError)));
+                    }
+                }
+                if user.username == "" {
+                    match models::user::create_with_email(&conn, &username, &email) {
+                        Ok(user_id) => {
+                            try!(req.session().set(Login { id: user_id.to_string() }));
+                            return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/")))));
+                        }
+                        Err(e) => {
+                            info!("Errored: {:?}", e);
+                            return Ok(Response::with((status::InternalServerError)));
+                        }
+                    }
+                } else {
+                    try!(req.session().set(Login { id: user.id.to_string() }));
+                    return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/")))));
+                }
+            }
+            Err(err) => {
+                error!("error: {}", err);
+            }
+        }
+    };
+
+    return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/signin")))));
 }

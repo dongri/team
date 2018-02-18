@@ -122,3 +122,20 @@ pub fn redirect_url(path: &str) -> Url {
             .unwrap();
     return url
 }
+
+// use std;
+use reqwest;
+
+pub fn get_google_email(access_token: String) -> String {
+    #[derive(Deserialize, Default, Debug)]
+    struct Info {
+        email: String,
+    }
+    let url = &format!("{}{}","https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=", access_token).to_string();
+    let mut res = reqwest::get(url).unwrap();
+    if let Ok(info) = res.json::<Info>() {
+        return info.email
+    } else {
+        return "".to_string()
+    }
+}

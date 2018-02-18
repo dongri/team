@@ -19,8 +19,24 @@ pub struct UserWithPassword {
     pub password: String,
 }
 
+#[derive(Serialize, Debug, Default)]
+pub struct UserWithEmail {
+    pub id: i32,
+    pub username: String,
+    pub icon_url: Option<String>,
+    pub email: Option<String>,
+    pub username_hash: String,
+}
+
 pub fn create(conn: &db::PostgresConnection, username: &String, password: &String) -> Result<(i32), Error> {
     let rows = &conn.query("INSERT INTO users (username, password) VALUES ($1, $2) returning id;", &[&username, &password]).unwrap();
+    let row = rows.get(0);
+    let user_id: i32 = row.get("id");
+    Ok(user_id)
+}
+
+pub fn create_with_email(conn: &db::PostgresConnection, username: &String, email: &String) -> Result<(i32), Error> {
+    let rows = &conn.query("INSERT INTO users (username, email) VALUES ($1, $2) returning id;", &[&username, &email]).unwrap();
     let row = rows.get(0);
     let user_id: i32 = row.get("id");
     Ok(user_id)
@@ -91,6 +107,20 @@ pub fn get_by_username(conn: &db::PostgresConnection, username: &str) -> Result<
             id: row.get("id"),
             username: row.get("username"),
             icon_url: row.get("icon_url"),
+            username_hash: helper::username_hash(row.get("username")),
+        };
+    }
+    Ok(user)
+}
+
+pub fn get_by_email(conn: &db::PostgresConnection, email: &str) -> Result<UserWithEmail, Error> {
+    let mut user: UserWithEmail = UserWithEmail{..Default::default()};
+    for row in &conn.query("SELECT id, username, icon_url, email from users where email = $1", &[&email]).unwrap() {
+        user = UserWithEmail {
+            id: row.get("id"),
+            username: row.get("username"),
+            icon_url: row.get("icon_url"),
+            email: row.get("email"),
             username_hash: helper::username_hash(row.get("username")),
         };
     }

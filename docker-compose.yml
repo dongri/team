@@ -20,6 +20,10 @@ services:
       - TEAM_DATABASE_URL=postgres://postgres:@team_postgres:5432/team
       - TEAM_DOMAIN=${TEAM_DOMAIN}
       - TEAM_SLACK=${TEAM_SLACK}
+      - TEAM_GOOGLE_CLIENT_ID=${TEAM_GOOGLE_CLIENT_ID}
+      - TEAM_GOOGLE_CLIENT_SECRET=${TEAM_GOOGLE_CLIENT_SECRET}
+      - TEAM_GOOGLE_REDIRECT_URL=${TEAM_GOOGLE_REDIRECT_URL}
+      - TEAM_GOOGLE_ALLOW_DOMAIN=${TEAM_GOOGLE_ALLOW_DOMAIN}
     volumes:
       - .:/source
     logging:
