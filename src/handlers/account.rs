@@ -608,7 +608,7 @@ pub fn get_auth_google_handler(req: &mut Request) -> IronResult<Response> {
                 let v: Vec<&str> = email.as_str().split("@").collect();
                 let username = v[0].to_string();
                 let domain = v[1];
-                if allow_domain != domain {
+                if allow_domain != domain && allow_domain != "" {
                     return Ok(Response::with((status::InternalServerError, "domain error")));
                 }
 

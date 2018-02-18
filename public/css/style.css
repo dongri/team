@@ -423,12 +423,12 @@ pre > code {
 .auth_basic {
   float: left;
   border-right: #AAA 1px solid;
-  padding-right: 30px;
+  padding-right: 40px;
 }
 
 .auth_google {
   float: left;
-  margin-left: 30px;
+  margin-left: 40px;
   margin-top: 14px;
 }
 
