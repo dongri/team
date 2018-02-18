@@ -418,18 +418,20 @@ pre > code {
 
 .auth {
   margin: 0 auto;
-  width: 50%;
+  max-width: 500px;
 }
 .auth_basic {
   float: left;
-  border-right: #AAA 1px solid;
+  border-right: #ddd 1px solid;
   padding-right: 40px;
+  width: 40%;
 }
 
 .auth_google {
   float: left;
   margin-left: 40px;
   margin-top: 14px;
+  width: 40%;
 }
 
 .auth_google_image {
