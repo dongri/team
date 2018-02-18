@@ -126,29 +126,15 @@ pub fn redirect_url(path: &str) -> Url {
 // use std;
 use reqwest;
 
-pub fn token_info(access_token: String) -> String {
-    println!("Status: {}", access_token);
-    
-    let url = &format!("{}{}","https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=", access_token).to_string();
-
+pub fn get_google_email(access_token: String) -> String {
     #[derive(Deserialize, Default, Debug)]
-    struct Ip {
+    struct Info {
         email: String,
     }
-
-    //let ip: Ip = Ip{..Default::default()};
+    let url = &format!("{}{}","https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=", access_token).to_string();
     let mut res = reqwest::get(url).unwrap();
-
-    println!("Status: {}", res.status());
-    println!("Headers:\n{}", res.headers());
-
-    // copy the response body directly to stdout
-    // let _ = std::io::copy(&mut res, &mut std::io::stdout());
-    // println!("aaaaa: {:?}", res.json());
-
-    if let Ok(ip) = res.json::<Ip>() {
-        println!("bbbbb: {:#?}", ip);
-        return ip.email
+    if let Ok(info) = res.json::<Info>() {
+        return info.email
     } else {
         return "".to_string()
     }

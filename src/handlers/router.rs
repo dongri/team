@@ -16,7 +16,7 @@ pub fn create_router() -> Router {
     router.post("/signin", account::post_signin_handler, "account/post_signin");
     router.get("/signout", account::get_signout_handler, "account/get_signout");
 
-    router.get("/google", account::get_google_handler, "account/get_google");
+    router.get("/auth/google", account::get_auth_google_handler, "account/get_auth_google");
 
     router.get("/account/settings", account::get_settings_handler, "account/get_settings");
     router.post("/account/settings", account::post_settings_handler, "account/post_settings");

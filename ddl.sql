@@ -6,8 +6,9 @@ create database team;
 create table users (
   id            serial primary key,
   username      varchar(255) NOT NULL,
-  password      varchar(255) NOT NULL,
+  password      varchar(255),
   icon_url      varchar(2048),
+  email         varchar(255),
   created       timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated       timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE(username)

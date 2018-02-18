@@ -30,4 +30,12 @@ pub struct Config {
     pub team_slack: String, // TEAM_SLACK
     #[serde(default="default_empty_string")]
     pub team_webhook_url: String, // TEAM_WEBHOOK_URL
+    #[serde(default="default_empty_string")]
+    pub team_google_client_id: String, // TEAM_GOOGLE_CLIENT_ID
+    #[serde(default="default_empty_string")]
+    pub team_google_client_secret: String, // TEAM_GOOGLE_CLIENT_SECRET
+    #[serde(default="default_empty_string")]
+    pub team_google_redirect_url: String, // TEAM_GOOGLE_REDIRECT_URL
+    #[serde(default="default_empty_string")]
+    pub team_google_allow_domain: String, // TEAM_GOOGLE_ALLOW_DOMAIN
 }

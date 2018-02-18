@@ -415,3 +415,23 @@ pre > code {
 .filename {
   margin-bottom: 10px;
 }
+
+.auth {
+  margin: 0 auto;
+  width: 50%;
+}
+.auth_basic {
+  float: left;
+  border-right: #AAA 1px solid;
+  padding-right: 30px;
+}
+
+.auth_google {
+  float: left;
+  margin-left: 30px;
+  margin-top: 14px;
+}
+
+.auth_google_image {
+  width: 200px;
+}
