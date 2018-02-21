@@ -105,15 +105,11 @@ footer {
 .user-icon {
   width: 40px;
   height: 40px;
-  border: 1px solid #CCC;
-  border-radius: 5px;
   background: black;
 }
 .user-large-icon {
   width: 80px;
   height: 80px;
-  border: 1px solid #CCC;
-  border-radius: 5px;
   background: black;
 }
 .user-profile {
@@ -284,8 +280,6 @@ h1.title {
 .feed-user-icon-img {
   width: 40px;
   height: 40px;
-  border: 1px solid #CCC;
-  border-radius: 5px;
   background: black;
 }
 .feed-item-detail {
