@@ -108,6 +108,7 @@ pub fn search_handler(req: &mut Request) -> IronResult<Response> {
     }
 
     let keyword_param: String;
+    let kind_param: String;
     let page_param: String;
 
     {
@@ -119,6 +120,12 @@ pub fn search_handler(req: &mut Request) -> IronResult<Response> {
             }
             _ => keyword_param = "".to_string(),
         }
+        match map.get("kind") {
+            Some(&Value::String(ref name)) => {
+                kind_param = name.to_string();
+            }
+            _ => kind_param = "all".to_string(),
+        }
         match map.get("page") {
             Some(&Value::String(ref name)) => {
                 page_param = name.to_string();
@@ -128,7 +135,9 @@ pub fn search_handler(req: &mut Request) -> IronResult<Response> {
     }
 
     let keyword_search = keyword_param.clone();
+    let kind_search = kind_param.clone();
     let keyword_count = keyword_param.clone();
+    let kind_count = kind_param.clone();
 
     let mut resp = Response::new();
 
@@ -151,7 +160,7 @@ pub fn search_handler(req: &mut Request) -> IronResult<Response> {
     let posts: Vec<models::post::Post>;
     let count: i32;
 
-    match models::post::search(&conn, &keyword_search, &offset, &limit) {
+    match models::post::search(&conn, &keyword_search, &kind_search, &offset, &limit) {
         Ok(posts_db) => {
             posts = posts_db;
         }
@@ -161,7 +170,7 @@ pub fn search_handler(req: &mut Request) -> IronResult<Response> {
         }
     }
 
-    match models::post::search_count(&conn, &keyword_count) {
+    match models::post::search_count(&conn, &keyword_count, &kind_count) {
         Ok(count_db) => {
             count = count_db;
         }

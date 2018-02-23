@@ -179,6 +179,9 @@ footer {
   font-size: 20px;
   color: #333;
 }
+.search-tabs {
+  margin-bottom: 20px;
+}
 .search-input {
   border-radius: 3px;
   border: none;

@@ -263,13 +263,24 @@ pub fn get_feed_count(conn: &db::PostgresConnection) -> Result<i32, Error> {
     Ok(count)
 }
 
-pub fn search(conn: &db::PostgresConnection, keyword: &String, offset: &i32, limit: &i32) -> Result<Vec<Post>, Error> {
+pub fn search(conn: &db::PostgresConnection, keyword: &String, kind: &String, offset: &i32, limit: &i32) -> Result<Vec<Post>, Error> {
+    let mut kind_param = String::from("");
+    if kind == "all" {
+        kind_param = format!("{}",  "");
+    }
+    if kind == "post" {
+        kind_param = format!("{}", "nippo");
+    }
+    if kind == "nippo" {
+        kind_param = format!("{}", "post");
+    }
+    println!("{}{}", "==============", kind_param);
     let mut posts: Vec<Post> = Vec::new();
     for row in &conn.query("
         SELECT p.id, p.kind, p.user_id, p.title, p.body, p.created, p.shared, u.username, u.icon_url from posts as p
         join users as u on u.id = p.user_id
-        where p.status = 'publish' and (p.title ilike '%' || $1 || '%' or p.body ilike '%' || $1 || '%')
-        order by p.id desc offset $2::int limit $3::int", &[&keyword, &offset, &limit]).unwrap() {
+        where p.status = 'publish' and (p.title ilike '%' || $1 || '%' or p.body ilike '%' || $1 || '%') and p.kind not in ($2)
+        order by p.id desc offset $3::int limit $4::int", &[&keyword, &kind_param, &offset, &limit]).unwrap() {
         match models::tag::get_tags_by_post_id(&conn, &row.get("id")) {
             Ok(tags) => {
                 posts.push(Post {
@@ -297,9 +308,9 @@ pub fn search(conn: &db::PostgresConnection, keyword: &String, offset: &i32, lim
     Ok(posts)
 }
 
-pub fn search_count(conn: &db::PostgresConnection, keyword: &String) -> Result<i32, Error> {
+pub fn search_count(conn: &db::PostgresConnection, keyword: &String, kind: &String) -> Result<i32, Error> {
     let rows = &conn.query("
-        SELECT count(*)::int as count from posts where status = 'publish' and (title ilike '%' || $1 || '%' or body ilike '%' || $1 || '%')", &[&keyword]).unwrap();
+        SELECT count(*)::int as count from posts where status = 'publish' and (title ilike '%' || $1 || '%' or body ilike '%' || $1 || '%') and kind = $2", &[&keyword, &kind]).unwrap();
     let row = rows.get(0);
     let count = row.get("count");
     Ok(count)
