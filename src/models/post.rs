@@ -265,21 +265,14 @@ pub fn get_feed_count(conn: &db::PostgresConnection) -> Result<i32, Error> {
 
 pub fn search(conn: &db::PostgresConnection, keyword: &String, kind: &String, offset: &i32, limit: &i32) -> Result<Vec<Post>, Error> {
     let mut kind_param = String::from("");
-    if kind == "all" {
-        kind_param = format!("{}",  "");
+    if kind != "all" {
+        kind_param = format!("{}", kind);
     }
-    if kind == "post" {
-        kind_param = format!("{}", "nippo");
-    }
-    if kind == "nippo" {
-        kind_param = format!("{}", "post");
-    }
-    println!("{}{}", "==============", kind_param);
     let mut posts: Vec<Post> = Vec::new();
     for row in &conn.query("
         SELECT p.id, p.kind, p.user_id, p.title, p.body, p.created, p.shared, u.username, u.icon_url from posts as p
         join users as u on u.id = p.user_id
-        where p.status = 'publish' and (p.title ilike '%' || $1 || '%' or p.body ilike '%' || $1 || '%') and p.kind not in ($2)
+        where p.status = 'publish' and (p.title ilike '%' || $1 || '%' or p.body ilike '%' || $1 || '%') and p.kind like '%' || $2 || '%'
         order by p.id desc offset $3::int limit $4::int", &[&keyword, &kind_param, &offset, &limit]).unwrap() {
         match models::tag::get_tags_by_post_id(&conn, &row.get("id")) {
             Ok(tags) => {
@@ -309,8 +302,12 @@ pub fn search(conn: &db::PostgresConnection, keyword: &String, kind: &String, of
 }
 
 pub fn search_count(conn: &db::PostgresConnection, keyword: &String, kind: &String) -> Result<i32, Error> {
+    let mut kind_param = String::from("");
+    if kind != "all" {
+        kind_param = format!("{}", kind);
+    }
     let rows = &conn.query("
-        SELECT count(*)::int as count from posts where status = 'publish' and (title ilike '%' || $1 || '%' or body ilike '%' || $1 || '%') and kind = $2", &[&keyword, &kind]).unwrap();
+        SELECT count(*)::int as count from posts where status = 'publish' and (title ilike '%' || $1 || '%' or body ilike '%' || $1 || '%') and kind like '%' || $2 || '%'", &[&keyword, &kind_param]).unwrap();
     let row = rows.get(0);
     let count = row.get("count");
     Ok(count)
