@@ -49,7 +49,7 @@
     {{#each post.tags}}
       <span class="tag-label"><a href="/tag/?name={{name}}">{{name}}</a></span>
     {{/each}}
-    <a href="javascript:editTags({{post.id}})" class="icon-edit">
+    <a href="javascript:editTags()" class="icon-edit tag-edit">
       <i class="fa fa-pencil-square-o" aria-hidden="true"></i>
     </a>
   </div>
@@ -59,7 +59,10 @@
       <div class="mui-textfield">
         <input type="text" value="{{#each post.tags}}{{name}},{{/each}}" name="tags">
       </div>
-      <button type="submit" class="mui-btn mui-btn--raised mui-btn--primary">Update Tag</button>
+      <button type="submit" class="mui-btn mui-btn--small mui-btn--raised mui-btn--primary">Update Tag</button>
+      <a href="javascript:editTagsCancel()">
+        Cancel
+      </a>
     </form>
   </div>  
 
@@ -150,6 +153,10 @@
     function editTags() {
       $("#tags_view").hide();
       $("#tags_input").show();
+    }
+    function editTagsCancel() {
+      $("#tags_view").show();
+      $("#tags_input").hide();
     }
   </script>
 {{/inline}}

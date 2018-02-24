@@ -224,6 +224,11 @@ footer {
 .tag-label a {
   text-decoration: none !important;
 }
+.tag-edit {
+  position: relative;
+  top: 3px;
+  margin-left: 5px;
+}
 h3.tag_name {
   margin-top: 0px;
   margin-bottom: 20px;
