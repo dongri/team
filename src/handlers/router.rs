@@ -42,6 +42,7 @@ pub fn create_router() -> Router {
     router.post("/:kind/update", post::post::update_handler, "post/update");
     router.post("/:kind/comment", post::comment::comment_handler, "post/comment");
     router.post("/:kind/comment/:id", post::comment::comment_update_handler, "post/comment/update");
+    router.post("/:kind/tags/:id", post::post::tags_update_handler, "post/tags/update");
 
     router.post("/:kind/stock/:id", post::stock::stock_handler, "post/stock");
     router.post("/:kind/unstock/:id", post::stock::unstock_handler, "post/unstock");

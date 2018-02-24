@@ -569,3 +569,87 @@ pub fn update_handler(req: &mut Request) -> IronResult<Response> {
         }
     }
 }
+
+pub fn tags_update_handler(req: &mut Request) -> IronResult<Response> {
+    let conn = get_pg_connection!(req);
+    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    match handlers::account::current_user(req, &conn) {
+        Ok(user) => { login_user = user; }
+        Err(e) => { error!("Errored: {:?}", e); }
+    }
+    let login_id = login_user.id;
+    if login_id == 0 {
+        return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/signin")))));
+    }
+
+    use params::{Params, Value};
+
+    let id: i32;
+    let title: String;
+    let body: String;
+    let tags: String;
+    let action: String = String::from("publish");
+
+    let old_post: models::post::Post;
+    {
+        let map = req.get_ref::<Params>().unwrap();
+        match map.find(&["id"]) {
+            Some(&Value::String(ref name)) => {
+                id = name.to_string().parse::<i32>().unwrap();
+            }
+            _ => return Ok(Response::with((status::BadRequest))),
+        }
+
+        match map.find(&["tags"]) {
+            Some(&Value::String(ref name)) => {
+                tags = name.to_string();
+            },
+            _ => return Ok(Response::with((status::BadRequest))),
+        }
+    }
+
+    let ref kind = req.extensions
+        .get::<Router>()
+        .unwrap()
+        .find("kind")
+        .unwrap_or("/");
+
+    match models::post::get_by_id(&conn, &id) {
+        Ok(post_obj) => {
+            old_post = post_obj;
+            title = old_post.title.clone();
+            body = old_post.body.clone();
+        }
+        Err(e) => {
+            error!("Errored: {:?}", e);
+            return Ok(Response::with((status::InternalServerError)));
+        }
+    }
+
+    match models::post::update(&conn, &id, &title, &body, &tags, &action) {
+        Ok(_) => {
+            let title = String::from("Update tag");
+            let path = String::from("post");
+            let left = &old_post.body;
+            let right = &body;
+            let mut diff_body = String::from("");
+            for diff in diff::lines(left, right) {
+                match diff {
+                    diff::Result::Left(l)    => diff_body += &format!("-{}\n", l),
+                    diff::Result::Both(l, _) => debug!(" {}\n", l),
+                    diff::Result::Right(r)   => diff_body += &format!("+{}\n", r)
+                }
+            }
+            helper::post_to_slack(&conn, &login_id, &title, &diff_body, &id, Vec::new(), &path);
+
+            let url = Url::parse(&format!("{}/{}/show/{}", &CONFIG.team_domain, kind, id)
+                                     .to_string())
+                    .unwrap();
+            return Ok(Response::with((status::Found, Redirect(url))));
+        }
+        Err(e) => {
+            error!("Errored: {:?}", e);
+            return Ok(Response::with((status::InternalServerError)));
+        }
+    }
+}
