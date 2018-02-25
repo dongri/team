@@ -44,9 +44,28 @@
   <div class="post-item-time">
     {{post.created}}
   </div>
-  {{#each post.tags}}
-    <span class="tag-label"><a href="/tag/?name={{name}}">{{name}}</a></span>
-  {{/each}}
+  <div id="tags_view">
+    Tag: 
+    {{#each post.tags}}
+      <span class="tag-label"><a href="/tag/?name={{name}}">{{name}}</a></span>
+    {{/each}}
+    <a href="javascript:editTags()" class="icon-edit tag-edit">
+      <i class="fa fa-pencil-square-o" aria-hidden="true"></i>
+    </a>
+  </div>
+  <div id="tags_input" style="display:none;">
+    <form class="mui-form" action="/{{kind}}/tags/{{post.id}}" method="post">
+      <input type="hidden" name="id" value="{{post.id}}">
+      <div class="mui-textfield">
+        <input type="text" value="{{#each post.tags}}{{name}},{{/each}}" name="tags">
+      </div>
+      <button type="submit" class="mui-btn mui-btn--small mui-btn--raised mui-btn--primary">Update Tag</button>
+      <a href="javascript:editTagsCancel()">
+        Cancel
+      </a>
+    </form>
+  </div>  
+
   <div class="post-item-icon">
   <a href="/{{post.user.username}}">
     {{#if post.user.icon_url}}
@@ -90,7 +109,7 @@
               <input type="hidden" name="action" value="update" id="comment_action_{{comment.id}}">
               <div class="mui-textfield">
                 <textarea placeholder="comment" name="body" id="input-comment">{{comment.body}}</textarea>
-              </di>
+              </div>
               <button type="submit" class="mui-btn mui-btn--raised mui-btn--primary">Update</button>
             </form>
           </div>
@@ -130,6 +149,14 @@
         $("#comment_action_"+comment_id).val("delete");
         $("#comment_input_"+comment_id).submit();
       }
+    }
+    function editTags() {
+      $("#tags_view").hide();
+      $("#tags_input").show();
+    }
+    function editTagsCancel() {
+      $("#tags_view").show();
+      $("#tags_input").hide();
     }
   </script>
 {{/inline}}

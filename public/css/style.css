@@ -179,6 +179,12 @@ footer {
   font-size: 20px;
   color: #333;
 }
+.search-tabs {
+  margin-bottom: 20px;
+}
+.search-tabs li a {
+  cursor: pointer;
+}
 .search-input {
   border-radius: 3px;
   border: none;
@@ -217,6 +223,11 @@ footer {
 }
 .tag-label a {
   text-decoration: none !important;
+}
+.tag-edit {
+  position: relative;
+  top: 3px;
+  margin-left: 5px;
 }
 h3.tag_name {
   margin-top: 0px;

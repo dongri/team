@@ -2,6 +2,17 @@
   Feed - Team
 {{/inline}}
 {{#*inline "page"}}
+  <ul class="mui-tabs__bar search-tabs">
+    <li class="{{kind_all_active}}">
+      <a data-mui-toggle="tab" data-mui-controls="pane-default-1" href="/search?keyword={{keyword}}&kind=all&page=1">All</a>
+    </li>
+    <li class="{{kind_post_active}}">
+      <a data-mui-toggle="tab" data-mui-controls="pane-default-2" href="/search?keyword={{keyword}}&kind=post&page=1">Post</a>
+    </li>
+    <li class="{{kind_nippo_active}}">
+      <a data-mui-toggle="tab" data-mui-controls="pane-default-3" href="/search?keyword={{keyword}}&kind=nippo&page=1">Nippo</a>
+    </li>
+  </ul>
   <ul class="post-items">
   {{#each posts}}
     <li>
@@ -32,9 +43,9 @@
   {{/each}}
   </ul>
   <div class="paginates">
-    <a href="/search?keyword={{keyword}}&page={{prev_page}}">Previous</a>
+    <a href="/search?keyword={{keyword}}&kind={{kind}}&page={{prev_page}}">Previous</a>
     {{current_page}} of {{total_page}}
-    <a href="/search?keyword={{keyword}}&page={{next_page}}">Next</a>
+    <a href="/search?keyword={{keyword}}&kind={{kind}}&page={{next_page}}">Next</a>
   </div>
 {{/inline}}
 {{~> layout ~}}

@@ -108,6 +108,7 @@ pub fn search_handler(req: &mut Request) -> IronResult<Response> {
     }
 
     let keyword_param: String;
+    let kind_param: String;
     let page_param: String;
 
     {
@@ -119,6 +120,12 @@ pub fn search_handler(req: &mut Request) -> IronResult<Response> {
             }
             _ => keyword_param = "".to_string(),
         }
+        match map.get("kind") {
+            Some(&Value::String(ref name)) => {
+                kind_param = name.to_string();
+            }
+            _ => kind_param = "all".to_string(),
+        }
         match map.get("page") {
             Some(&Value::String(ref name)) => {
                 page_param = name.to_string();
@@ -128,7 +135,9 @@ pub fn search_handler(req: &mut Request) -> IronResult<Response> {
     }
 
     let keyword_search = keyword_param.clone();
+    let kind_search = kind_param.clone();
     let keyword_count = keyword_param.clone();
+    let kind_count = kind_param.clone();
 
     let mut resp = Response::new();
 
@@ -142,6 +151,10 @@ pub fn search_handler(req: &mut Request) -> IronResult<Response> {
         next_page: i32,
         prev_page: i32,
         keyword: String,
+        kind: String,
+        kind_all_active: String,
+        kind_post_active: String,
+        kind_nippo_active: String,
     }
 
     let mut page = page_param.parse::<i32>().unwrap();
@@ -151,7 +164,7 @@ pub fn search_handler(req: &mut Request) -> IronResult<Response> {
     let posts: Vec<models::post::Post>;
     let count: i32;
 
-    match models::post::search(&conn, &keyword_search, &offset, &limit) {
+    match models::post::search(&conn, &keyword_search, &kind_search, &offset, &limit) {
         Ok(posts_db) => {
             posts = posts_db;
         }
@@ -161,7 +174,7 @@ pub fn search_handler(req: &mut Request) -> IronResult<Response> {
         }
     }
 
-    match models::post::search_count(&conn, &keyword_count) {
+    match models::post::search_count(&conn, &keyword_count, &kind_count) {
         Ok(count_db) => {
             count = count_db;
         }
@@ -174,6 +187,19 @@ pub fn search_handler(req: &mut Request) -> IronResult<Response> {
     if page == 0 {
         page = 1;
     }
+    let mut kind_all_active = String::from("");
+    let mut kind_post_active = String::from("");
+    let mut kind_nippo_active = String::from("");
+    let mui_is_active = String::from("mui--is-active");
+    if kind_param == "all" {
+        kind_all_active = mui_is_active.clone();
+    }
+    if kind_param == "post" {
+        kind_post_active = mui_is_active.clone();
+    }
+    if kind_param == "nippo" {
+        kind_nippo_active = mui_is_active.clone();
+    }
     let data = Data {
         logged_in: login_id != 0,
         login_user: login_user,
@@ -183,6 +209,10 @@ pub fn search_handler(req: &mut Request) -> IronResult<Response> {
         next_page: page + 1,
         prev_page: page - 1,
         keyword: keyword_param,
+        kind: kind_param,
+        kind_all_active: kind_all_active,
+        kind_post_active: kind_post_active,
+        kind_nippo_active: kind_nippo_active,
     };
 
     resp.set_mut(Template::new("search", to_json(&data)))
