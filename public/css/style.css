@@ -179,6 +179,11 @@ footer {
   font-size: 20px;
   color: #333;
 }
+.is-comment {
+  background: #A9F5BC;
+  padding: 5px;
+  border-radius: 5px;
+}
 .search-tabs {
   margin-bottom: 20px;
 }
