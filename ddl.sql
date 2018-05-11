@@ -77,3 +77,13 @@ create table gist_comments (
   created       timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated       timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+create table notifications (
+  id            serial primary key,
+  path          varchar(255),
+  from_user     serial REFERENCES users (id) ON DELETE CASCADE NOT NULL,
+  to_user       serial REFERENCES users (id) ON DELETE CASCADE NOT NULL,
+  read          boolean DEFAULT false,
+  created       timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated       timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
