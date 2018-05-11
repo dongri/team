@@ -1,47 +1,70 @@
-<header class="mui-appbar mui--z1">
-  <div class="mui-container">
-    <table width="100%">
-      <tr class="mui--appbar-height">
-        <td class="mui--text-title header-title"><a href="/">TEAM</a></td>
-        <td>
-          <form class="mui-form" action="/search" method="get">
-            <input type="text" name="keyword" class="search-input" value="{{keyword}}" placeholder="search" />
+<nav class="navbar is-{{login_user.theme}} topNav site-header">
+  <div class="container">
+    <div class="navbar-brand navbar-{{login_user.theme}}">
+      <a class="navbar-item" href="/">
+        <div class="site-title">Team</div>
+      </a>
+    </div>
+    <div id="topNav" class="navbar-menu">
+      <div class="navbar-start">
+        <div class="navbar-item">
+          <form action="/search" method="get">
+          <input class="input site-search site-search-{{login_user.theme}}" type="text" placeholder="Search ..." name="keyword" value="{{keyword}}">
           </form>
-        </td>
-        <td align="right">
-          <ul class="mui-list--inline mui--text-body2 header-ul">
-            {{#if logged_in}}
-              <li><a href="/">Feed</a></li>
-              <li><a href="/post/list">Post</a></li>
-              <li><a href="/nippo/list">Nippo</a></li>
-              <li><a href="/tag/list">Tag</a></li>
-              <li><a href="/gist/list">Gist</a></li>
-              <li>
-                <div class="mui-dropdown">
-                  <div data-mui-toggle="dropdown" class="dropdown-menu">
-                    {{#if login_user.icon_url}}
-                      <img src="{{login_user.icon_url}}" class="header-user-icon">
-                    {{else}}
-                      <canvas width="24" height="24" data-jdenticon-hash="{{login_user.username_hash}}" class="header-user-icon"></canvas>
-                    {{/if}}
-                    <span class="mui-caret"></span>
-                  </div>
-                  <ul class="mui-dropdown__menu mui-dropdown__menu--right">
-                    <li><a href="/{{login_user.username}}">Your profile</a></li>
-                    <li><a href="/stocked/list">Stocked</a></li>
-                    <li><a href="/draft/list">Draft</a></li>
-                    <li><a href="/account/settings">Settings</a></li>
-                    <li><a href="/signout">Sign out</a></li>
-                  </ul>
-                </div>
-              </li>
-            {{else}}
-              <li><a href="/signin">Sign In</a></li>
-              <li><a href="/signup">Sign Up</a></li>
-            {{/if}}
-          </ul>
-        </td>
-      </tr>
-    </table>
+        </div>
+      </div>
+      <div class="navbar-end navbar-{{login_user.theme}}">
+        {{#if logged_in}}
+        <a href="/notifications"><i class="far fa-bell notificatioin notificatioin-{{login_user.theme}}" id="notification-icon"></i></a>
+        <a class="navbar-item" href="/" id="menu-feed">Feed</a>
+         {{#each login_user.menu}}
+          <a class="navbar-item" href="/{{this}}/list">{{this}}</a>
+         {{/each}}
+        <div class="dropdown">
+          <div class="dropdown-trigger">
+            <button class="button user-icon-btn is-{{login_user.theme}} user-icon-btn-{{login_user.theme}}" aria-haspopup="true" aria-controls="dropdown-menu">
+              <span>
+                {{#if login_user.icon_url}}
+                <img src="{{login_user.icon_url}}" class="icon-img-small">
+                {{else}}
+                <canvas width="20" height="20" data-jdenticon-hash="{{login_user.username_hash}}" class="icon-img-small"></canvas>
+                {{/if}}
+              </span>
+              <span class="icon is-small" style="margin-left: -5px;">
+                <i class="fas fa-angle-down" aria-hidden="true"></i>
+              </span>
+            </button>
+          </div>
+          <div class="dropdown-menu" id="dropdown-menu" role="menu">
+            <div class="dropdown-content">
+              <a class="dropdown-item" href="/{{login_user.username}}">Your profile</a>
+              <a class="dropdown-item" href="/stocked/list">Stocked</a>
+              <a class="dropdown-item" href="/draft/list">Draft</a>
+              <a class="dropdown-item" href="/account/settings">Settings</a>
+              <hr class="dropdown-divider">
+              <a class="dropdown-item"href="/signout">Sign out</a>
+            </div>
+          </div>
+        </div>
+        {{else}}
+        <div class="navbar-item">
+          <div class="field is-grouped">
+            <p class="control">
+              <a class="button is-small" href="/signup">
+                <span>
+                  Sign up
+                </span>
+              </a>
+            </p>
+            <p class="control">
+              <a class="button is-small" href="/signin">
+                <span>Sing in</span>
+              </a>
+            </p>
+          </div>
+        </div>
+        {{/if}}
+      </div>
+    </div>
   </div>
-</header>
+</nav>

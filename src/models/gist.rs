@@ -12,6 +12,7 @@ pub struct Gist {
     pub filename: String,
     pub code: String,
     pub created: NaiveDateTime,
+    pub formated_created: String,
     pub user: models::user::User,
 }
 
@@ -33,20 +34,23 @@ pub fn list(conn: &db::PostgresConnection, offset: &i32, limit: &i32) -> Result<
         from gists as g
         join users as u on u.id = g.user_id
         order by g.id desc offset $1::int limit $2::int", &[&offset, &limit]).unwrap() {
-        gists.push(Gist {
+        let mut gist = Gist {
             id: row.get("id"),
             user_id: row.get("user_id"),
             description: row.get("description"),
             filename: row.get("filename"),
             code: row.get("code"),
             created: row.get("created"),
+            formated_created: "".to_string(),
             user: models::user::User{
                 id: row.get("user_id"),
                 username: row.get("username"),
                 icon_url: row.get("icon_url"),
                 username_hash: helper::username_hash(row.get("username")),
             },
-        });
+        };
+        gist.formated_created = helper::jst_time_formatter(gist.created);
+        gists.push(gist);
     }
     Ok(gists)
 }
@@ -63,13 +67,14 @@ pub fn get_by_id(conn: &db::PostgresConnection, id: &i32) -> Result<Gist, Error>
                             from gists as g join users as u on u.id=g.user_id 
                             where g.id = $1", &[&id]).unwrap();
     let row = rows.get(0);
-    let gist = Gist {
+    let mut gist = Gist {
         id: row.get("id"),
         user_id: row.get("user_id"),
         description: row.get("description"),
         filename: row.get("filename"),
         code: row.get("code"),
         created: row.get("created"),
+        formated_created: "".to_string(),
         user: models::user::User{
             id: row.get("user_id"),
             username: row.get("username"),
@@ -77,6 +82,7 @@ pub fn get_by_id(conn: &db::PostgresConnection, id: &i32) -> Result<Gist, Error>
             username_hash: helper::username_hash(row.get("username")),
         },
     };
+    gist.formated_created = helper::jst_time_formatter(gist.created);
     Ok(gist)
 }
 

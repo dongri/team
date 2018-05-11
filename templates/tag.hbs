@@ -1,41 +1,53 @@
 {{#*inline "title"}}
-  Feed - Team
+  Tags - Team
 {{/inline}}
 {{#*inline "page"}}
-  <h3 class="tag_name">tag: {{tag_name}}</h3>
+  <h3 class="tag_name">Tag: {{tag_name}}</h3>
   <ul class="post-items">
   {{#each posts}}
     <li>
-      <div class="post-item-left">
-        {{#if user.icon_url}}
-          <img src="{{user.icon_url}}" class="user-icon">
-        {{else}}
-          <canvas width="50" height="50" data-jdenticon-hash="{{user.username_hash}}" class="user-icon"></canvas>
-        {{/if}}
+      <div class="post-item-icon">
+        <a href="/{{user.username}}">
+          {{#if user.icon_url}}
+            <img src="{{user.icon_url}}" class="icon-img-normal">
+          {{else}}
+            <canvas width="40" height="40" data-jdenticon-hash="{{user.username_hash}}" class="icon-img-normal"></canvas>
+          {{/if}}
+        </a>
       </div>
-      <div class="post-item-right">
+      <div class="post-item-body">
         <div class="post-item">
-          <div class="post-username">
+          <div class="post-item-description">
             @{{user.username}}
           </div>
-          <div class="post-title">
+          <div class="post-item-title">
             <a href="/{{kind}}/show/{{id}}">{{title}}</a>
-            <div class="item-created">{{created}}</div>
           </div>
-          <div class="post-tags">
+          {{#if tags}}
+          <div class="post-item-tags">
             {{#each tags}}
-              <span class="tag-label"><a href="/tag?name={{name}}">{{name}}</a></span>
+              <span class="tag is-light"><a href="/tag?name={{name}}">{{name}}</a></span>
             {{/each}}
           </div>
+          {{/if}}
+          <div class="post-item-created">{{formated_created}}</div>
         </div>
       </div>
     </li>
   {{/each}}
   </ul>
-  <div class="paginates">
-    <a href="/tag?name={{tag_name}}&page={{prev_page}}">Previous</a>
-    {{current_page}} of {{total_page}}
-    <a href="/tag?name={{tag_name}}&page={{next_page}}">Next</a>
-  </div>
+
+  <nav class="pagination is-centered" role="navigation" aria-label="pagination">
+    <a class="pagination-previous" href="/tag?name={{tag_name}}&page={{prev_page}}">Previous</a>
+    <a class="pagination-next" href="/tag?name={{tag_name}}&page={{next_page}}">Next page</a>
+    <ul class="pagination-list">
+      <li>
+        <a class="pagination-link" aria-label="Page 46" aria-current="page">
+          {{current_page}} of {{total_page}}
+        </a>
+      </li>
+    </ul>
+  </nav>
+
 {{/inline}}
 {{~> layout ~}}

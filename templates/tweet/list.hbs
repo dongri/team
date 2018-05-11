@@ -1,0 +1,78 @@
+{{#*inline "title"}}
+  Tweet - Team
+{{/inline}}
+{{#*inline "page"}}
+  <div class="page-title">Tweet</div>
+
+  <form action="/tweet/post" method="post" class="tweet-form">
+    <div class="field">
+      <div class="control">
+        <textarea placeholder="What's happening?" name="body" id="input-comment" class="textarea is-info" rows="2" required></textarea>
+      </div>
+    </div>
+    <div class="field">
+      <div class="control">
+        <button type="submit" class="button is-info is-outlined">Tweet</button>
+      </div>
+    </div>
+  </form>
+
+  <ul class="post-items">
+  {{#each tweets}}
+    <li class="post-tweet" onclick="location.href='/tweet/show/{{id}}'">
+      <div class="post-item-icon">
+      <a href="/{{user.username}}">
+        {{#if user.icon_url}}
+          <img src="{{user.icon_url}}" class="icon-img-normal">
+        {{else}}
+          <canvas width="40" height="40" data-jdenticon-hash="{{user.username_hash}}" class="icon-img-normal"></canvas>
+        {{/if}}
+      </a>
+      </div>
+      <div class="post-item-body">
+        <div class="post-item">
+          <div class="post-item-description">
+            @{{user.username}} - {{formated_created}}
+          </div>
+          <div class="post-item-title">
+            <div class="tweet-body">{{body}}</div>
+          </div>
+          <div class="post-tweet-action">
+            <div class="post-tweet-comment-icon">
+              <i class="far fa-comment"></i>
+              {{#if comment_count}}
+                {{comment_count}}
+              {{/if}}
+            </div>
+            <div class="post-tweet-like-icon">
+              <i class="far fa-heart"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </li>
+  {{/each}}
+  </ul>
+
+  <nav class="pagination is-centered" role="navigation" aria-label="pagination">
+    <a class="pagination-previous" href="/tweet/list?page={{prev_page}}">Previous</a>
+    <a class="pagination-next" href="/tweet/list?page={{next_page}}">Next page</a>
+    <ul class="pagination-list">
+      <li>
+        <a class="pagination-link" aria-label="Page 46" aria-current="page">
+          {{current_page}} of {{total_page}}
+        </a>
+      </li>
+    </ul>
+  </nav>
+
+  <script>
+    $(".tweet-body").each(function(index, element){
+      var text = $(element).text();
+      text = text.replace(/\r?\n/g, '<br>');
+      $(element).html(text);
+    });
+  </script>
+
+{{/inline}}
+{{~> layout ~}}

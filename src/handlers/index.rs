@@ -14,7 +14,7 @@ const PAGINATES_PER: i32 = 10;
 
 pub fn index_handler(req: &mut Request) -> IronResult<Response> {
     let conn = get_pg_connection!(req);
-    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
     match handlers::account::current_user(req, &conn) {
         Ok(user) => { login_user = user; }
         Err(e) => { error!("Errored: {:?}", e); }
@@ -42,7 +42,7 @@ pub fn index_handler(req: &mut Request) -> IronResult<Response> {
     #[derive(Serialize, Debug)]
     struct Data {
         logged_in: bool,
-        login_user: models::user::User,
+        login_user: models::user::UserWithPreference,
         feeds: Vec<models::post::Feed>,
         current_page: i32,
         total_page: i32,
@@ -51,6 +51,9 @@ pub fn index_handler(req: &mut Request) -> IronResult<Response> {
     }
 
     let mut page = page_param.parse::<i32>().unwrap();
+    if page <= 0 {
+        page = 1;
+    }
     let offset = (page - 1) * PAGINATES_PER;
     let limit = PAGINATES_PER;
 
@@ -63,7 +66,7 @@ pub fn index_handler(req: &mut Request) -> IronResult<Response> {
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 
@@ -73,13 +76,10 @@ pub fn index_handler(req: &mut Request) -> IronResult<Response> {
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 
-    if page == 0 {
-        page = 1;
-    }
     let data = Data {
         logged_in: login_id != 0,
         login_user: login_user,
@@ -97,7 +97,7 @@ pub fn index_handler(req: &mut Request) -> IronResult<Response> {
 
 pub fn search_handler(req: &mut Request) -> IronResult<Response> {
     let conn = get_pg_connection!(req);
-    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
     match handlers::account::current_user(req, &conn) {
         Ok(user) => { login_user = user; }
         Err(e) => { error!("Errored: {:?}", e); }
@@ -138,13 +138,14 @@ pub fn search_handler(req: &mut Request) -> IronResult<Response> {
     let kind_search = kind_param.clone();
     let keyword_count = keyword_param.clone();
     let kind_count = kind_param.clone();
+    let kind_title = kind_param.clone();
 
     let mut resp = Response::new();
 
     #[derive(Serialize, Debug)]
     struct Data {
         logged_in: bool,
-        login_user: models::user::User,
+        login_user: models::user::UserWithPreference,
         posts: Vec<models::post::Post>,
         current_page: i32,
         total_page: i32,
@@ -155,6 +156,7 @@ pub fn search_handler(req: &mut Request) -> IronResult<Response> {
         kind_all_active: String,
         kind_post_active: String,
         kind_nippo_active: String,
+        kind_title: String,
     }
 
     let mut page = page_param.parse::<i32>().unwrap();
@@ -170,7 +172,7 @@ pub fn search_handler(req: &mut Request) -> IronResult<Response> {
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 
@@ -180,7 +182,7 @@ pub fn search_handler(req: &mut Request) -> IronResult<Response> {
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 
@@ -190,7 +192,7 @@ pub fn search_handler(req: &mut Request) -> IronResult<Response> {
     let mut kind_all_active = String::from("");
     let mut kind_post_active = String::from("");
     let mut kind_nippo_active = String::from("");
-    let mui_is_active = String::from("mui--is-active");
+    let mui_is_active = String::from("is-active");
     if kind_param == "all" {
         kind_all_active = mui_is_active.clone();
     }
@@ -213,6 +215,7 @@ pub fn search_handler(req: &mut Request) -> IronResult<Response> {
         kind_all_active: kind_all_active,
         kind_post_active: kind_post_active,
         kind_nippo_active: kind_nippo_active,
+        kind_title: helper::uppercase_first_letter(&kind_title),
     };
 
     resp.set_mut(Template::new("search", to_json(&data)))
@@ -222,7 +225,7 @@ pub fn search_handler(req: &mut Request) -> IronResult<Response> {
 
 pub fn tag_handler(req: &mut Request) -> IronResult<Response> {
     let conn = get_pg_connection!(req);
-    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
     match handlers::account::current_user(req, &conn) {
         Ok(user) => { login_user = user; }
         Err(e) => { error!("Errored: {:?}", e); }
@@ -246,7 +249,7 @@ pub fn tag_handler(req: &mut Request) -> IronResult<Response> {
 
         match helper::get_param(map, "name") {
             Ok(value) => tag_param = value,
-            Err(st) => return Ok(Response::with((st))),
+            Err(st) => return Ok(Response::with(st)),
         }
     }
 
@@ -255,7 +258,7 @@ pub fn tag_handler(req: &mut Request) -> IronResult<Response> {
     #[derive(Serialize, Debug)]
     struct Data {
         logged_in: bool,
-        login_user: models::user::User,
+        login_user: models::user::UserWithPreference,
         posts: Vec<models::post::Post>,
         current_page: i32,
         total_page: i32,
@@ -277,7 +280,7 @@ pub fn tag_handler(req: &mut Request) -> IronResult<Response> {
         },
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 
@@ -287,7 +290,7 @@ pub fn tag_handler(req: &mut Request) -> IronResult<Response> {
         },
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 

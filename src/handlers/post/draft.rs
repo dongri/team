@@ -12,7 +12,7 @@ use models;
 
 pub fn draft_list_handler(req: &mut Request) -> IronResult<Response> {
     let conn = get_pg_connection!(req);
-    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
     match handlers::account::current_user(req, &conn) {
         Ok(user) => { login_user = user; }
         Err(e) => { error!("Errored: {:?}", e); }
@@ -27,7 +27,7 @@ pub fn draft_list_handler(req: &mut Request) -> IronResult<Response> {
     #[derive(Serialize, Debug)]
     struct Data {
         logged_in: bool,
-        login_user: models::user::User,
+        login_user: models::user::UserWithPreference,
         posts: Vec<models::post::Post>,
     }
 
@@ -39,7 +39,7 @@ pub fn draft_list_handler(req: &mut Request) -> IronResult<Response> {
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
     let data = Data {

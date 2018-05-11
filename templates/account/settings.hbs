@@ -1,40 +1,106 @@
 {{#*inline "page"}}
-<form class="mui-form" action="/account/username" method="post">
-  <legend>username</legend>
-  <div class="mui-textfield">
-    <input type="text" id="username" name="username" value="{{user.username}}" placeholder="username">
+<div class="page-title">Settings</div>
+<div class="page-title">Menu</div>
+<form action="/account/preference/menu" method="post" id="preference_menu_form">
+  <input type="hidden" name="menu_param" id="menu_param" value="">
+  <div class="field">
+    <div class="control">
+      {{#each menu}}
+        <label class="checkbox">
+          {{name}}
+          <input type="checkbox" name="menu" value="{{name}}" class="menu" {{checked}}>
+        </label>
+         &nbsp;
+      {{/each}}
+    </div>
   </div>
-  <button type="submit" class="mui-btn mui-btn--raised mui-btn--primary">Update</button>
+  <div class="field">
+    <div class="control">
+      <button type="submit" class="button is-info is-outlined" onclick="javascript:submitUpdateMenu();return false;">Update</button>
+    </div>
+  </div>
+</form>
+<hr>
+<div class="page-title">Theme</div>
+<form action="/account/preference/theme" method="post">
+  <div class="field">
+    <div class="control">
+      <label class="radio">
+        Light
+        <input type="radio" name="theme" value="light" {{theme_light}}>
+      </label>
+      &nbsp;
+      <label class="radio">
+        Dark
+        <input type="radio" name="theme" value="black" {{theme_black}}>
+      </label>
+    </div>
+  </div>
+  <div class="field">
+    <div class="control">
+      <button type="submit" class="button is-info is-outlined">Update</button>
+    </div>
+  </div>
+</form>
+<hr>
+<div class="page-title">Username</div>
+<form action="/account/username" method="post">
+  <div class="field">
+    <div class="control">
+      <input type="text" id="username" name="username" value="{{user.username}}" placeholder="username" class="input">
+    </div>
+  </div>
+  <div class="field">
+    <div class="control">
+      <button type="submit" class="button is-info is-outlined">Update</button>
+    </div>
+  </div>
 </form>
 <hr />
-<form class="mui-form" action="/account/password" method="post">
-  <legend>Password</legend>
-  <label for="current_password">Current password</label>
-  <div class="mui-textfield">
-    <input type="password" id="current_password" name="current_password" placeholder="current password">
+<div class="page-title">Password</div>
+<form action="/account/password" method="post">
+  <div class="field">
+    <div class="control">
+      <input type="password" id="current_password" name="current_password" placeholder="current password" class="input">
+    </div>
   </div>
-  <label for="new_password">New password</label>
-  <div class="mui-textfield">
-    <input type="password" id="new_password" name="new_password" placeholder="new password">
+  <div class="field">
+    <div class="control">
+      <input type="password" id="new_password" name="new_password" placeholder="new password" class="input">
+    </div>
   </div>
-  <label for="confirm_password">Confirm new password</label>
-  <div class="mui-textfield">
-    <input type="password" id="confirm_password" name="confirm_password" placeholder="confirm">
+  <h1>Confirm new password</h1>
+  <div class="field">
+    <div class="control">
+    <input type="password" id="confirm_password" name="confirm_password" placeholder="Confirm new password" class="input">
+    </div>
   </div>
-  <button type="submit" class="mui-btn mui-btn--raised mui-btn--primary">Submit</button>
+  <div class="field">
+    <div class="control">
+      <button type="submit" class="button is-info is-outlined">Submit</button>
+    </div>
+  </div>
 </form>
 <hr />
-<form class="mui-form" action="/account/settings" method="post">
-  <legend>Icon URL</legend>
-  <div class="mui-textfield">
-    <input type="text" placeholder="Icon URL" name="icon_url" value="{{user.icon_url}}">
+<div class="page-title">Profile Icon</div>
+<form action="/account/settings" method="post">
+  <div class="field">
+    <div class="control">
+      <input type="text" placeholder="Icon URL" name="icon_url" value="{{user.icon_url}}" class="input">
+    </div>
   </div>
   <div>
     {{#if user.icon_url}}
-    <img src="{{user.icon_url}}" class="user-icon"> {{else}}
-    <canvas width="80" height="80" data-jdenticon-hash="{{user.username_hash}}" class="user-icon"></canvas>
+    <img src="{{user.icon_url}}" class="icon-img-large"> {{else}}
+    <canvas width="60" height="60" data-jdenticon-hash="{{user.username_hash}}" class="icon-img-large"></canvas>
     {{/if}}
   </div>
-  <button type="submit" class="mui-btn mui-btn--raised mui-btn--primary">Submit</button>
+  <div class="field">
+    <div class="control">
+      <button type="submit" class="button is-info is-outlined">Submit</button>
+    </div>
+  </div>
 </form>
+<hr />
+
 {{/inline}} {{~> layout ~}}

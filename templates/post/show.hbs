@@ -1,15 +1,18 @@
 {{#*inline "title"}}
   {{post.title}} - Team
 {{/inline}}
+{{#*inline "page_head"}}
+{{> post/head}}
+{{/inline}}
 {{#*inline "page"}}
   <div class="post-item-action">
     <div class="post-item-shared">
       {{# if shared}}
-        <i class="fa fa-users fa-2x" aria-hidden="true"></i>
+        <i class="fa fa-users" aria-hidden="true"></i>
       {{else}}
         {{# if deletable}}
         <form method="post" action="/{{kind}}/share/{{post.id}}">
-          <button class="mui-btn mui-btn--small mui-btn--primary post-button">Co-editing</button>
+          <button class="button is-info is-outlined is-small">Co-editing</button>
         </form>
         {{/if}}
       {{/if}}
@@ -17,100 +20,119 @@
     <div class="post-item-stock">
       {{# if stocked}}
       <form method="post" action="/{{kind}}/unstock/{{post.id}}">
-        <button class="mui-btn mui-btn--small mui-btn--primary post-button">Stocked</button>
+        <button class="button is-info is-outlined is-small">Stocked</button>
       </form>
       {{else}}
       <form method="post" action="/{{kind}}/stock/{{post.id}}">
-        <button class="mui-btn mui-btn--small mui-btn--primary post-button">Stock</button>
+        <button class="button is-info is-outlined is-small">Stock</button>
       </form>
       {{/if}}
     </div>
-    <br/>
     <div class="post-item-ed">
       {{# if editable}}
-        <a href="/{{kind}}/edit/{{post.id}}" class="icon-edit">
-          <i class="fa fa-pencil-square-o" aria-hidden="true"></i>
+        <a href="/{{kind}}/edit/{{post.id}}">
+          <button class="button is-danger is-outlined is-small">Edit</button>
         </a>
       {{/if}}
       {{# if deletable}}
-        <a href="/{{kind}}/delete/{{post.id}}" class="icon-delete">
-          <i class="fa fa-trash-o" aria-hidden="true"></i>
+        <a href="javascript:remove_post('{{kind}}', '{{post.id}}')">
+          <button class="button is-danger is-outlined is-small">Delete</button>
         </a>
       {{/if}}
     </div>
   </div>
 
-  <h1 class="title">{{post.title}}</h1>
-  <div class="post-item-time">
-    {{post.created}}
+  <div class="post-title">{{post.title}}</div>
+
+  <div class="post-item-info">
+    <div class="post-item-icon">
+      <a href="/{{post.user.username}}">
+        {{#if post.user.icon_url}}
+          <img src="{{post.user.icon_url}}" class="icon-img-normal">
+        {{else}}
+          <canvas width="20" height="20" data-jdenticon-hash="{{post.user.username_hash}}" class="post-user-icon"></canvas>
+        {{/if}}
+      </a>
+    </div>
+    <div class="post-item-body">
+      <div class="post-item-description">
+        @{{post.user.username}}<br/>
+      </div>
+      <div class="post-item-created">{{post.formated_created}}</div>
+    </div>
   </div>
+
   <div id="tags_view">
-    Tag: 
+    <i class="fas fa-tags"></i>
     {{#each post.tags}}
-      <span class="tag-label"><a href="/tag?name={{name}}">{{name}}</a></span>
+      <span class="tag is-light"><a href="/tag?name={{name}}">{{name}}</a></span>
     {{/each}}
-    <a href="javascript:editTags()" class="icon-edit tag-edit">
-      <i class="fa fa-pencil-square-o" aria-hidden="true"></i>
+    <a href="javascript:editTags()">
+      <i class="fa fa-edit" aria-hidden="true"></i>
     </a>
   </div>
   <div id="tags_input" style="display:none;">
-    <form class="mui-form" action="/{{kind}}/tags/{{post.id}}" method="post">
+    <form action="/{{kind}}/tags/{{post.id}}" method="post">
       <input type="hidden" name="id" value="{{post.id}}">
-      <div class="mui-textfield">
-        <input type="text" value="{{#each post.tags}}{{name}},{{/each}}" name="tags">
+      <div class="field">
+        <div class="control">
+          <input type="text" value="{{#each post.tags}}{{name}},{{/each}}" name="tags" class="input is-primary">
+        </div>
       </div>
-      <button type="submit" class="mui-btn mui-btn--small mui-btn--raised mui-btn--primary">Update Tag</button>
-      <a href="javascript:editTagsCancel()">
-        Cancel
-      </a>
+      <div class="field is-grouped">
+        <div class="control">
+          <button type="submit" class="button is-info is-outlined is-small">Update Tag</button>
+          <button type="button" class="button is-text is-small" onclick="javascript:editTagsCancel()">Cancel</button>
+        </div>
+      </div>
     </form>
-  </div>  
+  </div>
 
-  <div class="post-item-icon">
-  <a href="/{{post.user.username}}">
-    {{#if post.user.icon_url}}
-      <img src="{{post.user.icon_url}}" class="post-user-icon">
-    {{else}}
-      <canvas width="20" height="20" data-jdenticon-hash="{{post.user.username_hash}}" class="post-user-icon"></canvas>
-    {{/if}}
-  </a>
+  <div class="post-markdown">
+    <div class="marked" style="display:none;">{{post.body}}</div>
   </div>
-  <div class="post-item-username">
-    @{{post.user.username}}<br/>
-  </div>
-  <div class="mui-textfield marked" style="display:none;">{{post.body}}</div>
 
   <div class="comments">
     <ul class="post-items">
     {{#each comments}}
-      <li>
-        <div class="post-item-left">
-          {{#if comment.user.icon_url}}
-            <img src="{{comment.user.icon_url}}" class="user-icon">
-          {{else}}
-            <canvas width="50" height="50" data-jdenticon-hash="{{comment.user.username_hash}}" class="user-icon"></canvas>
-          {{/if}}
+      <li class="post-item-comment">
+        <div class="post-item-icon">
+          <a href="/{{comment.user.username}}">
+            {{#if comment.user.icon_url}}
+              <img src="{{comment.user.icon_url}}" class="icon-img-normal">
+            {{else}}
+              <canvas width="40" height="40" data-jdenticon-hash="{{comment.user.username_hash}}" class="icon-img-normal"></canvas>
+            {{/if}}
+          </a>
         </div>
-        <div class="post-item-right">
+        <div class="post-item-body">
           <div class="post-item">
-            <div class="post-username">
-              @{{comment.user.username}}<br/>
+            <div class="post-item-action">
               {{#if editable}}
-                <a href="javascript:edit({{comment.id}})" class="icon-edit">
-                  <i class="fa fa-pencil-square-o" aria-hidden="true"></i>
-                </a>
-                <a href="javascript:remove({{comment.id}})" class="icon-delete">
-                  <i class="fa fa-trash-o" aria-hidden="true"></i>
-                </a>
+              <a href="javascript:edit({{comment.id}})">
+                <i class="fa fa-edit" aria-hidden="true"></i>
+              </a>
+              <a href="javascript:remove({{comment.id}})">
+                <i class="fa fa-trash-alt" aria-hidden="true"></i>
+              </a>
               {{/if}}
             </div>
-            <div class="post-comment-body marked" style="display:none;" id="comment_view_{{comment.id}}">{{comment.body}}</div>
-            <form class="mui-form" action="/{{kind}}/comment/{{comment.id}}" method="post" id="comment_input_{{comment.id}}" style="display:none;">
-              <input type="hidden" name="action" value="update" id="comment_action_{{comment.id}}">
-              <div class="mui-textfield">
-                <textarea placeholder="comment" name="body" id="input-comment">{{comment.body}}</textarea>
+            <div class="post-item-description">
+              @{{comment.user.username}}<br/>
+            </div>
+            <div class="marked" style="display:none;" id="comment_view_{{comment.id}}">{{comment.body}}</div>
+            <form action="/{{kind}}/comment/{{comment.id}}" method="post" id="comment_input_{{comment.id}}" style="display:none;">
+              <input type="hidden" name="action" value="update" id="comment_action_{{comment.id}}" class="input">
+              <div class="field">
+                <div class="control">
+                  <textarea placeholder="comment" name="body" id="input-comment" class="textarea">{{comment.body}}</textarea>
+                </div>
               </div>
-              <button type="submit" class="mui-btn mui-btn--raised mui-btn--primary">Update</button>
+              <div class="field is-grouped">
+                <div class="control">
+                  <button type="submit" class="button is-info is-outlined">Update</button>
+                </div>
+              </div>
             </form>
           </div>
         </div>
@@ -121,11 +143,16 @@
 
   <form class="mui-form" action="/{{kind}}/comment" method="post">
     <input type="hidden" name="id" value="{{post.id}}">
-    <legend>Post a comment</legend>
-    <div class="mui-textfield">
-      <textarea placeholder="comment" name="body" id="input-comment"></textarea>
+    <div class="field">
+      <div class="control">
+        <textarea class="textarea is-info" placeholder="Post a comment" name="body" id="input-comment"></textarea>
+      </div>
     </div>
-    <button type="submit" class="mui-btn mui-btn--raised mui-btn--primary">Submit</button>
+    <div class="field is-grouped">
+      <div class="control">
+        <button type="submit" class="button is-info is-outlined">Submit</button>
+      </div>
+    </div>
   </form>
   <script>
     $(".marked").each(function(index, element){
@@ -157,6 +184,12 @@
     function editTagsCancel() {
       $("#tags_view").show();
       $("#tags_input").hide();
+    }
+    function remove_post(kind, post_id) {
+      var confirmed = confirm('Are you sure?');
+      if (confirmed) {
+        window.location.href = '/' + kind + '/delete/' + post_id;
+      }
     }
   </script>
 {{/inline}}

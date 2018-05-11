@@ -1,23 +1,33 @@
 {{#*inline "title"}}
-  Update {{kind}} - Team
+  Update {{kind_title}} - Team
 {{/inline}}
 {{#*inline "page_head"}}
 {{> post/head}}
 {{/inline}}
 {{#*inline "page"}}
-  <form class="mui-form" action="/{{kind}}/update" method="post">
+  <form action="/{{kind}}/update" method="post">
     <input type="hidden" name="id" value="{{post.id}}">
-    <div class="mui-textfield">
-      <input type="text" placeholder="Title" name="title" value="{{post.title}}" class="input-title">
+    <div class="field">
+      <div class="control">
+        <input type="text" placeholder="Title" name="title" value="{{post.title}}" class="input">
+      </div>
     </div>
-    <div class="mui-textfield">
-      <textarea name="body" placeholder="body" id="mdeditor" cols="30" rows="10" class="form-control">{{post.body}}</textarea>
+    <div class="field">
+      <div class="control">
+        <textarea name="body" placeholder="body" id="mdeditor" cols="30" rows="10">{{post.body}}</textarea>
+      </div>
     </div>
-    <div class="mui-textfield">
-      <input type="text" placeholder="Tags (e.g. rust,tips,postgres)" name="tags" value="{{tags}}" class="input-tags">
+    <div class="field">
+      <div class="control">
+        <input type="text" placeholder="Tags (e.g. rust,tips,postgres)" name="tags" value="{{tags}}" class="input">
+      </div>
     </div>
-    <button type="submit" class="mui-btn mui-btn--raised mui-btn--primary" name='action' value="publish">Update & Publish</button>
-    <button type="submit" class="mui-btn mui-btn--raised mui-btn--primary" name='action' value="draft">Draft</button>
+    <div class="field is-grouped">
+      <div class="control">
+        <button type="submit" class="button is-info is-outlined" name='action' value="publish">Update & Publish</button>
+        <button type="submit" class="button is-info is-outlined" name='action' value="draft">Draft</button>
+      </div>
+    </div>
   </form>
   <script>
     var simplemde = new SimpleMDE({

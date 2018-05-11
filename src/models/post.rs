@@ -12,9 +12,11 @@ pub struct Post {
     pub title: String,
     pub body: String,
     pub created: NaiveDateTime,
+    pub formated_created: String,
     pub user: models::user::User,
     pub tags: Vec<models::tag::Tag>,
     pub shared: bool,
+    pub status: String,
 }
 
 pub fn create(conn: &db::PostgresConnection, kind: &str, user_id: &i32, action: &String, title: &String, body: &String, tags: &String) -> Result<(i32), Error> {
@@ -44,21 +46,23 @@ pub fn create(conn: &db::PostgresConnection, kind: &str, user_id: &i32, action: 
 pub fn list(conn: &db::PostgresConnection, kind: &str, offset: &i32, limit: &i32) -> Result<Vec<Post>, Error> {
     let mut posts: Vec<Post> = Vec::new();
     for row in &conn.query("
-        SELECT p.id, p.kind, p.user_id, p.title, p.body, p.created, p.shared, u.username, u.icon_url
+        SELECT p.id, p.kind, p.user_id, p.title, p.body, p.created, p.shared, p.status, u.username, u.icon_url
         from posts as p
         join users as u on u.id = p.user_id
         where p.status = 'publish' and p.kind = $1
         order by p.id desc offset $2::int limit $3::int", &[&kind, &offset, &limit]).unwrap() {
         match models::tag::get_tags_by_post_id(&conn, &row.get("id")) {
             Ok(tags) => {
-                posts.push(Post {
+                let mut post = Post {
                     id: row.get("id"),
                     kind: row.get("kind"),
                     user_id: row.get("user_id"),
                     title: row.get("title"),
                     body: row.get("body"),
                     created: row.get("created"),
+                    formated_created: "".to_string(),
                     shared: row.get("shared"),
+                    status: row.get("status"),
                     user: models::user::User{
                         id: row.get("user_id"),
                         username: row.get("username"),
@@ -66,7 +70,9 @@ pub fn list(conn: &db::PostgresConnection, kind: &str, offset: &i32, limit: &i32
                         username_hash: helper::username_hash(row.get("username")),
                     },
                     tags: tags,
-                });
+                };
+                post.formated_created = helper::jst_time_formatter(post.created);
+                posts.push(post);
             },
             Err(e) => {
                 error!("Errored: {:?}", e);
@@ -125,18 +131,20 @@ pub fn update(conn: &db::PostgresConnection, id: &i32, title: &String, body: &St
 }
 
 pub fn get_by_id(conn: &db::PostgresConnection, id: &i32) -> Result<Post, Error> {
-    let rows = &conn.query("SELECT p.id, p.kind, p.user_id, p.title, p.body, p.created, p.shared, u.username, u.icon_url from posts as p join users as u on u.id=p.user_id where p.id = $1", &[&id]).unwrap();
+    let rows = &conn.query("SELECT p.id, p.kind, p.user_id, p.title, p.body, p.created, p.shared, p.status, u.username, u.icon_url from posts as p join users as u on u.id=p.user_id where p.id = $1", &[&id]).unwrap();
     let row = rows.get(0);
     match models::tag::get_tags_by_post_id(&conn, &row.get("id")) {
         Ok(tags) => {
-            let post = Post {
+            let mut post = Post {
                 id: row.get("id"),
                 kind: row.get("kind"),
                 user_id: row.get("user_id"),
                 title: row.get("title"),
                 body: row.get("body"),
                 created: row.get("created"),
+                formated_created: "".to_string(),
                 shared: row.get("shared"),
+                status: row.get("status"),
                 user: models::user::User{
                     id: row.get("user_id"),
                     username: row.get("username"),
@@ -145,6 +153,7 @@ pub fn get_by_id(conn: &db::PostgresConnection, id: &i32) -> Result<Post, Error>
                 },
                 tags: tags,
             };
+            post.formated_created = helper::jst_time_formatter(post.created);
             Ok(post)
         },
         Err(e) => {
@@ -170,11 +179,15 @@ pub struct Comment {
     pub user: models::user::User,
 }
 
-pub fn add_comment(conn: &db::PostgresConnection, user_id: &i32, post_id: &i32, body: &String) -> Result<(), Error> {
-    conn.execute(
-        "INSERT INTO post_comments (user_id, post_id, body) VALUES ($1, $2, $3);",
-        &[&user_id, &post_id, &body]
-    ).map(|_| ())
+pub fn add_comment(conn: &db::PostgresConnection, user_id: &i32, post_id: &i32, body: &String) -> Result<(i32), Error> {
+    &conn.query("
+        INSERT INTO post_comments (user_id, post_id, body) 
+        VALUES ($1, $2, $3) returning id;",
+        &[&user_id, &post_id, &body]).unwrap();
+    let posts = &conn.query("SELECT * from posts where id = $1", &[&post_id]).unwrap();
+    let post = posts.get(0);
+    let post_user_id: i32 = post.get("user_id");
+    models::notification::create(conn, &format!("/post/show/{}", post_id).to_string(), user_id, &post_user_id, body)
 }
 
 pub fn get_comments_by_post_id(conn: &db::PostgresConnection, id: &i32) -> Result<Vec<Comment>, Error> {
@@ -207,6 +220,7 @@ pub struct Feed {
     title: String,
     body: String,
     created: NaiveDateTime,
+    formated_created: String,
     user: models::user::User,
     tags: Vec<models::tag::Tag>,
 }
@@ -224,7 +238,7 @@ pub fn get_feeds(conn: &db::PostgresConnection, offset: &i32, limit: &i32) -> Re
             Ok(tags) => {
                 let mut body: String = row.get("body");
                 body = body.as_str().chars().skip(0).take(50).collect();
-                feeds.push(Feed {
+                let mut feed = Feed {
                     id: row.get("id"),
                     post: row.get("post"),
                     comment: row.get("comment"),
@@ -234,6 +248,7 @@ pub fn get_feeds(conn: &db::PostgresConnection, offset: &i32, limit: &i32) -> Re
                     title: row.get("title"),
                     body: body,
                     created: row.get("created"),
+                    formated_created: "".to_string(),
                     user: models::user::User{
                         id: row.get("user_id"),
                         username: row.get("username"),
@@ -241,7 +256,9 @@ pub fn get_feeds(conn: &db::PostgresConnection, offset: &i32, limit: &i32) -> Re
                         username_hash: helper::username_hash(row.get("username")),
                     },
                     tags: tags,
-                });
+                };
+                feed.formated_created = helper::jst_time_formatter(feed.created);
+                feeds.push(feed);
             },
             Err(e) => {
                 error!("Errored: {:?}", e);
@@ -270,20 +287,22 @@ pub fn search(conn: &db::PostgresConnection, keyword: &String, kind: &String, of
     }
     let mut posts: Vec<Post> = Vec::new();
     for row in &conn.query("
-        SELECT p.id, p.kind, p.user_id, p.title, p.body, p.created, p.shared, u.username, u.icon_url from posts as p
+        SELECT p.id, p.kind, p.user_id, p.title, p.body, p.created, p.shared, p.status, u.username, u.icon_url from posts as p
         join users as u on u.id = p.user_id
         where p.status = 'publish' and (p.title ilike '%' || $1 || '%' or p.body ilike '%' || $1 || '%') and p.kind like '%' || $2 || '%'
         order by p.id desc offset $3::int limit $4::int", &[&keyword, &kind_param, &offset, &limit]).unwrap() {
         match models::tag::get_tags_by_post_id(&conn, &row.get("id")) {
             Ok(tags) => {
-                posts.push(Post {
+                let mut post = Post {
                     id: row.get("id"),
                     kind: row.get("kind"),
                     user_id: row.get("user_id"),
                     title: row.get("title"),
                     body: row.get("body"),
                     created: row.get("created"),
+                    formated_created: "".to_string(),
                     shared: row.get("shared"),
+                    status: row.get("status"),
                     user: models::user::User{
                         id: row.get("user_id"),
                         username: row.get("username"),
@@ -291,7 +310,9 @@ pub fn search(conn: &db::PostgresConnection, keyword: &String, kind: &String, of
                         username_hash: helper::username_hash(row.get("username")),
                     },
                     tags: tags,
-                });
+                };
+                post.formated_created = helper::jst_time_formatter(post.created);
+                posts.push(post);
             },
             Err(e) => {
                 error!("Errored: {:?}", e);
@@ -324,7 +345,7 @@ pub fn stock_post(conn: &db::PostgresConnection, user_id: &i32, post_id: &i32) -
 pub fn stocked_list(conn: &db::PostgresConnection, user_id: &i32, offset: &i32, limit: &i32) -> Result<Vec<Post>, Error> {
     let mut posts: Vec<Post> = Vec::new();
     for row in &conn.query("
-        SELECT p.id, p.kind, p.user_id, p.title, p.body, p.created, p.shared, u.username, u.icon_url
+        SELECT p.id, p.kind, p.user_id, p.title, p.body, p.created, p.shared, p.status, u.username, u.icon_url
         from posts as p
         join stocks as s on s.post_id = p.id
         join users as u on u.id = p.user_id
@@ -332,14 +353,16 @@ pub fn stocked_list(conn: &db::PostgresConnection, user_id: &i32, offset: &i32, 
         order by s.id desc offset $2::int limit $3::int", &[&user_id, &offset, &limit]).unwrap() {
         match models::tag::get_tags_by_post_id(&conn, &row.get("id")) {
             Ok(tags) => {
-                posts.push(Post {
+                let mut post = Post {
                     id: row.get("id"),
                     kind: row.get("kind"),
                     user_id: row.get("user_id"),
                     title: row.get("title"),
                     body: row.get("body"),
                     created: row.get("created"),
+                    formated_created: "".to_string(),
                     shared: row.get("shared"),
+                    status: row.get("status"),
                     user: models::user::User{
                         id: row.get("user_id"),
                         username: row.get("username"),
@@ -347,7 +370,9 @@ pub fn stocked_list(conn: &db::PostgresConnection, user_id: &i32, offset: &i32, 
                         username_hash: helper::username_hash(row.get("username")),
                     },
                     tags: tags,
-                });
+                };
+                post.formated_created = helper::jst_time_formatter(post.created);
+                posts.push(post);
             },
             Err(e) => {
                 error!("Errored: {:?}", e);
@@ -382,7 +407,7 @@ pub fn stock_remove(conn: &db::PostgresConnection, user_id: &i32, post_id: &i32)
 pub fn draft_list(conn: &db::PostgresConnection, user_id: &i32) -> Result<Vec<Post>, Error> {
     let mut posts: Vec<Post> = Vec::new();
     for row in &conn.query("
-        SELECT p.id, p.kind, p.user_id, p.title, p.body, p.created, p.shared, u.username, u.icon_url
+        SELECT p.id, p.kind, p.user_id, p.title, p.body, p.created, p.shared, p.status, u.username, u.icon_url
         from posts as p
         join users as u on u.id = p.user_id
         where p.status = 'draft' and p.user_id = $1
@@ -396,7 +421,9 @@ pub fn draft_list(conn: &db::PostgresConnection, user_id: &i32) -> Result<Vec<Po
                     title: row.get("title"),
                     body: row.get("body"),
                     created: row.get("created"),
+                    formated_created: "".to_string(),
                     shared: row.get("shared"),
+                    status: row.get("status"),
                     user: models::user::User{
                         id: row.get("user_id"),
                         username: row.get("username"),
@@ -449,21 +476,23 @@ pub fn delete_comment_by_id(conn: &db::PostgresConnection, id: &i32) -> Result<(
 pub fn user_posts(conn: &db::PostgresConnection, username: &str, offset: &i32, limit: &i32, kind: &str) -> Result<Vec<Post>, Error> {
     let mut posts: Vec<Post> = Vec::new();
     for row in &conn.query("
-        SELECT p.id, p.kind, p.user_id, p.title, p.body, p.created, p.shared, u.username, u.icon_url
+        SELECT p.id, p.kind, p.user_id, p.title, p.body, p.created, p.shared, p.status, u.username, u.icon_url
         from posts as p
         join users as u on u.id = p.user_id
         where p.status = 'publish' and u.username = $1 and p.kind = $2
         order by p.id desc offset $3::int limit $4::int", &[&username, &kind, &offset, &limit]).unwrap() {
         match models::tag::get_tags_by_post_id(&conn, &row.get("id")) {
             Ok(tags) => {
-                posts.push(Post {
+                let mut post = Post {
                     id: row.get("id"),
                     kind: row.get("kind"),
                     user_id: row.get("user_id"),
                     title: row.get("title"),
                     body: row.get("body"),
                     created: row.get("created"),
+                    formated_created: "".to_string(),
                     shared: row.get("shared"),
+                    status: row.get("status"),
                     user: models::user::User{
                         id: row.get("user_id"),
                         username: row.get("username"),
@@ -471,7 +500,9 @@ pub fn user_posts(conn: &db::PostgresConnection, username: &str, offset: &i32, l
                         username_hash: helper::username_hash(row.get("username")),
                     },
                     tags: tags,
-                });
+                };
+                post.formated_created = helper::jst_time_formatter(post.created);
+                posts.push(post)
             },
             Err(e) => {
                 error!("Errored: {:?}", e);

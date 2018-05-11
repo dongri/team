@@ -13,7 +13,7 @@ use models;
 
 pub fn share_handler(req: &mut Request) -> IronResult<Response> {
     let conn = get_pg_connection!(req);
-    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
     match handlers::account::current_user(req, &conn) {
         Ok(user) => { login_user = user; }
         Err(e) => { error!("Errored: {:?}", e); }
@@ -45,7 +45,7 @@ pub fn share_handler(req: &mut Request) -> IronResult<Response> {
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 }

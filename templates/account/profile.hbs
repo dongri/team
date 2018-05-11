@@ -1,53 +1,66 @@
 {{#*inline "title"}}
-  Posts - Team
+  @{{user.username}} - Team
 {{/inline}}
 {{#*inline "page"}}
   <div class="user-profile">
     {{#if user.icon_url}}
-      <img src="{{user.icon_url}}" class="user-large-icon">
+      <img src="{{user.icon_url}}" class="icon-img-large">
     {{else}}
-      <canvas width="50" height="50" data-jdenticon-hash="{{user.username_hash}}" class="user-large-icon"></canvas>
+      <canvas width="60" height="60" data-jdenticon-hash="{{user.username_hash}}" class="icon-img-large"></canvas>
     {{/if}}
-    <h3 class="usr-profile-username">@{{user.username}}</h3>
-    <h4><a href="/{{user.username}}/post">Post</a> | <a href="/{{user.username}}/nippo">Nippo</a></h4>
+    <div class="usr-profile-username">@{{user.username}}</div>
+    <div class="tabs">
+      <ul>
+        <li class="{{kind_post_active}}"><a href="/{{user.username}}/post">Post</a></li>
+        <li class="{{kind_nippo_active}}"><a href="/{{user.username}}/nippo">Nippo</a></li>
+      </ul>
+    </div>
   </div>
   <ul class="post-items">
   {{#each posts}}
     <li>
-      <div class="post-item-left">
+      <div class="post-item-icon">
       <a href="/{{user.username}}">
         {{#if user.icon_url}}
-          <img src="{{user.icon_url}}" class="user-icon">
+          <img src="{{user.icon_url}}" class="icon-img-normal">
         {{else}}
-          <canvas width="50" height="50" data-jdenticon-hash="{{user.username_hash}}" class="user-icon"></canvas>
+          <canvas width="40" height="40" data-jdenticon-hash="{{user.username_hash}}" class="icon-img-normal"></canvas>
         {{/if}}
       </a>
       </div>
-      <div class="post-item-right">
+      <div class="post-item-body">
         <div class="post-item">
-          <div class="post-username">
+          <div class="post-item-description">
             @{{user.username}}
           </div>
-          <div class="post-title">
+          <div class="post-item-title">
             <a href="/post/show/{{id}}">{{title}}</a>
           </div>
           {{#if tags}}
-          <div class="post-tags">
+          <div class="post-item-tags">
             {{#each tags}}
-              <span class="tag-label"><a href="/tag?name={{name}}">{{name}}</a></span>
+              <span class="tag is-light"><a href="/tag?name={{name}}">{{name}}</a></span>
             {{/each}}
           </div>
           {{/if}}
-          <div class="item-created">{{created}}</div>
+          <div class="post-item-created">{{formated_created}}</div>
         </div>
       </div>
     </li>
   {{/each}}
   </ul>
-  <div class="paginates">
-    <a href="/{{user.username}}?page={{prev_page}}">Previous</a>
-    {{current_page}} of {{total_page}}
-    <a href="/{{user.username}}?page={{next_page}}">Next</a>
-  </div>
+
+  <nav class="pagination is-centered" role="navigation" aria-label="pagination">
+    <a class="pagination-previous" href="/{{user.username}}/{{kind}}?page={{prev_page}}">Previous</a>
+    <a class="pagination-next" href="/{{user.username}}/{{kind}}?page={{next_page}}">Next page</a>
+    <ul class="pagination-list">
+      <li>
+        <a class="pagination-link" aria-label="Page 46" aria-current="page">
+          {{current_page}} of {{total_page}}
+        </a>
+      </li>
+    </ul>
+  </nav>
+
 {{/inline}}
 {{~> layout ~}}

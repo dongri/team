@@ -35,17 +35,19 @@ pub fn get_tags_by_post_id(conn: &db::PostgresConnection, post_id: &i32) -> Resu
 
 pub fn tag_search(conn: &db::PostgresConnection, tag_name: &String, offset: i32, limit: i32) -> Result<Vec<models::post::Post>, Error> {
     let mut posts: Vec<models::post::Post> = Vec::new();
-    for row in &conn.query("SELECT p.id, p.kind, p.user_id, p.title, p.body, p.created, p.shared, u.username, u.icon_url from posts as p join users as u on u.id = p.user_id join taggings as t on p.id = t.post_id join tags as tg on t.tag_id = tg.id where tg.name = $1 order by p.id desc offset $2::int limit $3::int", &[&tag_name, &offset, &limit]).unwrap() {
+    for row in &conn.query("SELECT p.id, p.kind, p.user_id, p.title, p.body, p.created, p.shared, p.status, u.username, u.icon_url from posts as p join users as u on u.id = p.user_id join taggings as t on p.id = t.post_id join tags as tg on t.tag_id = tg.id where tg.name = $1 order by p.id desc offset $2::int limit $3::int", &[&tag_name, &offset, &limit]).unwrap() {
         match models::tag::get_tags_by_post_id(&conn, &row.get("id")) {
             Ok(tags) => {
-                posts.push(models::post::Post {
+                let mut post = models::post::Post {
                     id: row.get("id"),
                     kind: row.get("kind"),
                     user_id: row.get("user_id"),
                     title: row.get("title"),
                     body: row.get("body"),
                     created: row.get("created"),
+                    formated_created: "".to_string(),
                     shared: row.get("shared"),
+                    status: row.get("status"),
                     user: models::user::User{
                         id: row.get("user_id"),
                         username: row.get("username"),
@@ -53,7 +55,9 @@ pub fn tag_search(conn: &db::PostgresConnection, tag_name: &String, offset: i32,
                         username_hash: helper::username_hash(row.get("username")),
                     },
                     tags: tags,
-                });
+                };
+                post.formated_created = helper::jst_time_formatter(post.created);
+                posts.push(post);
             },
             Err(e) => {
                 error!("Errored: {:?}", e);

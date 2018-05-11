@@ -3,6 +3,7 @@ use handlers::index;
 use handlers::account;
 use handlers::post;
 use handlers::gist;
+use handlers::tweet;
 
 pub fn create_router() -> Router {
     let mut router = Router::new();
@@ -22,6 +23,8 @@ pub fn create_router() -> Router {
     router.post("/account/settings", account::post_settings_handler, "account/post_settings");
     router.post("/account/password", account::post_password_update, "account/post_password");
     router.post("/account/username", account::post_username_update, "account/post_username");
+    router.post("/account/preference/menu", account::post_preference_menu, "account/post_preference_menu");
+    router.post("/account/preference/theme", account::post_preference_theme, "account/post_preference_theme");
 
     router.get("/gist/new", gist::new_handler, "gist/new");
     router.post("/gist/create", gist::create_handler, "gist/create");
@@ -51,7 +54,15 @@ pub fn create_router() -> Router {
     router.get("/stocked/list", post::stock::stocked_list_handler, "stocked/list");
     router.get("/draft/list", post::draft::draft_list_handler, "draft/list");
 
+    router.get("/tweet/list", tweet::list_handler, "tweet/list");
+    router.post("/tweet/post", tweet::post_handler, "tweet/post");
+    router.get("/tweet/show/:id", tweet::show_handler, "tweet/show");
+    router.post("/tweet/comment", tweet::comment_handler, "tweet/comment");
+
     router.get("/tag/list", post::tag::tag_list_handler, "tag/list");
+
+    router.get("/notifications", post::post::notifications_handler, "post/notifications");
+    router.get("/notification_count", post::post::notification_count_handler, "post/notification_count");
 
     router.get("/:username", account::profile_post_handler, "user/profile");
     router.get("/:username/post", account::profile_post_handler, "user/profile_post");

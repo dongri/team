@@ -13,7 +13,7 @@ use models;
 
 pub fn comment_handler(req: &mut Request) -> IronResult<Response> {
     let conn = get_pg_connection!(req);
-    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
     match handlers::account::current_user(req, &conn) {
         Ok(user) => { login_user = user; }
         Err(e) => { error!("Errored: {:?}", e); }
@@ -34,14 +34,14 @@ pub fn comment_handler(req: &mut Request) -> IronResult<Response> {
             Some(&Value::String(ref name)) => {
                 id = name.parse::<i32>().unwrap();
             }
-            _ => return Ok(Response::with((status::BadRequest))),
+            _ => return Ok(Response::with(status::BadRequest)),
         }
 
         match map.find(&["body"]) {
             Some(&Value::String(ref name)) => {
                 body = name.to_string();
             }
-            _ => return Ok(Response::with((status::BadRequest))),
+            _ => return Ok(Response::with(status::BadRequest)),
         }
     }
 
@@ -59,7 +59,7 @@ pub fn comment_handler(req: &mut Request) -> IronResult<Response> {
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 
@@ -74,7 +74,7 @@ pub fn comment_handler(req: &mut Request) -> IronResult<Response> {
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 
@@ -90,14 +90,14 @@ pub fn comment_handler(req: &mut Request) -> IronResult<Response> {
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 }
 
 pub fn comment_update_handler(req: &mut Request) -> IronResult<Response> {
     let conn = get_pg_connection!(req);
-    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
     match handlers::account::current_user(req, &conn) {
         Ok(user) => { login_user = user; }
         Err(e) => { error!("Errored: {:?}", e); }
@@ -129,14 +129,14 @@ pub fn comment_update_handler(req: &mut Request) -> IronResult<Response> {
             Some(&Value::String(ref name)) => {
                 action = name.to_string();
             }
-            _ => return Ok(Response::with((status::BadRequest))),
+            _ => return Ok(Response::with(status::BadRequest)),
         }
 
         match map.find(&["body"]) {
             Some(&Value::String(ref name)) => {
                 body = name.to_string();
             }
-            _ => return Ok(Response::with((status::BadRequest))),
+            _ => return Ok(Response::with(status::BadRequest)),
         }
     }
 
@@ -150,12 +150,12 @@ pub fn comment_update_handler(req: &mut Request) -> IronResult<Response> {
         Ok(db_comment) => {
             comment = db_comment;
             if comment.user_id != login_id {
-                return Ok(Response::with((status::Forbidden)));
+                return Ok(Response::with(status::Forbidden));
             }
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 
@@ -168,7 +168,7 @@ pub fn comment_update_handler(req: &mut Request) -> IronResult<Response> {
             }
             Err(e) => {
                 error!("Errored: {:?}", e);
-                return Ok(Response::with((status::InternalServerError)));
+                return Ok(Response::with(status::InternalServerError));
             }
         }
     }
@@ -181,9 +181,9 @@ pub fn comment_update_handler(req: &mut Request) -> IronResult<Response> {
             }
             Err(e) => {
                 error!("Errored: {:?}", e);
-                return Ok(Response::with((status::InternalServerError)));
+                return Ok(Response::with(status::InternalServerError));
             }
         }
     }
-    return Ok(Response::with((status::InternalServerError)));
+    return Ok(Response::with(status::InternalServerError));
 }

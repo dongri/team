@@ -67,4 +67,42 @@ $(document).ready(function(){
     }
   });
 
+  var dropdown = document.querySelector('.dropdown');
+  dropdown.addEventListener('click', function (event) {
+    event.stopPropagation();
+    dropdown.classList.toggle('is-active');
+  });
+
+  document.addEventListener('click', function (event) {
+    event.stopPropagation();
+    dropdown.classList.remove('is-active');
+  });
+
+  $.ajax({
+    url: '/notification_count',
+    type: 'GET',
+    dataType: 'json',
+  }).then(
+  function (data) {
+    if (data.count > 0) {
+      $('#notification-icon').addClass('has-notification');
+    } else {
+      $('#notification-icon').removeClass('has-notification');
+    }
+  },
+  function () {
+    alert("Error!");
+  });
+
 });
+
+function submitUpdateMenu() {
+  var menu = [];
+  $('.menu').each(function(){
+    if ($(this).prop('checked')) {
+      menu.push($(this).val());
+    }
+  });
+  $("#menu_param").val(menu);
+  $("#preference_menu_form").submit();
+};

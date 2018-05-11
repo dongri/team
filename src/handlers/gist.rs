@@ -18,7 +18,7 @@ pub const PAGINATES_PER: i32 = 10;
 
 pub fn new_handler(req: &mut Request) -> IronResult<Response> {
     let conn = get_pg_connection!(req);
-    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
     match handlers::account::current_user(req, &conn) {
         Ok(user) => { login_user = user; }
         Err(e) => { error!("Errored: {:?}", e); }
@@ -33,7 +33,7 @@ pub fn new_handler(req: &mut Request) -> IronResult<Response> {
     #[derive(Serialize)]
     struct Data {
         logged_in: bool,
-        login_user: models::user::User,
+        login_user: models::user::UserWithPreference,
     }
     let data = Data {
         logged_in: login_id != 0,
@@ -46,7 +46,7 @@ pub fn new_handler(req: &mut Request) -> IronResult<Response> {
 
 pub fn create_handler(req: &mut Request) -> IronResult<Response> {
     let conn = get_pg_connection!(req);
-    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
     match handlers::account::current_user(req, &conn) {
         Ok(user) => { login_user = user; }
         Err(e) => { error!("Errored: {:?}", e); }
@@ -68,20 +68,20 @@ pub fn create_handler(req: &mut Request) -> IronResult<Response> {
             Some(&Value::String(ref name)) => {
                 description = name.to_string();
             }
-            _ => return Ok(Response::with((status::BadRequest))),
+            _ => return Ok(Response::with(status::BadRequest)),
         }
 
         match map.get("gist-filename") {
             Some(&Value::String(ref name)) => {
                 filename = name.to_string();
             }
-            _ => return Ok(Response::with((status::BadRequest))),
+            _ => return Ok(Response::with(status::BadRequest)),
         }
         match map.get("gist-code") {
             Some(&Value::String(ref name)) => {
                 code = name.to_string();
             }
-            _ => return Ok(Response::with((status::BadRequest))),
+            _ => return Ok(Response::with(status::BadRequest)),
         }
     }
 
@@ -97,7 +97,7 @@ pub fn create_handler(req: &mut Request) -> IronResult<Response> {
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 }
@@ -105,7 +105,7 @@ pub fn create_handler(req: &mut Request) -> IronResult<Response> {
 
 pub fn list_handler(req: &mut Request) -> IronResult<Response> {
     let conn = get_pg_connection!(req);
-    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
     match handlers::account::current_user(req, &conn) {
         Ok(user) => { login_user = user; }
         Err(e) => { error!("Errored: {:?}", e); }
@@ -133,7 +133,7 @@ pub fn list_handler(req: &mut Request) -> IronResult<Response> {
     #[derive(Serialize, Debug)]
     struct Data {
         logged_in: bool,
-        login_user: models::user::User,
+        login_user: models::user::UserWithPreference,
         gists: Vec<models::gist::Gist>,
         current_page: i32,
         total_page: i32,
@@ -142,6 +142,9 @@ pub fn list_handler(req: &mut Request) -> IronResult<Response> {
     }
 
     let mut page = page_param.parse::<i32>().unwrap();
+    if page <= 0 {
+        page = 1;
+    }
     let offset = (page - 1) * PAGINATES_PER;
     let limit = PAGINATES_PER;
 
@@ -154,7 +157,7 @@ pub fn list_handler(req: &mut Request) -> IronResult<Response> {
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 
@@ -164,12 +167,8 @@ pub fn list_handler(req: &mut Request) -> IronResult<Response> {
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
-    }
-
-    if page == 0 {
-        page = 1;
     }
 
     let data = Data {
@@ -189,7 +188,7 @@ pub fn list_handler(req: &mut Request) -> IronResult<Response> {
 
 pub fn show_handler(req: &mut Request) -> IronResult<Response> {
     let conn = get_pg_connection!(req);
-    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
     match handlers::account::current_user(req, &conn) {
         Ok(user) => { login_user = user; }
         Err(e) => { error!("Errored: {:?}", e); }
@@ -217,7 +216,7 @@ pub fn show_handler(req: &mut Request) -> IronResult<Response> {
     #[derive(Serialize)]
     struct Data {
         logged_in: bool,
-        login_user: models::user::User,
+        login_user: models::user::UserWithPreference,
         gist: models::gist::Gist,
         editable: bool,
         deletable: bool,
@@ -233,7 +232,7 @@ pub fn show_handler(req: &mut Request) -> IronResult<Response> {
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 
@@ -243,7 +242,7 @@ pub fn show_handler(req: &mut Request) -> IronResult<Response> {
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 
@@ -276,7 +275,7 @@ pub fn show_handler(req: &mut Request) -> IronResult<Response> {
 
 pub fn edit_handler(req: &mut Request) -> IronResult<Response> {
     let conn = get_pg_connection!(req);
-    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
     match handlers::account::current_user(req, &conn) {
         Ok(user) => { login_user = user; }
         Err(e) => { error!("Errored: {:?}", e); }
@@ -290,7 +289,7 @@ pub fn edit_handler(req: &mut Request) -> IronResult<Response> {
     #[derive(Serialize)]
     struct Data {
         logged_in: bool,
-        login_user: models::user::User,
+        login_user: models::user::UserWithPreference,
         gist: models::gist::Gist,
     }
 
@@ -306,13 +305,13 @@ pub fn edit_handler(req: &mut Request) -> IronResult<Response> {
     match models::gist::get_by_id(&conn, &id) {
         Ok(gist_obj) => {
             if gist_obj.user_id != login_id {
-                return Ok(Response::with((status::Forbidden)));
+                return Ok(Response::with(status::Forbidden));
             }
             gist = gist_obj;
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 
@@ -328,7 +327,7 @@ pub fn edit_handler(req: &mut Request) -> IronResult<Response> {
 
 pub fn update_handler(req: &mut Request) -> IronResult<Response> {
     let conn = get_pg_connection!(req);
-    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
     match handlers::account::current_user(req, &conn) {
         Ok(user) => { login_user = user; }
         Err(e) => { error!("Errored: {:?}", e); }
@@ -352,28 +351,28 @@ pub fn update_handler(req: &mut Request) -> IronResult<Response> {
             Some(&Value::String(ref name)) => {
                 id = name.to_string().parse::<i32>().unwrap();
             }
-            _ => return Ok(Response::with((status::BadRequest))),
+            _ => return Ok(Response::with(status::BadRequest)),
         }
 
         match map.find(&["gist-description"]) {
             Some(&Value::String(ref name)) => {
                 description = name.to_string();
             }
-            _ => return Ok(Response::with((status::BadRequest))),
+            _ => return Ok(Response::with(status::BadRequest)),
         }
 
         match map.find(&["gist-filename"]) {
             Some(&Value::String(ref name)) => {
                 filename = name.to_string();
             }
-            _ => return Ok(Response::with((status::BadRequest))),
+            _ => return Ok(Response::with(status::BadRequest)),
         }
 
         match map.find(&["gist-code"]) {
             Some(&Value::String(ref name)) => {
                 code = name.to_string();
             },
-            _ => return Ok(Response::with((status::BadRequest))),
+            _ => return Ok(Response::with(status::BadRequest)),
         }
     }
 
@@ -381,12 +380,12 @@ pub fn update_handler(req: &mut Request) -> IronResult<Response> {
         Ok(gist_obj) => {
             old_gist = gist_obj;
             if old_gist.user_id != login_id {
-                return Ok(Response::with((status::Forbidden)));
+                return Ok(Response::with(status::Forbidden));
             }
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 
@@ -402,14 +401,14 @@ pub fn update_handler(req: &mut Request) -> IronResult<Response> {
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 }
 
 pub fn delete_handler(req: &mut Request) -> IronResult<Response> {
     let conn = get_pg_connection!(req);
-    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
     match handlers::account::current_user(req, &conn) {
         Ok(user) => { login_user = user; }
         Err(e) => { error!("Errored: {:?}", e); }
@@ -428,12 +427,12 @@ pub fn delete_handler(req: &mut Request) -> IronResult<Response> {
     match models::gist::get_by_id(&conn, &id) {
         Ok(gist) => {
             if gist.user_id != login_user.id {
-                return Ok(Response::with((status::Forbidden)));
+                return Ok(Response::with(status::Forbidden));
             }
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 
@@ -443,14 +442,14 @@ pub fn delete_handler(req: &mut Request) -> IronResult<Response> {
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            Ok(Response::with((status::InternalServerError)))
+            Ok(Response::with(status::InternalServerError))
         }
     }
 }
 
 pub fn comment_handler(req: &mut Request) -> IronResult<Response> {
     let conn = get_pg_connection!(req);
-    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
     match handlers::account::current_user(req, &conn) {
         Ok(user) => { login_user = user; }
         Err(e) => { error!("Errored: {:?}", e); }
@@ -471,14 +470,14 @@ pub fn comment_handler(req: &mut Request) -> IronResult<Response> {
             Some(&Value::String(ref name)) => {
                 id = name.parse::<i32>().unwrap();
             }
-            _ => return Ok(Response::with((status::BadRequest))),
+            _ => return Ok(Response::with(status::BadRequest)),
         }
 
         match map.find(&["body"]) {
             Some(&Value::String(ref name)) => {
                 body = name.to_string();
             }
-            _ => return Ok(Response::with((status::BadRequest))),
+            _ => return Ok(Response::with(status::BadRequest)),
         }
     }
 
@@ -490,7 +489,7 @@ pub fn comment_handler(req: &mut Request) -> IronResult<Response> {
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 
@@ -505,7 +504,7 @@ pub fn comment_handler(req: &mut Request) -> IronResult<Response> {
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 
@@ -521,14 +520,14 @@ pub fn comment_handler(req: &mut Request) -> IronResult<Response> {
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 }
 
 pub fn comment_update_handler(req: &mut Request) -> IronResult<Response> {
     let conn = get_pg_connection!(req);
-    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
     match handlers::account::current_user(req, &conn) {
         Ok(user) => { login_user = user; }
         Err(e) => { error!("Errored: {:?}", e); }
@@ -560,14 +559,14 @@ pub fn comment_update_handler(req: &mut Request) -> IronResult<Response> {
             Some(&Value::String(ref name)) => {
                 action = name.to_string();
             }
-            _ => return Ok(Response::with((status::BadRequest))),
+            _ => return Ok(Response::with(status::BadRequest)),
         }
 
         match map.find(&["body"]) {
             Some(&Value::String(ref name)) => {
                 body = name.to_string();
             }
-            _ => return Ok(Response::with((status::BadRequest))),
+            _ => return Ok(Response::with(status::BadRequest)),
         }
     }
 
@@ -575,12 +574,12 @@ pub fn comment_update_handler(req: &mut Request) -> IronResult<Response> {
         Ok(db_comment) => {
             comment = db_comment;
             if comment.user_id != login_id {
-                return Ok(Response::with((status::Forbidden)));
+                return Ok(Response::with(status::Forbidden));
             }
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 
@@ -593,7 +592,7 @@ pub fn comment_update_handler(req: &mut Request) -> IronResult<Response> {
             }
             Err(e) => {
                 error!("Errored: {:?}", e);
-                return Ok(Response::with((status::InternalServerError)));
+                return Ok(Response::with(status::InternalServerError));
             }
         }
     }
@@ -606,9 +605,9 @@ pub fn comment_update_handler(req: &mut Request) -> IronResult<Response> {
             }
             Err(e) => {
                 error!("Errored: {:?}", e);
-                return Ok(Response::with((status::InternalServerError)));
+                return Ok(Response::with(status::InternalServerError));
             }
         }
     }
-    return Ok(Response::with((status::InternalServerError)));
+    return Ok(Response::with(status::InternalServerError));
 }

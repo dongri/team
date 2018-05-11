@@ -1,6 +1,7 @@
 use postgres::error::Error;
 use db;
 use helper;
+use env;
 
 #[derive(Serialize, Debug, Default)]
 pub struct User {
@@ -26,6 +27,16 @@ pub struct UserWithEmail {
     pub icon_url: Option<String>,
     pub email: Option<String>,
     pub username_hash: String,
+}
+
+#[derive(Serialize, Debug, Default)]
+pub struct UserWithPreference {
+    pub id: i32,
+    pub username: String,
+    pub icon_url: Option<String>,
+    pub username_hash: String,
+    pub menu: Vec<String>,
+    pub theme: String,
 }
 
 pub fn create(conn: &db::PostgresConnection, username: &String, password: &String) -> Result<(i32), Error> {
@@ -63,6 +74,23 @@ pub fn get_by_id(conn: &db::PostgresConnection, id: &i32) -> Result<User, Error>
             username: row.get("username"),
             icon_url: row.get("icon_url"),
             username_hash: helper::username_hash(row.get("username")),
+        };
+    }
+    Ok(user)
+}
+
+pub fn get_current_user(conn: &db::PostgresConnection, id: &i32) -> Result<UserWithPreference, Error> {
+    let mut user: UserWithPreference = UserWithPreference{..Default::default()};
+    let default_menu = &env::CONFIG.team_menu;
+    let default_theme = &env::CONFIG.team_theme;
+    for row in &conn.query("SELECT u.id, u.username, u.icon_url, COALESCE(p.menu, $2) as menu, COALESCE(p.theme, $3) as theme from users as u left join preferences as p on u.id=p.user_id where u.id = $1", &[&id, &default_menu, &default_theme]).unwrap() {
+        user = UserWithPreference {
+            id: row.get("id"),
+            username: row.get("username"),
+            icon_url: row.get("icon_url"),
+            username_hash: helper::username_hash(row.get("username")),
+            menu: helper::split_menu(row.get("menu")),
+            theme: row.get("theme"),
         };
     }
     Ok(user)
@@ -125,4 +153,26 @@ pub fn get_by_email(conn: &db::PostgresConnection, email: &str) -> Result<UserWi
         };
     }
     Ok(user)
+}
+
+pub fn set_preference_menu(conn: &db::PostgresConnection, user_id: &i32, menu: &String) -> Result<(), Error>{
+    conn.execute(
+        "update preferences set menu=$2 where user_id=$1", &[&user_id, &menu]
+    ).unwrap();
+    conn.execute(
+        "insert into preferences (user_id, menu) 
+        select $1, $2
+        where not exists (select 1 from preferences where user_id=$1)", &[&user_id, &menu]
+    ).map(|_| ())
+}
+
+pub fn set_preference_theme(conn: &db::PostgresConnection, user_id: &i32, theme: &String) -> Result<(), Error>{
+    conn.execute(
+        "update preferences set theme=$2 where user_id=$1", &[&user_id, &theme]
+    ).unwrap();
+    conn.execute(
+        "insert into preferences (user_id, theme) 
+        select $1, $2
+        where not exists (select 1 from preferences where user_id=$1)", &[&user_id, &theme]
+    ).map(|_| ())
 }

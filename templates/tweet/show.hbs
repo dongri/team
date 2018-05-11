@@ -1,0 +1,71 @@
+{{#*inline "title"}}
+  Tweet - Team
+{{/inline}}
+{{#*inline "page"}}
+  <div style="display: flex;">
+    <div class="post-item-icon">
+      <a href="/{{tweet.user.username}}">
+        {{#if tweet.user.icon_url}}
+          <img src="{{tweet.user.icon_url}}" class="icon-img-normal">
+        {{else}}
+          <canvas width="40" height="40" data-jdenticon-hash="{{tweet.user.username_hash}}" class="icon-img-normal"></canvas>
+        {{/if}}
+      </a>
+    </div>
+    <div class="post-item-body">
+      <div class="post-item-description">
+        @{{tweet.user.username}} - {{tweet.formated_created}}
+      </div>
+      <div class="tweet-body">{{tweet.body}}</div>
+    </div>
+  </div>
+  <div class="comments">
+    <ul class="post-items">
+      {{#each comments}}
+      <li class="post-item-comment">
+        <div class="post-item-icon">
+          <a href="/{{user.username}}">
+            {{#if user.icon_url}}
+            <img src="{{user.icon_url}}" class="icon-img-normal"> {{else}}
+            <canvas width="40" height="40" data-jdenticon-hash="{{user.username_hash}}" class="icon-img-normal"></canvas>
+            {{/if}}
+          </a>
+        </div>
+        <div class="post-item-body">
+          <div class="post-item">
+            <div class="post-item-description">
+              @{{user.username}}
+              <br/>
+            </div>
+            <div class="marked" id="comment_view_{{id}}">{{body}}</div>
+          </div>
+        </div>
+      </li>
+      {{/each}}
+    </ul>
+  </div>
+
+  <form action="/tweet/comment" method="post">
+    <input type="hidden" name="id" value="{{tweet.id}}">
+    <div class="field">
+      <div class="control">
+        <textarea placeholder="Post a comment" name="body" id="input-comment" class="textarea is-info" rows="2" required></textarea>
+      </div>
+    </div>
+    <div class="field">
+      <div class="control">
+        <button type="submit" class="button is-info is-outlined">Submit</button>
+      </div>
+    </div>
+  </form>
+
+  <script>
+    $(".tweet-body").each(function (index, element) {
+      var text = $(element).text();
+      text = text.replace(/\r?\n/g, '<br>');
+      $(element).html(text);
+    });
+  </script>
+
+{{/inline}}
+{{~> layout ~}}

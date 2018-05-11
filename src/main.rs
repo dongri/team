@@ -122,7 +122,7 @@ fn main() {
     mount.mount("/css", Static::new(Path::new("./public/css/")));
     mount.mount("/js", Static::new(Path::new("./public/js/")));
     mount.mount("/img", Static::new(Path::new("./public/img/")));
-    mount.mount("/fonts", Static::new(Path::new("./public/fonts/")));
+    mount.mount("/webfonts", Static::new(Path::new("./public/webfonts/")));
     mount.mount("/codemirror", Static::new(Path::new("./public/codemirror/")));
     mount.mount("/favicons", Static::new(Path::new("./public/favicons/")));
     mount.mount("/", router);

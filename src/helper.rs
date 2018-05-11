@@ -3,6 +3,8 @@ use serde::ser::Serialize;
 use crypto::sha2::Sha256;
 use crypto::digest::Digest;
 use slack_hook::{Slack, PayloadBuilder};
+use chrono::{NaiveDateTime};
+use time::Duration;
 
 // hyper
 use hyper::Client;
@@ -138,4 +140,20 @@ pub fn get_google_email(access_token: String) -> String {
     } else {
         return "".to_string()
     }
+}
+
+pub fn uppercase_first_letter(s: &str) -> String {
+    let mut c = s.chars();
+    match c.next() {
+        None => String::new(),
+        Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
+    }
+}
+
+pub fn jst_time_formatter(time: NaiveDateTime) -> String {
+    return (time + Duration::hours(9)).format("%Y-%m-%d %H:%M:%S").to_string()
+}
+
+pub fn split_menu(menu: String) -> Vec<String> {
+    return menu.split(",").map(|s| s.to_string()).collect();
 }
