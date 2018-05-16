@@ -59,20 +59,20 @@ pub fn post_signup_handler(req: &mut Request) -> IronResult<Response> {
         match map.get("username") {
             Some(&Value::String(ref name)) => {
                 if name == "" {
-                    return Ok(Response::with((status::BadRequest)));
+                    return Ok(Response::with(status::BadRequest));
                 }
                 username = name.to_string();
             }
-            _ => return Ok(Response::with((status::BadRequest))),
+            _ => return Ok(Response::with(status::BadRequest)),
         }
         match map.get("password") {
             Some(&Value::String(ref name)) => {
                 if name == "" {
-                    return Ok(Response::with((status::BadRequest)));
+                    return Ok(Response::with(status::BadRequest));
                 }
                 password = name.to_string();
             }
-            _ => return Ok(Response::with((status::BadRequest))),
+            _ => return Ok(Response::with(status::BadRequest)),
         }
     }
 
@@ -84,7 +84,7 @@ pub fn post_signup_handler(req: &mut Request) -> IronResult<Response> {
         }
         Err(e) => {
             info!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 }
@@ -114,13 +114,13 @@ pub fn post_signin_handler(req: &mut Request) -> IronResult<Response> {
             Some(&Value::String(ref name)) => {
                 username = name.to_string();
             }
-            _ => return Ok(Response::with((status::BadRequest))),
+            _ => return Ok(Response::with(status::BadRequest)),
         }
         match map.get("password") {
             Some(&Value::String(ref name)) => {
                 password = name.to_string();
             }
-            _ => return Ok(Response::with((status::BadRequest))),
+            _ => return Ok(Response::with(status::BadRequest)),
         }
     }
 
@@ -137,7 +137,7 @@ pub fn post_signin_handler(req: &mut Request) -> IronResult<Response> {
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 }
@@ -176,7 +176,7 @@ pub fn get_settings_handler(req: &mut Request) -> IronResult<Response> {
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
     let data = Data {
@@ -211,7 +211,7 @@ pub fn post_settings_handler(req: &mut Request) -> IronResult<Response> {
             Some(&Value::String(ref name)) => {
                 icon_url = name.to_string();
             }
-            _ => return Ok(Response::with((status::BadRequest))),
+            _ => return Ok(Response::with(status::BadRequest)),
         }
     }
 
@@ -222,7 +222,7 @@ pub fn post_settings_handler(req: &mut Request) -> IronResult<Response> {
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 }
@@ -249,22 +249,22 @@ pub fn post_password_update(req: &mut Request) -> IronResult<Response> {
         let map = &req.get_ref::<Params>().unwrap();
         match helper::get_param(map, "current_password") {
             Ok(value) => current_password = value,
-            Err(st) => return Ok(Response::with((st))),
+            Err(st) => return Ok(Response::with(st)),
         }
 
         match helper::get_param(map, "new_password") {
             Ok(value) => new_password = value,
-            Err(st) => return Ok(Response::with((st))),
+            Err(st) => return Ok(Response::with(st)),
         }
 
         match helper::get_param(map, "confirm_password") {
             Ok(value) => confirm_password = value,
-            Err(st) => return Ok(Response::with((st))),
+            Err(st) => return Ok(Response::with(st)),
         }
     }
 
     if new_password != confirm_password {
-        return Ok(Response::with((status::BadRequest)));
+        return Ok(Response::with(status::BadRequest));
     }
 
     let current_password = helper::encrypt_password(current_password);
@@ -272,11 +272,11 @@ pub fn post_password_update(req: &mut Request) -> IronResult<Response> {
 
     match models::user::get_with_password_by_id(&conn, &login_id) {
         Ok(u) => user = u,
-        Err(_) => return Ok(Response::with((status::BadRequest))),
+        Err(_) => return Ok(Response::with(status::BadRequest)),
     }
 
     if current_password != user.password {
-        return Ok(Response::with((status::BadRequest)));
+        return Ok(Response::with(status::BadRequest));
     }
 
     match models::user::update_password(&conn, &login_id, &helper::encrypt_password(new_password)) {
@@ -286,7 +286,7 @@ pub fn post_password_update(req: &mut Request) -> IronResult<Response> {
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 }
@@ -310,7 +310,7 @@ pub fn post_username_update(req: &mut Request) -> IronResult<Response> {
         let map = &req.get_ref::<Params>().unwrap();
         match helper::get_param(map, "username") {
             Ok(value) => username = value,
-            Err(st) => return Ok(Response::with((st))),
+            Err(st) => return Ok(Response::with(st)),
         }
     }
 
@@ -321,7 +321,7 @@ pub fn post_username_update(req: &mut Request) -> IronResult<Response> {
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 }
@@ -423,7 +423,7 @@ pub fn profile_post_handler(req: &mut Request) -> IronResult<Response> {
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 
@@ -433,7 +433,7 @@ pub fn profile_post_handler(req: &mut Request) -> IronResult<Response> {
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 
@@ -443,7 +443,7 @@ pub fn profile_post_handler(req: &mut Request) -> IronResult<Response> {
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 
@@ -525,7 +525,7 @@ pub fn profile_nippo_handler(req: &mut Request) -> IronResult<Response> {
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 
@@ -535,7 +535,7 @@ pub fn profile_nippo_handler(req: &mut Request) -> IronResult<Response> {
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 
@@ -545,7 +545,7 @@ pub fn profile_nippo_handler(req: &mut Request) -> IronResult<Response> {
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 
@@ -621,7 +621,7 @@ pub fn get_auth_google_handler(req: &mut Request) -> IronResult<Response> {
                     }
                     Err(e) => {
                         error!("Errored: {:?}", e);
-                        return Ok(Response::with((status::InternalServerError)));
+                        return Ok(Response::with(status::InternalServerError));
                     }
                 }
                 if user.username == "" {
@@ -632,7 +632,7 @@ pub fn get_auth_google_handler(req: &mut Request) -> IronResult<Response> {
                         }
                         Err(e) => {
                             info!("Errored: {:?}", e);
-                            return Ok(Response::with((status::InternalServerError)));
+                            return Ok(Response::with(status::InternalServerError));
                         }
                     }
                 } else {

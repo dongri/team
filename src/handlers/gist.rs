@@ -68,20 +68,20 @@ pub fn create_handler(req: &mut Request) -> IronResult<Response> {
             Some(&Value::String(ref name)) => {
                 description = name.to_string();
             }
-            _ => return Ok(Response::with((status::BadRequest))),
+            _ => return Ok(Response::with(status::BadRequest)),
         }
 
         match map.get("gist-filename") {
             Some(&Value::String(ref name)) => {
                 filename = name.to_string();
             }
-            _ => return Ok(Response::with((status::BadRequest))),
+            _ => return Ok(Response::with(status::BadRequest)),
         }
         match map.get("gist-code") {
             Some(&Value::String(ref name)) => {
                 code = name.to_string();
             }
-            _ => return Ok(Response::with((status::BadRequest))),
+            _ => return Ok(Response::with(status::BadRequest)),
         }
     }
 
@@ -97,7 +97,7 @@ pub fn create_handler(req: &mut Request) -> IronResult<Response> {
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 }
@@ -154,7 +154,7 @@ pub fn list_handler(req: &mut Request) -> IronResult<Response> {
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 
@@ -164,7 +164,7 @@ pub fn list_handler(req: &mut Request) -> IronResult<Response> {
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 
@@ -233,7 +233,7 @@ pub fn show_handler(req: &mut Request) -> IronResult<Response> {
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 
@@ -243,7 +243,7 @@ pub fn show_handler(req: &mut Request) -> IronResult<Response> {
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 
@@ -306,13 +306,13 @@ pub fn edit_handler(req: &mut Request) -> IronResult<Response> {
     match models::gist::get_by_id(&conn, &id) {
         Ok(gist_obj) => {
             if gist_obj.user_id != login_id {
-                return Ok(Response::with((status::Forbidden)));
+                return Ok(Response::with(status::Forbidden));
             }
             gist = gist_obj;
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 
@@ -352,28 +352,28 @@ pub fn update_handler(req: &mut Request) -> IronResult<Response> {
             Some(&Value::String(ref name)) => {
                 id = name.to_string().parse::<i32>().unwrap();
             }
-            _ => return Ok(Response::with((status::BadRequest))),
+            _ => return Ok(Response::with(status::BadRequest)),
         }
 
         match map.find(&["gist-description"]) {
             Some(&Value::String(ref name)) => {
                 description = name.to_string();
             }
-            _ => return Ok(Response::with((status::BadRequest))),
+            _ => return Ok(Response::with(status::BadRequest)),
         }
 
         match map.find(&["gist-filename"]) {
             Some(&Value::String(ref name)) => {
                 filename = name.to_string();
             }
-            _ => return Ok(Response::with((status::BadRequest))),
+            _ => return Ok(Response::with(status::BadRequest)),
         }
 
         match map.find(&["gist-code"]) {
             Some(&Value::String(ref name)) => {
                 code = name.to_string();
             },
-            _ => return Ok(Response::with((status::BadRequest))),
+            _ => return Ok(Response::with(status::BadRequest)),
         }
     }
 
@@ -381,12 +381,12 @@ pub fn update_handler(req: &mut Request) -> IronResult<Response> {
         Ok(gist_obj) => {
             old_gist = gist_obj;
             if old_gist.user_id != login_id {
-                return Ok(Response::with((status::Forbidden)));
+                return Ok(Response::with(status::Forbidden));
             }
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 
@@ -402,7 +402,7 @@ pub fn update_handler(req: &mut Request) -> IronResult<Response> {
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 }
@@ -428,12 +428,12 @@ pub fn delete_handler(req: &mut Request) -> IronResult<Response> {
     match models::gist::get_by_id(&conn, &id) {
         Ok(gist) => {
             if gist.user_id != login_user.id {
-                return Ok(Response::with((status::Forbidden)));
+                return Ok(Response::with(status::Forbidden));
             }
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 
@@ -443,7 +443,7 @@ pub fn delete_handler(req: &mut Request) -> IronResult<Response> {
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            Ok(Response::with((status::InternalServerError)))
+            Ok(Response::with(status::InternalServerError))
         }
     }
 }
@@ -471,14 +471,14 @@ pub fn comment_handler(req: &mut Request) -> IronResult<Response> {
             Some(&Value::String(ref name)) => {
                 id = name.parse::<i32>().unwrap();
             }
-            _ => return Ok(Response::with((status::BadRequest))),
+            _ => return Ok(Response::with(status::BadRequest)),
         }
 
         match map.find(&["body"]) {
             Some(&Value::String(ref name)) => {
                 body = name.to_string();
             }
-            _ => return Ok(Response::with((status::BadRequest))),
+            _ => return Ok(Response::with(status::BadRequest)),
         }
     }
 
@@ -490,7 +490,7 @@ pub fn comment_handler(req: &mut Request) -> IronResult<Response> {
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 
@@ -505,7 +505,7 @@ pub fn comment_handler(req: &mut Request) -> IronResult<Response> {
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 
@@ -521,7 +521,7 @@ pub fn comment_handler(req: &mut Request) -> IronResult<Response> {
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 }
@@ -560,14 +560,14 @@ pub fn comment_update_handler(req: &mut Request) -> IronResult<Response> {
             Some(&Value::String(ref name)) => {
                 action = name.to_string();
             }
-            _ => return Ok(Response::with((status::BadRequest))),
+            _ => return Ok(Response::with(status::BadRequest)),
         }
 
         match map.find(&["body"]) {
             Some(&Value::String(ref name)) => {
                 body = name.to_string();
             }
-            _ => return Ok(Response::with((status::BadRequest))),
+            _ => return Ok(Response::with(status::BadRequest)),
         }
     }
 
@@ -575,12 +575,12 @@ pub fn comment_update_handler(req: &mut Request) -> IronResult<Response> {
         Ok(db_comment) => {
             comment = db_comment;
             if comment.user_id != login_id {
-                return Ok(Response::with((status::Forbidden)));
+                return Ok(Response::with(status::Forbidden));
             }
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 
@@ -593,7 +593,7 @@ pub fn comment_update_handler(req: &mut Request) -> IronResult<Response> {
             }
             Err(e) => {
                 error!("Errored: {:?}", e);
-                return Ok(Response::with((status::InternalServerError)));
+                return Ok(Response::with(status::InternalServerError));
             }
         }
     }
@@ -606,9 +606,9 @@ pub fn comment_update_handler(req: &mut Request) -> IronResult<Response> {
             }
             Err(e) => {
                 error!("Errored: {:?}", e);
-                return Ok(Response::with((status::InternalServerError)));
+                return Ok(Response::with(status::InternalServerError));
             }
         }
     }
-    return Ok(Response::with((status::InternalServerError)));
+    return Ok(Response::with(status::InternalServerError));
 }

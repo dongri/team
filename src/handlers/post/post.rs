@@ -79,26 +79,26 @@ pub fn create_handler(req: &mut Request) -> IronResult<Response> {
             Some(&Value::String(ref name)) => {
                 action = name.to_string();
             }
-            _ => return Ok(Response::with((status::BadRequest))),
+            _ => return Ok(Response::with(status::BadRequest)),
         }
 
         match map.get("title") {
             Some(&Value::String(ref name)) => {
                 title = name.to_string();
             }
-            _ => return Ok(Response::with((status::BadRequest))),
+            _ => return Ok(Response::with(status::BadRequest)),
         }
         match map.get("body") {
             Some(&Value::String(ref name)) => {
                 body = name.to_string();
             }
-            _ => return Ok(Response::with((status::BadRequest))),
+            _ => return Ok(Response::with(status::BadRequest)),
         }
         match map.get("tags") {
             Some(&Value::String(ref name)) => {
                 tags = name.to_string();
             },
-            _ => return Ok(Response::with((status::BadRequest))),
+            _ => return Ok(Response::with(status::BadRequest)),
         }
     }
 
@@ -131,7 +131,7 @@ pub fn create_handler(req: &mut Request) -> IronResult<Response> {
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 }
@@ -195,7 +195,7 @@ pub fn list_handler(req: &mut Request) -> IronResult<Response> {
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 
@@ -205,7 +205,7 @@ pub fn list_handler(req: &mut Request) -> IronResult<Response> {
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 
@@ -295,7 +295,7 @@ pub fn show_handler(req: &mut Request) -> IronResult<Response> {
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 
@@ -305,7 +305,7 @@ pub fn show_handler(req: &mut Request) -> IronResult<Response> {
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 
@@ -315,7 +315,7 @@ pub fn show_handler(req: &mut Request) -> IronResult<Response> {
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 
@@ -372,12 +372,12 @@ pub fn delete_handler(req: &mut Request) -> IronResult<Response> {
     match models::post::get_by_id(&conn, &id) {
         Ok(post) => {
             if post.user_id != login_user.id {
-                return Ok(Response::with((status::Forbidden)));
+                return Ok(Response::with(status::Forbidden));
             }
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 
@@ -387,7 +387,7 @@ pub fn delete_handler(req: &mut Request) -> IronResult<Response> {
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            Ok(Response::with((status::InternalServerError)))
+            Ok(Response::with(status::InternalServerError))
         }
     }
 }
@@ -432,13 +432,13 @@ pub fn edit_handler(req: &mut Request) -> IronResult<Response> {
     match models::post::get_by_id(&conn, &id) {
         Ok(post_obj) => {
             if post_obj.user_id != login_id && post_obj.shared == false {
-                return Ok(Response::with((status::Forbidden)));
+                return Ok(Response::with(status::Forbidden));
             }
             post = post_obj;
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 
@@ -489,35 +489,35 @@ pub fn update_handler(req: &mut Request) -> IronResult<Response> {
             Some(&Value::String(ref name)) => {
                 id = name.to_string().parse::<i32>().unwrap();
             }
-            _ => return Ok(Response::with((status::BadRequest))),
+            _ => return Ok(Response::with(status::BadRequest)),
         }
 
         match map.find(&["title"]) {
             Some(&Value::String(ref name)) => {
                 title = name.to_string();
             }
-            _ => return Ok(Response::with((status::BadRequest))),
+            _ => return Ok(Response::with(status::BadRequest)),
         }
 
         match map.find(&["body"]) {
             Some(&Value::String(ref name)) => {
                 body = name.to_string();
             }
-            _ => return Ok(Response::with((status::BadRequest))),
+            _ => return Ok(Response::with(status::BadRequest)),
         }
 
         match map.find(&["tags"]) {
             Some(&Value::String(ref name)) => {
                 tags = name.to_string();
             },
-            _ => return Ok(Response::with((status::BadRequest))),
+            _ => return Ok(Response::with(status::BadRequest)),
         }
 
         match map.find(&["action"]) {
             Some(&Value::String(ref name)) => {
                 action = name.to_string();
             },
-            _ => return Ok(Response::with((status::BadRequest))),
+            _ => return Ok(Response::with(status::BadRequest)),
         }
     }
 
@@ -531,12 +531,12 @@ pub fn update_handler(req: &mut Request) -> IronResult<Response> {
         Ok(post_obj) => {
             old_post = post_obj;
             if old_post.user_id != login_id && old_post.shared == false {
-                return Ok(Response::with((status::Forbidden)));
+                return Ok(Response::with(status::Forbidden));
             }
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 
@@ -565,7 +565,7 @@ pub fn update_handler(req: &mut Request) -> IronResult<Response> {
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 }
@@ -597,14 +597,14 @@ pub fn tags_update_handler(req: &mut Request) -> IronResult<Response> {
             Some(&Value::String(ref name)) => {
                 id = name.to_string().parse::<i32>().unwrap();
             }
-            _ => return Ok(Response::with((status::BadRequest))),
+            _ => return Ok(Response::with(status::BadRequest)),
         }
 
         match map.find(&["tags"]) {
             Some(&Value::String(ref name)) => {
                 tags = name.to_string();
             },
-            _ => return Ok(Response::with((status::BadRequest))),
+            _ => return Ok(Response::with(status::BadRequest)),
         }
     }
 
@@ -622,7 +622,7 @@ pub fn tags_update_handler(req: &mut Request) -> IronResult<Response> {
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 
@@ -649,7 +649,7 @@ pub fn tags_update_handler(req: &mut Request) -> IronResult<Response> {
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 }

@@ -63,7 +63,7 @@ pub fn index_handler(req: &mut Request) -> IronResult<Response> {
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 
@@ -73,7 +73,7 @@ pub fn index_handler(req: &mut Request) -> IronResult<Response> {
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 
@@ -170,7 +170,7 @@ pub fn search_handler(req: &mut Request) -> IronResult<Response> {
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 
@@ -180,7 +180,7 @@ pub fn search_handler(req: &mut Request) -> IronResult<Response> {
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 
@@ -246,7 +246,7 @@ pub fn tag_handler(req: &mut Request) -> IronResult<Response> {
 
         match helper::get_param(map, "name") {
             Ok(value) => tag_param = value,
-            Err(st) => return Ok(Response::with((st))),
+            Err(st) => return Ok(Response::with(st)),
         }
     }
 
@@ -277,7 +277,7 @@ pub fn tag_handler(req: &mut Request) -> IronResult<Response> {
         },
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 
@@ -287,7 +287,7 @@ pub fn tag_handler(req: &mut Request) -> IronResult<Response> {
         },
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 
