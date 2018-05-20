@@ -18,7 +18,7 @@ pub const PAGINATES_PER: i32 = 10;
 
 pub fn new_handler(req: &mut Request) -> IronResult<Response> {
     let conn = get_pg_connection!(req);
-    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
     match handlers::account::current_user(req, &conn) {
         Ok(user) => { login_user = user; }
         Err(e) => { error!("Errored: {:?}", e); }
@@ -33,7 +33,7 @@ pub fn new_handler(req: &mut Request) -> IronResult<Response> {
     #[derive(Serialize)]
     struct Data {
         logged_in: bool,
-        login_user: models::user::User,
+        login_user: models::user::UserWithPreference,
     }
     let data = Data {
         logged_in: login_id != 0,
@@ -46,7 +46,7 @@ pub fn new_handler(req: &mut Request) -> IronResult<Response> {
 
 pub fn create_handler(req: &mut Request) -> IronResult<Response> {
     let conn = get_pg_connection!(req);
-    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
     match handlers::account::current_user(req, &conn) {
         Ok(user) => { login_user = user; }
         Err(e) => { error!("Errored: {:?}", e); }
@@ -105,7 +105,7 @@ pub fn create_handler(req: &mut Request) -> IronResult<Response> {
 
 pub fn list_handler(req: &mut Request) -> IronResult<Response> {
     let conn = get_pg_connection!(req);
-    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
     match handlers::account::current_user(req, &conn) {
         Ok(user) => { login_user = user; }
         Err(e) => { error!("Errored: {:?}", e); }
@@ -133,7 +133,7 @@ pub fn list_handler(req: &mut Request) -> IronResult<Response> {
     #[derive(Serialize, Debug)]
     struct Data {
         logged_in: bool,
-        login_user: models::user::User,
+        login_user: models::user::UserWithPreference,
         gists: Vec<models::gist::Gist>,
         current_page: i32,
         total_page: i32,
@@ -142,6 +142,9 @@ pub fn list_handler(req: &mut Request) -> IronResult<Response> {
     }
 
     let mut page = page_param.parse::<i32>().unwrap();
+    if page <= 0 {
+        page = 1;
+    }
     let offset = (page - 1) * PAGINATES_PER;
     let limit = PAGINATES_PER;
 
@@ -168,10 +171,6 @@ pub fn list_handler(req: &mut Request) -> IronResult<Response> {
         }
     }
 
-    if page == 0 {
-        page = 1;
-    }
-
     let data = Data {
         logged_in: login_id != 0,
         login_user: login_user,
@@ -189,7 +188,7 @@ pub fn list_handler(req: &mut Request) -> IronResult<Response> {
 
 pub fn show_handler(req: &mut Request) -> IronResult<Response> {
     let conn = get_pg_connection!(req);
-    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
     match handlers::account::current_user(req, &conn) {
         Ok(user) => { login_user = user; }
         Err(e) => { error!("Errored: {:?}", e); }
@@ -217,7 +216,7 @@ pub fn show_handler(req: &mut Request) -> IronResult<Response> {
     #[derive(Serialize)]
     struct Data {
         logged_in: bool,
-        login_user: models::user::User,
+        login_user: models::user::UserWithPreference,
         gist: models::gist::Gist,
         editable: bool,
         deletable: bool,
@@ -276,7 +275,7 @@ pub fn show_handler(req: &mut Request) -> IronResult<Response> {
 
 pub fn edit_handler(req: &mut Request) -> IronResult<Response> {
     let conn = get_pg_connection!(req);
-    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
     match handlers::account::current_user(req, &conn) {
         Ok(user) => { login_user = user; }
         Err(e) => { error!("Errored: {:?}", e); }
@@ -290,7 +289,7 @@ pub fn edit_handler(req: &mut Request) -> IronResult<Response> {
     #[derive(Serialize)]
     struct Data {
         logged_in: bool,
-        login_user: models::user::User,
+        login_user: models::user::UserWithPreference,
         gist: models::gist::Gist,
     }
 
@@ -328,7 +327,7 @@ pub fn edit_handler(req: &mut Request) -> IronResult<Response> {
 
 pub fn update_handler(req: &mut Request) -> IronResult<Response> {
     let conn = get_pg_connection!(req);
-    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
     match handlers::account::current_user(req, &conn) {
         Ok(user) => { login_user = user; }
         Err(e) => { error!("Errored: {:?}", e); }
@@ -409,7 +408,7 @@ pub fn update_handler(req: &mut Request) -> IronResult<Response> {
 
 pub fn delete_handler(req: &mut Request) -> IronResult<Response> {
     let conn = get_pg_connection!(req);
-    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
     match handlers::account::current_user(req, &conn) {
         Ok(user) => { login_user = user; }
         Err(e) => { error!("Errored: {:?}", e); }
@@ -450,7 +449,7 @@ pub fn delete_handler(req: &mut Request) -> IronResult<Response> {
 
 pub fn comment_handler(req: &mut Request) -> IronResult<Response> {
     let conn = get_pg_connection!(req);
-    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
     match handlers::account::current_user(req, &conn) {
         Ok(user) => { login_user = user; }
         Err(e) => { error!("Errored: {:?}", e); }
@@ -528,7 +527,7 @@ pub fn comment_handler(req: &mut Request) -> IronResult<Response> {
 
 pub fn comment_update_handler(req: &mut Request) -> IronResult<Response> {
     let conn = get_pg_connection!(req);
-    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
     match handlers::account::current_user(req, &conn) {
         Ok(user) => { login_user = user; }
         Err(e) => { error!("Errored: {:?}", e); }

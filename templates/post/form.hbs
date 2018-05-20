@@ -1,22 +1,32 @@
 {{#*inline "title"}}
-  New {{kind}} - Team
+  New {{kind_title}} - Team
 {{/inline}}
 {{#*inline "page_head"}}
 {{> post/head}}
 {{/inline}}
 {{#*inline "page"}}
-  <form class="mui-form" action="/{{kind}}/create" method="post">
-    <div class="mui-textfield">
-      <input type="text" placeholder="Title" name="title" class="input-title" id="{{kind}}-title">
+  <form action="/{{kind}}/create" method="post">
+    <div class="field">
+      <div class="control">
+        <input type="text" placeholder="Title" name="title" class="input" id="{{kind}}-title">
+      </div>
     </div>
-    <div class="mui-textfield">
-      <textarea placeholder="" name="body" id="{{kind}}-mdeditor"></textarea>
+    <div class="field">
+      <div class="control">
+        <textarea placeholder="" name="body" id="{{kind}}-mdeditor"></textarea>
+      </div>
     </div>
-    <div class="mui-textfield">
-      <input type="text" placeholder="Tags (e.g. rust,tips,postgres)" name="tags" class="input-tags">
+    <div class="field">
+      <div class="control">
+        <input type="text" placeholder="Tags (e.g. rust,tips,postgres)" name="tags" class="input">
+      </div>
     </div>
-    <button type="submit" class="mui-btn mui-btn--raised mui-btn--primary" name='action' value="publish">publish</button>
-    <button type="submit" class="mui-btn mui-btn--raised mui-btn--primary" name='action' value="draft">Draft</button>
+    <div class="field is-grouped">
+      <div class="control">
+        <button type="submit" class="button is-info is-outlined" name='action' value="publish">Publish</button>
+        <button type="submit" class="button is-info is-outlined" name='action' value="draft">Draft</button>
+      </div>
+    </div>
   </form>
   <script>
     // Nippo teamplate

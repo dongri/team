@@ -1,21 +1,33 @@
 {{#*inline "page"}}
   <div class="auth">
-    <h1>Sign up</h1>
-    <div class="auth_basic">
-      <form class="mui-form" action="/signup" method="post">
-        <div class="mui-textfield">
-          <input type="text" placeholder="username" name="username">
-        </div>
-        <div class="mui-textfield">
-          <input type="password" placeholder="password" name="password">
-        </div>
-        <button type="submit" class="mui-btn mui-btn--raised mui-btn--primary">Submit</button>
-      </form>
-    </div>
+    <div class="page-title">Sign up</div>
     <div class="auth_google">
       <a href="/auth/google">
         <img src="/img/login-with-google.png" class="auth_google_image">
       </a>
+    </div>
+    OR
+    <div class="auth_basic">
+      <form action="/signup" method="post">
+        <div class="field">
+          <label class="label">Username</label>
+          <div class="control">
+            <input class="input" type="text" placeholder="Username" name="username">
+          </div>
+        </div>
+        
+        <div class="field">
+          <label class="label">Password</label>
+          <div class="control">
+            <input class="input" type="password" placeholder="Password" name="password">
+          </div>
+        </div>
+        <div class="field is-grouped">
+          <div class="control">
+            <button class="button is-link">Submit</button>
+          </div>
+        </div>
+      </form>
     </div>
   </div>
 {{/inline}}

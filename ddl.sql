@@ -77,3 +77,40 @@ create table gist_comments (
   created       timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated       timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+create table tweets (
+  id            serial primary key,
+  user_id       serial REFERENCES users (id) ON DELETE CASCADE NOT NULL,
+  body          text NOT NULL,
+  created       timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated       timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+create table tweet_comments (
+  id            serial primary key,
+  user_id       serial REFERENCES users (id) ON DELETE CASCADE NOT NULL,
+  tweet_id      serial REFERENCES tweets (id) ON DELETE CASCADE NOT NULL,
+  body          text NOT NULL,
+  created       timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated       timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+create table notifications (
+  id            serial primary key,
+  path          varchar(255),
+  from_user     serial REFERENCES users (id) ON DELETE CASCADE NOT NULL,
+  to_user       serial REFERENCES users (id) ON DELETE CASCADE NOT NULL,
+  body          text NOT NULL,
+  read          boolean DEFAULT false,
+  created       timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated       timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+create table preferences (
+  id            serial primary key,
+  user_id       serial REFERENCES users (id) ON DELETE CASCADE NOT NULL,
+  menu          varchar(1024),
+  theme         varchar(1024),
+  created       timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated       timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

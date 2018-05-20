@@ -25,6 +25,7 @@ export TEAM_GOOGLE_ALLOW_DOMAIN=yourcompany.com
 
 ### up
 ```
+$ rm /tmp/postgres/*
 $ docker-compose up
 ```
 http://localhost:3000

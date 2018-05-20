@@ -7,18 +7,31 @@
 
 {{#*inline "page"}}
 
-  <form class="mui-form" id="gist-form" action="/gist/update" method="post">
+  <form id="gist-form" action="/gist/update" method="post">
     <input type="hidden" name="id" value="{{gist.id}}">
     <input type="hidden" value="" name="gist-code" id="gist-code">
-    <div class="mui-textfield">
-      <input type="text" placeholder="Gist description..." name="gist-description" class="input-title" id="title" value="{{gist.description}}">
+    <div class="field">
+      <div class="control">
+        <input type="text" placeholder="Gist description..." name="gist-description" class="input" id="title" value="{{gist.description}}">
+      </div>
     </div>
-    <div class="mui-textfield">
-      <input type="text" placeholder="Filename (hello.go)" name="gist-filename" class="input-gist-filename" id="mode" value="{{gist.filename}}">
+    <div class="field">
+      <div class="control">
+        <input type="text" placeholder="Filename (hello.go)" name="gist-filename" class="input" id="mode" value="{{gist.filename}}">
+      </div>
     </div>
-    <textarea id="code" name="code" style="display: none;">{{gist.code}}</textarea>
-    <button type="button" class="mui-btn mui-btn--raised mui-btn--primary" name='action' onclick="submitFunc()" value="publish">Update</button>
+    <div class="field">
+      <div class="control">
+        <textarea id="code" name="code" style="display: none;">{{gist.code}}</textarea>
+      </div>
+    </div>
+    <div class="field">
+      <div class="control">
+        <button type="button" class="button is-info is-outlined" name='action' onclick="submitFunc()" value="publish">Update</button>
+      </div>
+    </div>
   </form>
+
   <script>
 
     CodeMirror.modeURL = "/codemirror/mode/%N/%N.js";

@@ -6,6 +6,7 @@ use iron::modifiers::Redirect;
 use hbs::handlebars::to_json;
 use iron::Url;
 use iron::prelude::IronResult;
+use iron::mime::Mime;
 use diff;
 use db;
 use persistent;
@@ -20,7 +21,7 @@ pub const PAGINATES_PER: i32 = 10;
 
 pub fn new_handler(req: &mut Request) -> IronResult<Response> {
     let conn = get_pg_connection!(req);
-    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
     match handlers::account::current_user(req, &conn) {
         Ok(user) => { login_user = user; }
         Err(e) => { error!("Errored: {:?}", e); }
@@ -41,13 +42,15 @@ pub fn new_handler(req: &mut Request) -> IronResult<Response> {
     #[derive(Serialize)]
     struct Data {
         logged_in: bool,
-        login_user: models::user::User,
+        login_user: models::user::UserWithPreference,
         kind: String,
+        kind_title: String,
     }
     let data = Data {
         logged_in: login_id != 0,
         login_user: login_user,
         kind: kind.to_string(),
+        kind_title: helper::uppercase_first_letter(kind),
     };
     resp.set_mut(helper::template("post/form", to_json(&data)))
         .set_mut(status::Ok);
@@ -56,7 +59,7 @@ pub fn new_handler(req: &mut Request) -> IronResult<Response> {
 
 pub fn create_handler(req: &mut Request) -> IronResult<Response> {
     let conn = get_pg_connection!(req);
-    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
     match handlers::account::current_user(req, &conn) {
         Ok(user) => { login_user = user; }
         Err(e) => { error!("Errored: {:?}", e); }
@@ -138,7 +141,7 @@ pub fn create_handler(req: &mut Request) -> IronResult<Response> {
 
 pub fn list_handler(req: &mut Request) -> IronResult<Response> {
     let conn = get_pg_connection!(req);
-    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
     match handlers::account::current_user(req, &conn) {
         Ok(user) => { login_user = user; }
         Err(e) => { error!("Errored: {:?}", e); }
@@ -172,7 +175,7 @@ pub fn list_handler(req: &mut Request) -> IronResult<Response> {
     #[derive(Serialize, Debug)]
     struct Data {
         logged_in: bool,
-        login_user: models::user::User,
+        login_user: models::user::UserWithPreference,
         posts: Vec<models::post::Post>,
         current_page: i32,
         total_page: i32,
@@ -180,9 +183,13 @@ pub fn list_handler(req: &mut Request) -> IronResult<Response> {
         prev_page: i32,
         kind: String,
         new_title: String,
+        kind_title: String,
     }
 
     let mut page = page_param.parse::<i32>().unwrap();
+    if page <= 0 {
+        page = 1;
+    }
     let offset = (page - 1) * PAGINATES_PER;
     let limit = PAGINATES_PER;
 
@@ -209,10 +216,6 @@ pub fn list_handler(req: &mut Request) -> IronResult<Response> {
         }
     }
 
-    if page == 0 {
-        page = 1;
-    }
-
     let new_title = if kind == &"post" {
         "Post Know-how"
     } else if kind == &"nippo" {
@@ -230,6 +233,7 @@ pub fn list_handler(req: &mut Request) -> IronResult<Response> {
         next_page: page + 1,
         prev_page: page - 1,
         kind: kind.to_string(),
+        kind_title: helper::uppercase_first_letter(kind),
         new_title: new_title.to_string(),
     };
 
@@ -240,7 +244,7 @@ pub fn list_handler(req: &mut Request) -> IronResult<Response> {
 
 pub fn show_handler(req: &mut Request) -> IronResult<Response> {
     let conn = get_pg_connection!(req);
-    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
     match handlers::account::current_user(req, &conn) {
         Ok(user) => { login_user = user; }
         Err(e) => { error!("Errored: {:?}", e); }
@@ -275,7 +279,7 @@ pub fn show_handler(req: &mut Request) -> IronResult<Response> {
     #[derive(Serialize)]
     struct Data {
         logged_in: bool,
-        login_user: models::user::User,
+        login_user: models::user::UserWithPreference,
         post: models::post::Post,
         editable: bool,
         deletable: bool,
@@ -283,6 +287,7 @@ pub fn show_handler(req: &mut Request) -> IronResult<Response> {
         comments: Vec<PostComment>,
         stocked: bool,
         kind: String,
+        kind_title: String,
     }
 
     let post: models::post::Post;
@@ -344,6 +349,7 @@ pub fn show_handler(req: &mut Request) -> IronResult<Response> {
         comments: post_comments,
         stocked: stocked,
         kind: kind.to_string(),
+        kind_title: helper::uppercase_first_letter(kind),
     };
 
     resp.set_mut(Template::new("post/show", to_json(&data)))
@@ -353,7 +359,7 @@ pub fn show_handler(req: &mut Request) -> IronResult<Response> {
 
 pub fn delete_handler(req: &mut Request) -> IronResult<Response> {
     let conn = get_pg_connection!(req);
-    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
     match handlers::account::current_user(req, &conn) {
         Ok(user) => { login_user = user; }
         Err(e) => { error!("Errored: {:?}", e); }
@@ -394,7 +400,7 @@ pub fn delete_handler(req: &mut Request) -> IronResult<Response> {
 
 pub fn edit_handler(req: &mut Request) -> IronResult<Response> {
     let conn = get_pg_connection!(req);
-    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
     match handlers::account::current_user(req, &conn) {
         Ok(user) => { login_user = user; }
         Err(e) => { error!("Errored: {:?}", e); }
@@ -408,10 +414,11 @@ pub fn edit_handler(req: &mut Request) -> IronResult<Response> {
     #[derive(Serialize)]
     struct Data {
         logged_in: bool,
-        login_user: models::user::User,
+        login_user: models::user::UserWithPreference,
         post: models::post::Post,
         tags: String,
         kind: String,
+        kind_title: String,
     }
 
     let post: models::post::Post;
@@ -456,6 +463,7 @@ pub fn edit_handler(req: &mut Request) -> IronResult<Response> {
         post: post,
         tags: tag_str,
         kind: kind.to_string(),
+        kind_title: helper::uppercase_first_letter(kind),
     };
     resp.set_mut(Template::new("post/edit", to_json(&data)))
         .set_mut(status::Ok);
@@ -464,7 +472,7 @@ pub fn edit_handler(req: &mut Request) -> IronResult<Response> {
 
 pub fn update_handler(req: &mut Request) -> IronResult<Response> {
     let conn = get_pg_connection!(req);
-    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
     match handlers::account::current_user(req, &conn) {
         Ok(user) => { login_user = user; }
         Err(e) => { error!("Errored: {:?}", e); }
@@ -555,7 +563,15 @@ pub fn update_handler(req: &mut Request) -> IronResult<Response> {
                 }
             }
             if action == "publish" {
+                if old_post.status == "draft" {
+                    diff_body = body.clone();
+                }
                 helper::post_to_slack(&conn, &login_id, &title, &diff_body, &id, Vec::new(), &path);
+                if kind == &"nippo" {
+                    let title = String::from("New 日報");
+                    let url_str = format!("{}/{}/show/{}", &CONFIG.team_domain, kind, id).to_string();
+                    helper::webhook(login_user.username, title, body.clone(), url_str);
+                }
             }
 
             let url = Url::parse(&format!("{}/{}/show/{}", &CONFIG.team_domain, kind, id)
@@ -572,7 +588,7 @@ pub fn update_handler(req: &mut Request) -> IronResult<Response> {
 
 pub fn tags_update_handler(req: &mut Request) -> IronResult<Response> {
     let conn = get_pg_connection!(req);
-    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
     match handlers::account::current_user(req, &conn) {
         Ok(user) => { login_user = user; }
         Err(e) => { error!("Errored: {:?}", e); }
@@ -652,4 +668,120 @@ pub fn tags_update_handler(req: &mut Request) -> IronResult<Response> {
             return Ok(Response::with(status::InternalServerError));
         }
     }
+}
+
+pub fn notifications_handler(req: &mut Request) -> IronResult<Response> {
+    let conn = get_pg_connection!(req);
+    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
+    match handlers::account::current_user(req, &conn) {
+        Ok(user) => { login_user = user; }
+        Err(e) => { error!("Errored: {:?}", e); }
+    }
+    let login_id = login_user.id;
+    if login_id == 0 {
+        return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/signin")))));
+    }
+
+    let page_param: String;
+
+    {
+        use params::{Params, Value};
+        let map = req.get_ref::<Params>().unwrap();
+        match map.get("page") {
+            Some(&Value::String(ref name)) => {
+                page_param = name.to_string();
+            }
+            _ => page_param = "1".to_string(),
+        }
+    }
+
+    let mut resp = Response::new();
+
+    #[derive(Serialize, Debug)]
+    struct Data {
+        logged_in: bool,
+        login_user: models::user::UserWithPreference,
+        notifications: Vec<models::notification::Notification>,
+        current_page: i32,
+        total_page: i32,
+        next_page: i32,
+        prev_page: i32,
+    }
+
+    let mut page = page_param.parse::<i32>().unwrap();
+    let offset = (page - 1) * PAGINATES_PER;
+    let limit = PAGINATES_PER;
+
+    let notifications: Vec<models::notification::Notification>;
+    let count: i32;
+
+    match models::notification::list(&conn, &login_id, &offset, &limit) {
+        Ok(notifications_db) => {
+            notifications = notifications_db;
+        }
+        Err(e) => {
+            error!("Errored: {:?}", e);
+            return Ok(Response::with((status::InternalServerError)));
+        }
+    }
+
+    match models::notification::count(&conn, &login_id) {
+        Ok(count_db) => {
+            count = count_db;
+        }
+        Err(e) => {
+            error!("Errored: {:?}", e);
+            return Ok(Response::with((status::InternalServerError)));
+        }
+    }
+
+    if page == 0 {
+        page = 1;
+    }
+
+    let data = Data {
+        logged_in: login_id != 0,
+        login_user: login_user,
+        notifications: notifications,
+        current_page: page,
+        total_page: count / PAGINATES_PER + 1,
+        next_page: page + 1,
+        prev_page: page - 1,
+    };
+
+    resp.set_mut(Template::new("notifications", to_json(&data)))
+        .set_mut(status::Ok);
+    return Ok(resp);
+}
+
+pub fn notification_count_handler(req: &mut Request) -> IronResult<Response> {
+    let conn = get_pg_connection!(req);
+    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
+    match handlers::account::current_user(req, &conn) {
+        Ok(user) => { login_user = user; }
+        Err(e) => { error!("Errored: {:?}", e); }
+    }
+    let login_id = login_user.id;
+    if login_id == 0 {
+        return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/signin")))));
+    }
+    #[derive(Serialize, Debug)]
+    struct Data {
+        count: i32,
+    }
+    let count: i32;
+    match models::notification::unread_count(&conn, &login_id) {
+        Ok(count_db) => {
+            count = count_db;
+        }
+        Err(e) => {
+            error!("Errored: {:?}", e);
+            return Ok(Response::with((status::InternalServerError)));
+        }
+    }
+    let data = Data {
+        count: count,
+    };
+    let content_type = "application/json".parse::<Mime>().unwrap();
+    return Ok(Response::with((content_type, status::Ok, to_json(&data).to_string())));
 }

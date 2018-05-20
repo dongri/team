@@ -18,6 +18,14 @@ fn default_database_url() -> String {
     String::from("postgres://root:@postgres:5432/team")
 }
 
+fn default_menu() -> String {
+    String::from("post,nippo,tag,gist,tweet")
+}
+
+fn default_theme() -> String {
+    String::from("light")
+}
+
 #[derive(Deserialize, Debug)]
 pub struct Config {
     #[serde(default="default_port")]
@@ -38,4 +46,8 @@ pub struct Config {
     pub team_google_redirect_url: String, // TEAM_GOOGLE_REDIRECT_URL
     #[serde(default="default_empty_string")]
     pub team_google_allow_domain: String, // TEAM_GOOGLE_ALLOW_DOMAIN
+    #[serde(default="default_menu")]
+    pub team_menu: String, // TEAM_MENU
+    #[serde(default="default_theme")]
+    pub team_theme: String, // TEAM_THEME
 }

@@ -17,7 +17,7 @@ use handlers::post::PAGINATES_PER;
 
 pub fn stock_handler(req: &mut Request) -> IronResult<Response> {
     let conn = get_pg_connection!(req);
-    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
     match handlers::account::current_user(req, &conn) {
         Ok(user) => { login_user = user; }
         Err(e) => { error!("Errored: {:?}", e); }
@@ -56,7 +56,7 @@ pub fn stock_handler(req: &mut Request) -> IronResult<Response> {
 
 pub fn unstock_handler(req: &mut Request) -> IronResult<Response> {
     let conn = get_pg_connection!(req);
-    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
     match handlers::account::current_user(req, &conn) {
         Ok(user) => { login_user = user; }
         Err(e) => { error!("Errored: {:?}", e); }
@@ -95,7 +95,7 @@ pub fn unstock_handler(req: &mut Request) -> IronResult<Response> {
 
 pub fn stocked_list_handler(req: &mut Request) -> IronResult<Response> {
     let conn = get_pg_connection!(req);
-    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
     match handlers::account::current_user(req, &conn) {
         Ok(user) => { login_user = user; }
         Err(e) => { error!("Errored: {:?}", e); }
@@ -123,7 +123,7 @@ pub fn stocked_list_handler(req: &mut Request) -> IronResult<Response> {
     #[derive(Serialize, Debug)]
     struct Data {
         logged_in: bool,
-        login_user: models::user::User,
+        login_user: models::user::UserWithPreference,
         posts: Vec<models::post::Post>,
         current_page: i32,
         total_page: i32,
@@ -132,6 +132,9 @@ pub fn stocked_list_handler(req: &mut Request) -> IronResult<Response> {
     }
 
     let mut page = page_param.parse::<i32>().unwrap();
+    if page <= 0 {
+        page = 1;
+    }
     let offset = (page - 1) * PAGINATES_PER;
     let limit = PAGINATES_PER;
 
@@ -158,9 +161,6 @@ pub fn stocked_list_handler(req: &mut Request) -> IronResult<Response> {
         }
     }
 
-    if page == 0 {
-        page = 1;
-    }
     let data = Data {
         logged_in: login_id != 0,
         login_user: login_user,

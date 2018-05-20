@@ -1,0 +1,44 @@
+{{#*inline "title"}}
+  Notifications - Team
+{{/inline}}
+{{#*inline "page"}}
+  <div class="page-title">Notifications</div>
+  <ul class="post-items">
+  {{#each notifications}}
+    <li>
+      <div class="post-item-icon">
+        <a href="/{{user.username}}">
+          {{#if user.icon_url}}
+            <img src="{{user.icon_url}}" class="icon-img-normal">
+          {{else}}
+            <canvas width="40" height="40" data-jdenticon-hash="{{user.username_hash}}" class="icon-img-normal"></canvas>
+          {{/if}}
+        </a>
+       </div>
+      <div class="post-item-body">
+        <div class="post-item">
+          <div class="post-item-description">
+            @{{user.username}} commented on
+            <a href="{{path}}">Post</a>
+          </div>
+          <div class="post-item-title is-comment arrow_box">{{body}}</div>
+          <div class="post-item-created">{{formated_created}}</div>
+      </div>
+    </li>
+  {{/each}}
+  </ul>
+
+  <nav class="pagination is-centered" role="navigation" aria-label="pagination">
+    <a class="pagination-previous" href="/notifications/?page={{prev_page}}">Previous</a>
+    <a class="pagination-next" href="/notifications/?page={{next_page}}">Next page</a>
+    <ul class="pagination-list">
+      <li>
+        <a class="pagination-link" aria-label="Page 46" aria-current="page">
+          {{current_page}} of {{total_page}}
+        </a>
+      </li>
+    </ul>
+  </nav>
+
+{{/inline}}
+{{~> layout ~}}

@@ -4,18 +4,15 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="apple-touch-icon" sizes="180x180" href="/favicons/apple-touch-icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicons/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicons/favicon-16x16.png">
-    <link rel="manifest" href="/favicons/site.webmanifest">
+    <link rel="shortcut icon" href="/favicons/favicon.ico">
     <meta name="theme-color" content="#24292e">
     <title>{{#> title}}Team{{/title}}</title>
-    <link href="/css/font-awesome.min.css" rel="stylesheet" type="text/css" />
-    <link href="/css/mui.min.css" rel="stylesheet" type="text/css" />
+    <link href="/css/fontawesome-all.min.css" rel="stylesheet" type="text/css" />
+    <link href="/css/bulma.min.css" rel="stylesheet" type="text/css" />
     <link href="/css/style.css" rel="stylesheet" type="text/css" />
-    <script src="/js/mui.min.js"></script>
-    <script src="/js/marked.min.js"></script>
     <script src="/js/jquery-1.11.3.js"></script>
+    <script src="/js/jquery.cookie.js"></script>
+    <script src="/js/marked.min.js"></script>
     <link href="/css/highlight.default.min.css" rel="stylesheet" type="text/css" />
     <script src="/js/highlight.min.js"></script>
     <!-- emojify -->
@@ -28,9 +25,10 @@
   </head>
   <body>
     {{> header}}
-    <div class="mui-container">
-      <div class="mui--appbar-height appbar-height"></div>
-      {{~> page}}
+    <div class="container">
+      <div class="contents">
+        {{~> page}}
+      </div>
     </div>
     {{> footer}}
     <script src="/js/jdenticon.min.js" async></script>

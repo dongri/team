@@ -3,7 +3,7 @@ version: "3"
 services:
 
   team_postgres:
-    image: postgres:latest
+    image: postgres:9.6.8-alpine
     container_name: team_postgres
     volumes:
       - ./ddl.sql:/docker-entrypoint-initdb.d/init.sql

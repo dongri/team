@@ -149,7 +149,7 @@ pub fn get_signout_handler(req: &mut Request) -> IronResult<Response> {
 
 pub fn get_settings_handler(req: &mut Request) -> IronResult<Response> {
     let conn = get_pg_connection!(req);
-    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
     match handlers::account::current_user(req, &conn) {
         Ok(user) => { login_user = user; }
         Err(e) => { error!("Errored: {:?}", e); }
@@ -161,11 +161,20 @@ pub fn get_settings_handler(req: &mut Request) -> IronResult<Response> {
 
     let mut resp = Response::new();
 
+    #[derive(Serialize, Debug, Default)]
+    struct Menu {
+        name: String,
+        checked: String,
+    }
+
     #[derive(Serialize, Default)]
     struct Data {
         logged_in: bool,
         user: models::user::User,
-        login_user: models::user::User,
+        login_user: models::user::UserWithPreference,
+        menu: Vec<Menu>,
+        theme_light: String,
+        theme_black: String,
     }
 
     let user: models::user::User;
@@ -179,10 +188,39 @@ pub fn get_settings_handler(req: &mut Request) -> IronResult<Response> {
             return Ok(Response::with(status::InternalServerError));
         }
     }
+
+    // Menu
+    let default_menu = &env::CONFIG.team_menu;
+    let mut menu: Vec<Menu> = Vec::new();
+    for name in default_menu.split(",") {
+        let mut m = Menu{
+            name: "".to_string(),
+            checked: "".to_string(),
+        };
+        m.name = name.to_string();
+        if login_user.menu.contains(&m.name){
+            m.checked = "checked".to_string();
+        }
+        menu.push(m);
+    }
+
+    // Theme
+    let mut theme_light_checked = String::from("");
+    let mut theme_black_checked = String::from("");
+    if login_user.theme == "light" {
+        theme_light_checked = String::from("checked");
+    }
+    if login_user.theme == "black" {
+        theme_black_checked = String::from("checked");
+    }
+    
     let data = Data {
         logged_in: login_id != 0,
         login_user: login_user,
         user: user,
+        menu: menu,
+        theme_light: theme_light_checked,
+        theme_black: theme_black_checked,
     };
 
     resp.set_mut(Template::new("account/settings", to_json(&data)))
@@ -192,7 +230,7 @@ pub fn get_settings_handler(req: &mut Request) -> IronResult<Response> {
 
 pub fn post_settings_handler(req: &mut Request) -> IronResult<Response> {
     let conn = get_pg_connection!(req);
-    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
     match handlers::account::current_user(req, &conn) {
         Ok(user) => { login_user = user; }
         Err(e) => { error!("Errored: {:?}", e); }
@@ -230,7 +268,7 @@ pub fn post_settings_handler(req: &mut Request) -> IronResult<Response> {
 pub fn post_password_update(req: &mut Request) -> IronResult<Response> {
     let conn = get_pg_connection!(req);
 
-    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
     match handlers::account::current_user(req, &conn) {
         Ok(user) => { login_user = user; }
         Err(e) => { error!("Errored: {:?}", e); }
@@ -294,7 +332,7 @@ pub fn post_password_update(req: &mut Request) -> IronResult<Response> {
 pub fn post_username_update(req: &mut Request) -> IronResult<Response> {
     let conn = get_pg_connection!(req);
 
-    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
     match handlers::account::current_user(req, &conn) {
         Ok(user) => { login_user = user; }
         Err(e) => { error!("Errored: {:?}", e); }
@@ -326,21 +364,8 @@ pub fn post_username_update(req: &mut Request) -> IronResult<Response> {
     }
 }
 
-// pub fn get_login_id(req: &mut Request) -> i32 {
-//     let login = req.session()
-//         .get::<Login>()
-//         .ok()
-//         .and_then(|x| x)
-//         .unwrap_or(Login { id: "".to_string() });
-//     if login.id == "" {
-//         return 0;
-//     } else {
-//         return login.id.parse::<i32>().unwrap();
-//     }
-// }
-
-pub fn current_user(req: &mut Request, conn: &db::PostgresConnection) -> Result<models::user::User, String> {
-    let mut user: models::user::User = models::user::User{..Default::default()};
+pub fn current_user(req: &mut Request, conn: &db::PostgresConnection) -> Result<models::user::UserWithPreference, String> {
+    let mut user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
     let login = req.session()
         .get::<Login>()
         .ok()
@@ -351,7 +376,7 @@ pub fn current_user(req: &mut Request, conn: &db::PostgresConnection) -> Result<
         return Ok(user);
     } else {
         let login_id = login.id.parse::<i32>().unwrap();
-        match models::user::get_by_id(&conn, &login_id) {
+        match models::user::get_current_user(&conn, &login_id) {
             Ok(user_obj) => {
                 user = user_obj;
                 Ok(user)
@@ -366,7 +391,7 @@ pub fn current_user(req: &mut Request, conn: &db::PostgresConnection) -> Result<
 
 pub fn profile_post_handler(req: &mut Request) -> IronResult<Response> {
     let conn = get_pg_connection!(req);
-    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
     match handlers::account::current_user(req, &conn) {
         Ok(user) => { login_user = user; }
         Err(e) => { error!("Errored: {:?}", e); }
@@ -400,13 +425,16 @@ pub fn profile_post_handler(req: &mut Request) -> IronResult<Response> {
     #[derive(Serialize, Debug)]
     struct Data {
         logged_in: bool,
-        login_user: models::user::User,
+        login_user: models::user::UserWithPreference,
         user: models::user::User,
         posts: Vec<models::post::Post>,
         current_page: i32,
         total_page: i32,
         next_page: i32,
         prev_page: i32,
+        kind: String,
+        kind_post_active: String,
+        kind_nippo_active: String,
     }
 
     let mut page = page_param.parse::<i32>().unwrap();
@@ -459,6 +487,9 @@ pub fn profile_post_handler(req: &mut Request) -> IronResult<Response> {
         total_page: count / PAGINATES_PER + 1,
         next_page: page + 1,
         prev_page: page - 1,
+        kind: String::from("post"),
+        kind_post_active: String::from("is-active"),
+        kind_nippo_active: String::from(""),
     };
 
     resp.set_mut(Template::new("account/profile", to_json(&data)))
@@ -468,7 +499,7 @@ pub fn profile_post_handler(req: &mut Request) -> IronResult<Response> {
 
 pub fn profile_nippo_handler(req: &mut Request) -> IronResult<Response> {
     let conn = get_pg_connection!(req);
-    let mut login_user: models::user::User = models::user::User{..Default::default()};
+    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
     match handlers::account::current_user(req, &conn) {
         Ok(user) => { login_user = user; }
         Err(e) => { error!("Errored: {:?}", e); }
@@ -502,13 +533,16 @@ pub fn profile_nippo_handler(req: &mut Request) -> IronResult<Response> {
     #[derive(Serialize, Debug)]
     struct Data {
         logged_in: bool,
-        login_user: models::user::User,
+        login_user: models::user::UserWithPreference,
         user: models::user::User,
         posts: Vec<models::post::Post>,
         current_page: i32,
         total_page: i32,
         next_page: i32,
         prev_page: i32,
+        kind: String,
+        kind_post_active: String,
+        kind_nippo_active: String,
     }
 
     let mut page = page_param.parse::<i32>().unwrap();
@@ -561,6 +595,9 @@ pub fn profile_nippo_handler(req: &mut Request) -> IronResult<Response> {
         total_page: count / PAGINATES_PER + 1,
         next_page: page + 1,
         prev_page: page - 1,
+        kind: String::from("nippo"),
+        kind_post_active: String::from(""),
+        kind_nippo_active: String::from("is-active"),
     };
 
     resp.set_mut(Template::new("account/profile", to_json(&data)))
@@ -647,4 +684,72 @@ pub fn get_auth_google_handler(req: &mut Request) -> IronResult<Response> {
     };
 
     return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/signin")))));
+}
+
+pub fn post_preference_menu(req: &mut Request) -> IronResult<Response> {
+    let conn = get_pg_connection!(req);
+    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
+    match handlers::account::current_user(req, &conn) {
+        Ok(user) => { login_user = user; }
+        Err(e) => { error!("Errored: {:?}", e); }
+    }
+    let login_id = login_user.id;
+    if login_id == 0 {
+        return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/signin")))));
+    }
+
+    let menu: String;
+    {
+        use params::Params;
+        let map = &req.get_ref::<Params>().unwrap();
+        match helper::get_param(map, "menu_param") {
+            Ok(value) => menu = value,
+            Err(st) => return Ok(Response::with(st)),
+        }
+    }
+
+    match models::user::set_preference_menu(&conn, &login_id, &menu) {
+        Ok(_) => {
+            return Ok(Response::with((status::Found,
+                                      Redirect(helper::redirect_url("/account/settings")))));
+        }
+        Err(e) => {
+            error!("Errored: {:?}", e);
+            return Ok(Response::with(status::InternalServerError));
+        }
+    }
+}
+
+pub fn post_preference_theme(req: &mut Request) -> IronResult<Response> {
+    let conn = get_pg_connection!(req);
+    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
+    match handlers::account::current_user(req, &conn) {
+        Ok(user) => { login_user = user; }
+        Err(e) => { error!("Errored: {:?}", e); }
+    }
+    let login_id = login_user.id;
+    if login_id == 0 {
+        return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/signin")))));
+    }
+
+    let theme: String;
+    {
+        use params::Params;
+        let map = &req.get_ref::<Params>().unwrap();
+        match helper::get_param(map, "theme") {
+            Ok(value) => theme = value,
+            Err(st) => return Ok(Response::with(st)),
+        }
+    }
+
+    match models::user::set_preference_theme(&conn, &login_id, &theme) {
+        Ok(_) => {
+            return Ok(Response::with((status::Found,
+                                      Redirect(helper::redirect_url("/account/settings")))));
+        }
+        Err(e) => {
+            error!("Errored: {:?}", e);
+            return Ok(Response::with(status::InternalServerError));
+        }
+    }
 }

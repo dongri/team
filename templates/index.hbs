@@ -2,50 +2,63 @@
   Feed - Team
 {{/inline}}
 {{#*inline "page"}}
-  <h2 class="page-title">Feed</h2>
+  <div class="page-title">Feed</div>
   <ul class="post-items">
   {{#each feeds}}
     <li>
-      <div class="feed-item">
-        <div class="feed-user-icon">
+      <div class="post-item-icon">
         <a href="/{{user.username}}">
           {{#if user.icon_url}}
-            <img src="{{user.icon_url}}" class="feed-user-icon-img">
+            <img src="{{user.icon_url}}" class="icon-img-normal">
           {{else}}
-            <canvas width="30" height="30" data-jdenticon-hash="{{user.username_hash}}" class="feed-user-icon-img"></canvas>
+            <canvas width="40" height="40" data-jdenticon-hash="{{user.username_hash}}" class="icon-img-normal"></canvas>
           {{/if}}
         </a>
-        </div>
-
-        <div class="feed-post">
+       </div>
+      <div class="post-item-body">
+        <div class="post-item">
           {{#if comment}}
-            <div class="feed-item-detail">
+            <div class="post-item-description">
               @{{user.username}} commented on <a href="/{{kind}}/show/{{id}}">{{title}}</a>
             </div>
-            <div class="feed-comment is-comment">" {{body}} "</div>
+            <div class="post-item-title is-comment arrow_box">{{body}}</div>
           {{/if}}
           {{#if post}}
-            <div class="feed-item-detail">
+            <div class="post-item-description">
               @{{user.username}} created new post
             </div>
-            <div class="feed-comment"><a href="/{{kind}}/show/{{id}}">{{title}}</a></div>
+            <div class="post-item-title"><a href="/{{kind}}/show/{{id}}">{{title}}</a></div>
           {{/if}}
           {{#if gist}}
-            <div class="feed-item-detail">
+            <div class="post-item-description">
               @{{user.username}} created new gist
             </div>
-            <div class="feed-comment"><a href="/gist/show/{{id}}">{{title}}</a></div>
+            <div class="post-item-title"><a href="/gist/show/{{id}}">{{title}}</a></div>
           {{/if}}
-        </div>
-
+          {{#if tags}}
+            <div class="post-item-tags">
+              {{#each tags}}
+              <span class="tag is-light"><a href="/tag?name={{name}}">{{name}}</a></span>
+              {{/each}}
+            </div>
+          {{/if}}
+          <div class="post-item-created">{{formated_created}}</div>
       </div>
     </li>
   {{/each}}
   </ul>
-  <div class="paginates">
-    <a href="/?page={{prev_page}}">Previous</a>
-    {{current_page}} of {{total_page}}
-    <a href="/?page={{next_page}}">Next</a>
-  </div>
+
+  <nav class="pagination is-centered" role="navigation" aria-label="pagination">
+    <a class="pagination-previous" href="/?page={{prev_page}}">Previous</a>
+    <a class="pagination-next" href="/?page={{next_page}}">Next page</a>
+    <ul class="pagination-list">
+      <li>
+        <a class="pagination-link" aria-label="Page 46" aria-current="page">
+          {{current_page}} of {{total_page}}
+        </a>
+      </li>
+    </ul>
+  </nav>
+
 {{/inline}}
 {{~> layout ~}}

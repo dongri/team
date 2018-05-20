@@ -2,40 +2,46 @@
   Gist - Team
 {{/inline}}
 {{#*inline "page"}}
-  <h2 class="page-title">Gist</h2>
-  <button class="mui-btn mui-btn--small mui-btn--primary post-button" onClick="location.href='/gist/new'">New Gist</button>
+  <button type="button" class="button is-info is-outlined button-new" onClick="location.href='/gist/new'">New Gist</button>
+  <div class="page-title">Gist</div>
   <ul class="post-items">
   {{#each gists}}
     <li>
-      <div class="post-item-left">
+      <div class="post-item-icon">
       <a href="/{{user.username}}">
         {{#if user.icon_url}}
-          <img src="{{user.icon_url}}" class="user-icon">
+          <img src="{{user.icon_url}}" class="icon-img-normal">
         {{else}}
-          <canvas width="50" height="50" data-jdenticon-hash="{{user.username_hash}}" class="user-icon"></canvas>
+          <canvas width="40" height="40" data-jdenticon-hash="{{user.username_hash}}" class="icon-img-normal"></canvas>
         {{/if}}
       </a>
       </div>
-      <div class="post-item-right">
+      <div class="post-item-body">
         <div class="post-item">
-          <div class="post-username">
+          <div class="post-item-description">
             @{{user.username}}
           </div>
-          <div class="post-title">
+          <div class="post-item-title">
             <a href="/gist/show/{{id}}">{{description}}</a>
           </div>
-          {{#if tags}}
-          {{/if}}
-          <div class="item-created">{{created}}</div>
+          <div class="post-item-created">{{formated_created}}</div>
         </div>
       </div>
     </li>
   {{/each}}
   </ul>
-  <div class="paginates">
-    <a href="/gist/list?page={{prev_page}}">Previous</a>
-    {{current_page}} of {{total_page}}
-    <a href="/gist/list?page={{next_page}}">Next</a>
-  </div>
+
+  <nav class="pagination is-centered" role="navigation" aria-label="pagination">
+    <a class="pagination-previous" href="/gist/list?page={{prev_page}}">Previous</a>
+    <a class="pagination-next" href="/gist/list?page={{next_page}}">Next page</a>
+    <ul class="pagination-list">
+      <li>
+        <a class="pagination-link" aria-label="Page 46" aria-current="page">
+          {{current_page}} of {{total_page}}
+        </a>
+      </li>
+    </ul>
+  </nav>
+
 {{/inline}}
 {{~> layout ~}}
