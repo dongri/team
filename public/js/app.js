@@ -36,7 +36,6 @@ $(document).ready(function(){
   ], {
     onKeydown: function (e, commands) {
       if (e.ctrlKey && e.keyCode === 74) {
-        alert('aaa');
         return commands.KEY_ENTER;
       }
     }

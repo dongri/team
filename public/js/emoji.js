@@ -160,5 +160,6 @@ var emojies = [
   'white_medium_square', 'white_small_square', 'white_square_button',
   'wind_chime', 'wine_glass', 'wink', 'wolf', 'woman', 'womans_clothes',
   'womans_hat', 'womens', 'worried', 'wrench', 'x', 'yellow_heart', 'yen',
-  'yum', 'zap', 'zero', 'zzz'
+  'yum', 'zap', 'zero', 'zzz',
+  'like', 'dislike', 'parrot', 'origami'
 ];

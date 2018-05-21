@@ -128,9 +128,6 @@ a.navbar-item {
 .button-new {
   float: right;
 }
-.emoji {
-  width: 24px;
-}
 .auth {
   text-align: left;
 }
@@ -269,4 +266,32 @@ a.navbar-item {
 }
 .tweet-form {
   margin-bottom: 30px;
+}
+/* Emoji */
+.emoji {
+  width: 24px;
+}
+.emoji-suggest {
+  width: 20px;
+}
+ul.textcomplete-dropdown {
+  list-style: none;
+  padding-left: 0px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding: 5px;
+  background: white;
+}
+
+ul.textcomplete-dropdown li.active {
+  background: #2196F3 !important;
+}
+
+ul.textcomplete-dropdown li.active a {
+  color: white;
+}
+
+li.textcomplete-item a {
+  font-size: 12px;
+  text-decoration: none;
 }
