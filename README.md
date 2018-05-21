@@ -59,12 +59,12 @@ https://github.com/dongri/docker-rust
 
 # Screen Shot
 
-<a data-flickr-embed="true"  href="https://www.flickr.com/photos/140596581@N07/27373734497/in/dateposted-public/" title="1"><img src="https://farm1.staticflickr.com/978/27373734497_a45fa1a8ed.jpg" width="800" height="528" alt="1"></a>
+<a data-flickr-embed="true"  href="https://www.flickr.com/photos/140596581@N07/27373734497/in/dateposted-public/" title="1"><img src="https://farm1.staticflickr.com/978/27373734497_a45fa1a8ed_c.jpg" width="800" height="528" alt="1"></a>
 
-<a data-flickr-embed="true"  href="https://www.flickr.com/photos/140596581@N07/42244553111/in/dateposted-public/" title="2"><img src="https://farm1.staticflickr.com/830/42244553111_6da609ae89.jpg" width="800" height="528" alt="2"></a>
+<a data-flickr-embed="true"  href="https://www.flickr.com/photos/140596581@N07/42244553111/in/dateposted-public/" title="2"><img src="https://farm1.staticflickr.com/830/42244553111_6da609ae89_c.jpg" width="800" height="528" alt="2"></a>
 
-<a data-flickr-embed="true"  href="https://www.flickr.com/photos/140596581@N07/42244553011/in/dateposted-public/" title="3"><img src="https://farm1.staticflickr.com/973/42244553011_306ff88d55.jpg" width="800" height="528" alt="3"></a>
+<a data-flickr-embed="true"  href="https://www.flickr.com/photos/140596581@N07/42244553011/in/dateposted-public/" title="3"><img src="https://farm1.staticflickr.com/973/42244553011_306ff88d55_c.jpg" width="800" height="528" alt="3"></a>
 
-<a data-flickr-embed="true"  href="https://www.flickr.com/photos/140596581@N07/42244552961/in/dateposted-public/" title="4"><img src="https://farm1.staticflickr.com/903/42244552961_1f467f751c.jpg" width="800" height="528" alt="4"></a>
+<a data-flickr-embed="true"  href="https://www.flickr.com/photos/140596581@N07/42244552961/in/dateposted-public/" title="4"><img src="https://farm1.staticflickr.com/903/42244552961_1f467f751c_c.jpg" width="800" height="528" alt="4"></a>
 
-<a data-flickr-embed="true"  href="https://www.flickr.com/photos/140596581@N07/42244552801/in/dateposted-public/" title="5"><img src="https://farm1.staticflickr.com/952/42244552801_d8c2848163.jpg" width="800" height="528" alt="5"></a>
+<a data-flickr-embed="true"  href="https://www.flickr.com/photos/140596581@N07/42244552801/in/dateposted-public/" title="5"><img src="https://farm1.staticflickr.com/952/42244552801_d8c2848163_c.jpg" width="800" height="528" alt="5"></a>
