@@ -35,7 +35,7 @@
             @{{user.username}} - {{formated_created}}
           </div>
           <div class="post-item-title">
-            <div class="tweet-body marked">{{body}}</div>
+            <div class="tweet-body marked" style="display: none;">{{body}}</div>
           </div>
           <div class="post-tweet-action">
             <div class="post-tweet-comment-icon">
@@ -67,16 +67,13 @@
   </nav>
 
   <script>
-    $(".tweet-body").each(function(index, element){
-      var text = $(element).text();
-      text = text.replace(/\r?\n/g, '<br>');
-      $(element).html(text);
-    });
     $(".marked").each(function (index, element) {
       var markdownText = $(element).text();
       markdownText = markdownText.replace(/<iframe/g, "&lt;iframe")
       markdownText = markdownText.replace(/<\/iframe>/g, "&lt;/iframe>")
       var htmlText = marked(markdownText);
+      htmlText = htmlText.replace(/\n+$/g, '');
+      htmlText = htmlText.replace(/\r?\n/g, '<br>');
       $(element).html(htmlText);
       $('pre code', element).each(function (i, e) {
         hljs.highlightBlock(e, e.className);
