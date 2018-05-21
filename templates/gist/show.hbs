@@ -39,7 +39,7 @@
   <div class="post-title">{{gist.description}}</div>
 
   <div class="filename" id="gist-filename">{{gist.filename}}</div>
-  <textarea id="code" name="code" style="display: none;">{{gist.code}}</textarea>
+  <textarea id="code" name="code" style="display: none;" required>{{gist.code}}</textarea>
 
   <div class="comments">
     <ul class="post-items">
@@ -74,7 +74,7 @@
               <input type="hidden" name="action" value="update" id="comment_action_{{comment.id}}" class="input">
               <div class="field">
                 <div class="control">
-                  <textarea placeholder="comment" name="body" id="input-comment" class="textarea">{{comment.body}}</textarea>
+                  <textarea placeholder="comment" name="body" id="input-comment" class="textarea" required>{{comment.body}}</textarea>
                 </div>
               </div>
               <div class="field is-grouped">
@@ -94,7 +94,7 @@
     <input type="hidden" name="id" value="{{gist.id}}">
     <div class="field">
       <div class="control">
-        <textarea placeholder="Post a comment" name="body" id="input-comment" class="textarea is-info"></textarea>
+        <textarea placeholder="Post a comment" name="body" id="input-comment" class="textarea is-info" required></textarea>
       </div>
     </div>
     <div class="field">

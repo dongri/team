@@ -125,7 +125,7 @@
               <input type="hidden" name="action" value="update" id="comment_action_{{comment.id}}" class="input">
               <div class="field">
                 <div class="control">
-                  <textarea placeholder="comment" name="body" id="input-comment" class="textarea">{{comment.body}}</textarea>
+                  <textarea placeholder="comment" name="body" id="input-comment" class="textarea" required>{{comment.body}}</textarea>
                 </div>
               </div>
               <div class="field is-grouped">
@@ -145,7 +145,7 @@
     <input type="hidden" name="id" value="{{post.id}}">
     <div class="field">
       <div class="control">
-        <textarea class="textarea is-info" placeholder="Post a comment" name="body" id="input-comment"></textarea>
+        <textarea class="textarea is-info" placeholder="Post a comment" name="body" id="input-comment" required></textarea>
       </div>
     </div>
     <div class="field is-grouped">
