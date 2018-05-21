@@ -130,7 +130,7 @@ pub fn post_handler(req: &mut Request) -> IronResult<Response> {
         Ok(id) => {
             let title = String::from("New Tweet");
             let path = String::from("tweet");
-            let body = &format!("{}{}{}", "```\n", &body, "\n```").to_string();
+            let body = &format!("{}", &body).to_string();
             helper::post_to_slack(&conn, &login_id, &title, &body, &id, Vec::new(), &path);
             let url = Url::parse(&format!("{}/tweet/list", &CONFIG.team_domain)
                                      .to_string()).unwrap();
