@@ -569,8 +569,9 @@ pub fn update_handler(req: &mut Request) -> IronResult<Response> {
                 helper::post_to_slack(&conn, &login_id, &title, &diff_body, &id, Vec::new(), &path);
                 if kind == &"nippo" {
                     let title = String::from("New 日報");
+                    let webhook_body = body.clone();
                     let url_str = format!("{}/{}/show/{}", &CONFIG.team_domain, kind, id).to_string();
-                    helper::webhook(login_user.username, title, body.clone(), url_str);
+                    helper::webhook(login_user.username, title, webhook_body, url_str);
                 }
             }
 

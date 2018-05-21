@@ -35,7 +35,7 @@
             @{{user.username}} - {{formated_created}}
           </div>
           <div class="post-item-title">
-            <div class="tweet-body">{{body}}</div>
+            <div class="tweet-body marked">{{body}}</div>
           </div>
           <div class="post-tweet-action">
             <div class="post-tweet-comment-icon">
@@ -71,6 +71,17 @@
       var text = $(element).text();
       text = text.replace(/\r?\n/g, '<br>');
       $(element).html(text);
+    });
+    $(".marked").each(function (index, element) {
+      var markdownText = $(element).text();
+      markdownText = markdownText.replace(/<iframe/g, "&lt;iframe")
+      markdownText = markdownText.replace(/<\/iframe>/g, "&lt;/iframe>")
+      var htmlText = marked(markdownText);
+      $(element).html(htmlText);
+      $('pre code', element).each(function (i, e) {
+        hljs.highlightBlock(e, e.className);
+      });
+      $(element).show();
     });
   </script>
 

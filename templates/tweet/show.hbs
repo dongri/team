@@ -65,6 +65,17 @@
       text = text.replace(/\r?\n/g, '<br>');
       $(element).html(text);
     });
+    $(".marked").each(function (index, element) {
+      var markdownText = $(element).text();
+      markdownText = markdownText.replace(/<iframe/g, "&lt;iframe")
+      markdownText = markdownText.replace(/<\/iframe>/g, "&lt;/iframe>")
+      var htmlText = marked(markdownText);
+      $(element).html(htmlText);
+      $('pre code', element).each(function (i, e) {
+        hljs.highlightBlock(e, e.className);
+      });
+      $(element).show();
+    });
   </script>
 
 {{/inline}}
