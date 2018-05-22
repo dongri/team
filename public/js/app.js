@@ -1,15 +1,3 @@
-
-marked.setOptions({
-  renderer: new marked.Renderer(),
-  gfm: true,
-  tables: true,
-  breaks: true,
-  pedantic: true,
-  sanitize: true,
-  smartLists: true,
-  smartypants: false
-});
-
 $(document).ready(function(){
   emojify.setConfig({
     img_dir : '/img/emoji', // Directory for emoji images
@@ -91,6 +79,29 @@ $(document).ready(function(){
   },
   function () {
     alert("Error!");
+  });
+
+  // Markdown
+  var md = window.markdownit({
+    html: true,
+    linkify: true
+  });
+  $(".marked").each(function (index, element) {
+    var markdownText = $(element).html();
+    var htmlText = md.render(markdownText);
+    $(element).html(htmlText);
+    $('pre code', element).each(function (i, e) {
+      hljs.highlightBlock(e, e.className);
+    });
+    $(element).show();
+  });
+
+  $(".tweet-body").each(function (index, element) {
+    var htmlText = $(element).html();
+    htmlText = htmlText.replace(/\n+$/g, '');
+    htmlText = htmlText.replace(/\r?\n/g, '<br>');
+    $(element).html(htmlText);
+    $(element).show();
   });
 
 });
