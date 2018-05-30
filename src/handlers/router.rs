@@ -1,3 +1,8 @@
+use std::path::Path;
+
+use mount::Mount;
+use staticfile::Static;
+
 use Router;
 use handlers::index;
 use handlers::account;
@@ -69,4 +74,17 @@ pub fn create_router() -> Router {
     router.get("/:username/nippo", account::profile_nippo_handler, "user/profile_nippo");
 
     return router;
+}
+
+pub fn mount_path() -> Mount {
+    let mut mount = Mount::new();
+    mount.mount("/css", Static::new(Path::new("./public/css/")));
+    mount.mount("/js", Static::new(Path::new("./public/js/")));
+    mount.mount("/img", Static::new(Path::new("./public/img/")));
+    mount.mount("/webfonts", Static::new(Path::new("./public/webfonts/")));
+    mount.mount("/codemirror", Static::new(Path::new("./public/codemirror/")));
+    mount.mount("/favicons", Static::new(Path::new("./public/favicons/")));
+    mount.mount("/", create_router());
+
+    return mount
 }
