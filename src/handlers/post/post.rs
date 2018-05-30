@@ -722,7 +722,7 @@ pub fn notifications_handler(req: &mut Request) -> IronResult<Response> {
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 
@@ -732,7 +732,7 @@ pub fn notifications_handler(req: &mut Request) -> IronResult<Response> {
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
 
@@ -777,7 +777,7 @@ pub fn notification_count_handler(req: &mut Request) -> IronResult<Response> {
         }
         Err(e) => {
             error!("Errored: {:?}", e);
-            return Ok(Response::with((status::InternalServerError)));
+            return Ok(Response::with(status::InternalServerError));
         }
     }
     let data = Data {
