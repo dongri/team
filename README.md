@@ -19,6 +19,7 @@ export TEAM_GOOGLE_CLIENT_ID=xxxxxxxxxx.apps.googleusercontent.com
 export TEAM_GOOGLE_CLIENT_SECRET=xxxxxxxxxx
 export TEAM_GOOGLE_REDIRECT_URL=http://localhost:3000/auth/google
 export TEAM_GOOGLE_ALLOW_DOMAIN=yourcompany.com
+export TEAM_RUST_BACKTRACE=1
 ```
 
 # Development (Docker)
