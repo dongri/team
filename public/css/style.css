@@ -45,7 +45,7 @@ a:hover {
   margin-top: 20px;
 }
 .navbar {
-  z-index: 10 !important;
+  z-index: 2 !important;
 }
 .navbar-light > a:hover {
   background: #f5f5f5 !important;
