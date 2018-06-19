@@ -87,7 +87,7 @@ $(document).ready(function(){
     linkify: true
   });
   $(".marked").each(function (index, element) {
-    var markdownText = $(element).html();
+    var markdownText = $(element).text();
     var htmlText = md.render(markdownText);
     $(element).html(htmlText);
     $('pre code', element).each(function (i, e) {
