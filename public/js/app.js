@@ -84,11 +84,11 @@ $(document).ready(function(){
   // Markdown
   var md = window.markdownit({
     html: true,
-    linkify: true,
-    breaks: true
+    linkify: true
   });
   $(".marked").each(function (index, element) {
     var markdownText = $(element).text();
+    markdownText = markdownText.replace(/\r?\n/g, '<br>');
     var htmlText = md.render(markdownText);
     $(element).html(htmlText);
     $('pre code', element).each(function (i, e) {
