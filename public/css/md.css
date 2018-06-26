@@ -93,8 +93,13 @@
   padding: 10px;
   padding-left: 15px;
   border-radius: 5px;
+  display: block;
 }
 
 .marked code {
   color: #000;
+}
+
+.marked p {
+  margin-bottom: 16px;
 }
