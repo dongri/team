@@ -84,7 +84,8 @@ $(document).ready(function(){
   // Markdown
   var md = window.markdownit({
     html: true,
-    linkify: true
+    linkify: true,
+    breaks: true
   });
   $(".marked").each(function (index, element) {
     var markdownText = $(element).text();
