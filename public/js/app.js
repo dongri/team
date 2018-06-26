@@ -1,8 +1,4 @@
 $(document).ready(function(){
-  emojify.setConfig({
-    img_dir : '/img/emoji', // Directory for emoji images
-  });
-  emojify.run();
 
   $('textarea', '.CodeMirror').textcomplete([
     {
@@ -104,6 +100,12 @@ $(document).ready(function(){
     $(element).html(htmlText);
     $(element).show();
   });
+
+  emojify.setConfig({
+    img_dir: '/img/emoji', // Directory for emoji images
+  });
+
+  emojify.run();
 
 });
 
