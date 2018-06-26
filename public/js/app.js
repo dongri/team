@@ -88,7 +88,7 @@ $(document).ready(function(){
   });
   $(".marked").each(function (index, element) {
     var markdownText = $(element).text();
-    markdownText = markdownText.replace(/\r?\n/g, '<br>');
+    // markdownText = markdownText.replace(/\r?\n/g, '<br>');
     var htmlText = md.render(markdownText);
     $(element).html(htmlText);
     $('pre code', element).each(function (i, e) {
