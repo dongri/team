@@ -392,7 +392,10 @@ pub fn post_username_update(req: &mut Request) -> IronResult<Response> {
 }
 
 pub fn current_user(req: &mut Request, conn: &db::PostgresConnection) -> Result<models::user::UserWithPreference, String> {
-    let url = req.url.to_string();
+    let mut url = req.url.to_string();
+    if req.url.port() == 443 {
+        url = url.replace("http", "https")
+    }
     let _ = req.session().set(RefUrl { url: url } );
     let mut user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
     let login = req.session()
