@@ -393,7 +393,7 @@ pub fn post_username_update(req: &mut Request) -> IronResult<Response> {
 
 pub fn current_user(req: &mut Request, conn: &db::PostgresConnection) -> Result<models::user::UserWithPreference, String> {
     let mut url = req.url.to_string();
-    if req.url.port() == 443 {
+    if env::CONFIG.team_domain.starts_with("https") {
         url = url.replace("http", "https")
     }
     let _ = req.session().set(RefUrl { url: url } );
