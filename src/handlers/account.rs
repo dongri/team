@@ -151,7 +151,7 @@ pub fn post_signin_handler(req: &mut Request) -> IronResult<Response> {
             if user.username != "" {
                 try!(req.session().set(Login { id: user.id.to_string() }));
                 let ref_url = req.session().get::<RefUrl>().ok().and_then(|x| x)
-                    .unwrap_or(RefUrl { url: "/".to_string() });
+                    .unwrap_or(RefUrl { url: "".to_string() });
                 let url = Url::parse(&format!("{}", ref_url.url)
                     .to_string())
                     .unwrap_or(helper::redirect_url("/"));
@@ -678,7 +678,7 @@ pub fn get_auth_google_handler(req: &mut Request) -> IronResult<Response> {
                 }
 
                 let ref_url = req.session().get::<RefUrl>().ok().and_then(|x| x)
-                    .unwrap_or(RefUrl { url: "/".to_string() });
+                    .unwrap_or(RefUrl { url: "".to_string() });
                 let url = Url::parse(&format!("{}", ref_url.url)
                     .to_string())
                     .unwrap_or(helper::redirect_url("/"));
