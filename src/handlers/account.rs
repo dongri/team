@@ -39,6 +39,27 @@ impl iron_sessionstorage::Value for Login {
     }
 }
 
+#[derive(Serialize, Debug, Default)]
+pub struct RefUrl {
+    url: String,
+}
+
+impl iron_sessionstorage::Value for RefUrl {
+    fn get_key() -> &'static str {
+        "ref_url"
+    }
+    fn into_raw(self) -> String {
+        self.url
+    }
+    fn from_raw(value: String) -> Option<Self> {
+        if value.is_empty() {
+            None
+        } else {
+            Some(RefUrl { url: value })
+        }
+    }
+}
+
 pub fn get_signup_handler(_: &mut Request) -> IronResult<Response> {
     let mut resp = Response::new();
     resp.set_mut(Template::new("account/signup", {}))
@@ -129,7 +150,12 @@ pub fn post_signin_handler(req: &mut Request) -> IronResult<Response> {
         Ok(user) => {
             if user.username != "" {
                 try!(req.session().set(Login { id: user.id.to_string() }));
-                return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/")))));
+                let ref_url = req.session().get::<RefUrl>().ok().and_then(|x| x)
+                    .unwrap_or(RefUrl { url: "/".to_string() });
+                let url = Url::parse(&format!("{}", ref_url.url)
+                    .to_string())
+                    .unwrap_or(helper::redirect_url("/"));
+                return Ok(Response::with((status::Found, Redirect(url))));
             } else {
                 return Ok(Response::with((status::Found,
                                           Redirect(helper::redirect_url("/signin")))));
@@ -365,6 +391,8 @@ pub fn post_username_update(req: &mut Request) -> IronResult<Response> {
 }
 
 pub fn current_user(req: &mut Request, conn: &db::PostgresConnection) -> Result<models::user::UserWithPreference, String> {
+    let url = req.url.to_string();
+    let _ = req.session().set(RefUrl { url: url } );
     let mut user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
     let login = req.session()
         .get::<Login>()
@@ -649,6 +677,12 @@ pub fn get_auth_google_handler(req: &mut Request) -> IronResult<Response> {
                     return Ok(Response::with((status::InternalServerError, "domain error")));
                 }
 
+                let ref_url = req.session().get::<RefUrl>().ok().and_then(|x| x)
+                    .unwrap_or(RefUrl { url: "/".to_string() });
+                let url = Url::parse(&format!("{}", ref_url.url)
+                    .to_string())
+                    .unwrap_or(helper::redirect_url("/"));
+
                 let conn = get_pg_connection!(req);
                 let user: models::user::UserWithEmail;
                 match models::user::get_by_email(&conn, &email) {
@@ -665,7 +699,7 @@ pub fn get_auth_google_handler(req: &mut Request) -> IronResult<Response> {
                     match models::user::create_with_email(&conn, &username, &email) {
                         Ok(user_id) => {
                             try!(req.session().set(Login { id: user_id.to_string() }));
-                            return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/")))));
+                            return Ok(Response::with((status::Found, Redirect(url))));
                         }
                         Err(e) => {
                             info!("Errored: {:?}", e);
@@ -674,7 +708,7 @@ pub fn get_auth_google_handler(req: &mut Request) -> IronResult<Response> {
                     }
                 } else {
                     try!(req.session().set(Login { id: user.id.to_string() }));
-                    return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/")))));
+                    return Ok(Response::with((status::Found, Redirect(url))));
                 }
             }
             Err(err) => {
