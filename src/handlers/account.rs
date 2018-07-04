@@ -155,6 +155,7 @@ pub fn post_signin_handler(req: &mut Request) -> IronResult<Response> {
                 let url = Url::parse(&format!("{}", ref_url.url)
                     .to_string())
                     .unwrap_or(helper::redirect_url("/"));
+                println!("==== Referer: {:?} =====", url.to_string());
                 return Ok(Response::with((status::Found, Redirect(url))));
             } else {
                 return Ok(Response::with((status::Found,
