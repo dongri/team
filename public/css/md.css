@@ -104,3 +104,10 @@
 .marked > p {
   margin-bottom: 16px;
 }
+
+.marked th, td {
+  padding: 3px;
+  padding-left: 5px;
+  padding-bottom: 5px;
+  border: 1px solid #ddd;
+}
