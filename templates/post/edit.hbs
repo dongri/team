@@ -16,6 +16,12 @@
       <div class="control">
         <textarea name="body" placeholder="body" id="mdeditor" cols="30" rows="10" required>{{post.body}}</textarea>
       </div>
+      <label class="label-file">
+        <i aria-hidden="true" data-hidden="true" class="fa fa-file-image-o toolbar-button-icon"></i>
+        Attach a file
+        <input type="file" name="image" style="display: none;">
+      </label>
+      <input id="image" type="hidden" value="image">
     </div>
     <div class="field">
       <div class="control">
@@ -29,11 +35,38 @@
       </div>
     </div>
   </form>
+
   <script>
+
     var simplemde = new SimpleMDE({
       element: document.getElementById("mdeditor"),
-      spellChecker: false
+      spellChecker: false,
+      status: false
     });
+
+    $(document).on('change', 'input[name="image"]', function () {
+      var fd = new FormData();
+      if ($("input[name='image']").val() !== '') {
+        fd.append("file", $("input[name='image']").prop("files")[0]);
+      }
+      fd.append("dir", $("#image").val());
+      var postData = {
+        type: "POST",
+        dataType: "text",
+        data: fd,
+        processData: false,
+        contentType: false
+      };
+      $.ajax(
+        "/image/upload", postData
+      ).done(function (text) {
+        var json = JSON.parse(text);
+        var v = simplemde.value();
+        simplemde.value(v + "\n![](" + json.fileurl + ")");
+      });
+    });
+
   </script>
+
 {{/inline}}
 {{~> layout ~}}

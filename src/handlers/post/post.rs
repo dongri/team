@@ -786,3 +786,44 @@ pub fn notification_count_handler(req: &mut Request) -> IronResult<Response> {
     let content_type = "application/json".parse::<Mime>().unwrap();
     return Ok(Response::with((content_type, status::Ok, to_json(&data).to_string())));
 }
+
+use time;
+use std::fs;
+pub fn image_upload_handler(req: &mut Request) -> IronResult<Response> {
+    let conn = get_pg_connection!(req);
+    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
+    match handlers::account::current_user(req, &conn) {
+        Ok(user) => { login_user = user; }
+        Err(e) => { error!("Errored: {:?}", e); }
+    }
+    let login_id = login_user.id;
+    if login_id == 0 {
+        return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/signin")))));
+    }
+
+    use params::{Params, Value};
+
+    let timestamp = time::get_time().sec;
+    let filepath = format!("public/img/posts/{:?}.png", timestamp);
+    let fileurl = format!("img/posts/{:?}.png", timestamp);
+
+    match req.get_ref::<Params>().unwrap().find(&["file"]) {
+        Some(&Value::File(ref file)) => {
+            let a = &file.path;
+            let b = &filepath;
+            let _ = fs::copy(a, b);
+        }
+        _ => {
+            println!("no file");
+        }
+    }
+    #[derive(Serialize, Debug)]
+    struct Data {
+        fileurl: String,
+    }
+    let data = Data {
+        fileurl: format!("{}/{}", &CONFIG.team_domain, fileurl),
+    };
+    let content_type = "application/json".parse::<Mime>().unwrap();
+    return Ok(Response::with((content_type, status::Ok, to_json(&data).to_string())));
+}

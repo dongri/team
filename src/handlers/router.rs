@@ -69,6 +69,8 @@ pub fn create_router() -> Router {
     router.get("/notifications", post::post::notifications_handler, "post/notifications");
     router.get("/notification_count", post::post::notification_count_handler, "post/notification_count");
 
+    router.post("/image/upload", post::post::image_upload_handler, "post/imageupload");
+
     router.get("/:username", account::profile_post_handler, "user/profile");
     router.get("/:username/post", account::profile_post_handler, "user/profile_post");
     router.get("/:username/nippo", account::profile_nippo_handler, "user/profile_nippo");

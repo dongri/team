@@ -298,3 +298,11 @@ li.textcomplete-item a {
   font-size: 12px;
   text-decoration: none;
 }
+
+label.label-file {
+  color: #1b69b6;
+  cursor: pointer;
+  padding: 5px 3px;
+  margin-bottom: 10px;
+  display: inline-block;
+}
