@@ -15,6 +15,12 @@
       <div class="control">
         <textarea placeholder="" name="body" id="{{kind}}-mdeditor"></textarea>
       </div>
+      <label class="label-file">
+        <i aria-hidden="true" data-hidden="true" class="fa fa-file-image-o toolbar-button-icon"></i>
+        Attach a file
+        <input type="file" name="image" style="display: none;">
+      </label>
+      <input id="image" type="hidden" value="image">
     </div>
     <div class="field">
       <div class="control">
@@ -28,14 +34,17 @@
       </div>
     </div>
   </form>
+
   <script>
     // Nippo teamplate
     $("#nippo-mdeditor").val("# 本日の作業内容\n\n# 発生した問題\n\n# 明日の作業予定\n\n# 所感\n\n");
 
     var simplemde = new SimpleMDE({
       element: document.getElementById("{{kind}}-mdeditor"),
-      spellChecker: false
+      spellChecker: false,
+      status: false
     });
+
     $( document ).ready(function() {
       // Today
       var today = new Date();
@@ -53,6 +62,29 @@
       $("#nippo-title").val(today);
 
     });
+
+    $(document).on('change', 'input[name="image"]', function () {
+      var fd = new FormData();
+      if ($("input[name='image']").val() !== '') {
+        fd.append("file", $("input[name='image']").prop("files")[0]);
+      }
+      fd.append("dir", $("#image").val());
+      var postData = {
+        type: "POST",
+        dataType: "text",
+        data: fd,
+        processData: false,
+        contentType: false
+      };
+      $.ajax(
+        "/image/upload", postData
+      ).done(function (text) {
+        var json = JSON.parse(text);
+        var v = simplemde.value();
+        simplemde.value(v + "\n![](" + json.fileurl + ")");
+      });
+    });
+
   </script>
 {{/inline}}
 {{~> layout ~}}

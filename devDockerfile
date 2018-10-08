@@ -1,8 +1,8 @@
-FROM dongri/rust:1.22.1
-MAINTAINER Dongri Jin <dongrify@gmail.com>
+FROM dongri/rust:1.29.1
+LABEL maintainer "Dongri Jin <dongrify@gmail.com>"
 
 ADD . /source
 WORKDIR /source
-RUN cargo install cargo-watch
+RUN cargo install --vers 7.0.4 cargo-watch
 EXPOSE 3000
-CMD cargo watch -x 'run'
+CMD cargo watch -x 'run' -i 'public/img/posts/*'

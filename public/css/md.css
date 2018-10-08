@@ -111,3 +111,7 @@
   padding-bottom: 5px;
   border: 1px solid #ddd;
 }
+
+.marked a {
+  text-decoration: underline;
+}
