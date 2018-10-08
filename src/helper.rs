@@ -95,7 +95,7 @@ pub fn webhook(username: String, title: String, body: String, url: String) {
 
     let b = format!(r#"{:?}"#, body);
     let json_string = format!(r#"{{"username": "{}", "title": "{}", "body": {}, "url": "{}"}}"#, username, title, b, url);
-    let json: BTreeMap<String, f64> = serde_json::from_str(&json_string).unwrap();
+    let json: BTreeMap<String, String> = serde_json::from_str(&json_string).unwrap();
 
     let uri = webhook_url.parse().unwrap();
     let mut req = Request::new(Method::Post, uri);
