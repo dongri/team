@@ -2,7 +2,7 @@
 
 ### 百闻不如一见
 
-https://rust-team.herokuapp.com/
+https://teamx.herokuapp.com/
 ```
 username: user
 password: test
