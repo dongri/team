@@ -98,13 +98,13 @@ pub fn webhook(username: String, title: String, body: String, url: String) {
         "url": url,
     });
 
-    let jsonString = data.to_string();
+    let json_string = data.to_string();
 
     let uri = webhook_url.parse().unwrap();
     let mut req = Request::new(Method::Post, uri);
     req.headers_mut().set(ContentType::json());
-    req.headers_mut().set(ContentLength(jsonString.len() as u64));
-    req.set_body(jsonString);
+    req.headers_mut().set(ContentLength(json_string.len() as u64));
+    req.set_body(json_string);
 
     let post = client.request(req);
     let res = core.run(post);
