@@ -1,6 +1,5 @@
 use hbs::Template;
 use serde::ser::Serialize;
-use serde_json;
 use crypto::sha2::Sha256;
 use crypto::digest::Digest;
 use slack_hook::{Slack, PayloadBuilder};
@@ -80,7 +79,6 @@ pub fn slack(text: String) {
     }
 }
 
-use std::collections::BTreeMap;
 pub fn webhook(username: String, title: String, body: String, url: String) {
     let webhook_url = &CONFIG.team_webhook_url;
     if webhook_url == "" {
@@ -93,20 +91,6 @@ pub fn webhook(username: String, title: String, body: String, url: String) {
         .connector(HttpsConnector::new(4, &handle).unwrap())
         .build(&handle);
 
-    // #[derive(Serialize, Default)]
-    // struct Data {
-    //     username: String,
-    //     title: String,
-    //     body: String,
-    //     url: String,
-    // }
-    // let data = Data {
-    //     username: username,
-    //     title: title,
-    //     body: body,
-    //     url: url,
-    // };
-
     let data = json!({
         "username": username,
         "title": title,
@@ -114,16 +98,13 @@ pub fn webhook(username: String, title: String, body: String, url: String) {
         "url": url,
     });
 
-    let json = data.to_string();
-
-    // let json_string = format!(r#"{{"username": "{}", "title": "{}", "body": {}, "url": "{}"}}"#, username, title, b, url);
-    // let json: BTreeMap<String, String> = serde_json::from_str(&json_string).unwrap();
+    let jsonString = data.to_string();
 
     let uri = webhook_url.parse().unwrap();
     let mut req = Request::new(Method::Post, uri);
     req.headers_mut().set(ContentType::json());
-    req.headers_mut().set(ContentLength(json.len() as u64));
-    req.set_body(json);
+    req.headers_mut().set(ContentLength(jsonString.len() as u64));
+    req.set_body(jsonString);
 
     let post = client.request(req);
     let res = core.run(post);
