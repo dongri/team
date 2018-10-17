@@ -26,6 +26,10 @@ fn default_theme() -> String {
     String::from("light")
 }
 
+fn default_secret_cookie() -> String {
+    String::from("FLEo9NZJDhZbBaT")
+}
+
 #[derive(Deserialize, Debug)]
 pub struct Config {
     #[serde(default="default_port")]
@@ -50,4 +54,6 @@ pub struct Config {
     pub team_menu: String, // TEAM_MENU
     #[serde(default="default_theme")]
     pub team_theme: String, // TEAM_THEME
+    #[serde(default="default_secret_cookie")]
+    pub team_secret_cookie: String // TEAM_SECRET_COOKIE
 }
