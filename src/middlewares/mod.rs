@@ -7,6 +7,8 @@ use iron_sessionstorage::SessionStorage;
 use iron_sessionstorage::backends::SignedCookieBackend;
 use time;
 
+use env::CONFIG;
+
 struct Logger;
 impl Logger {
     fn log(&self, req: &Request, res: Result<&Response, &IronError>, time: u64) {
@@ -49,8 +51,8 @@ pub fn setup<H: Handler>(handler: H) -> Chain {
     }
     chain.link_after(hbse);
 
-    let secret = b"FLEo9NZJDhZbBaT".to_vec();
-    chain.link_around(SessionStorage::new(SignedCookieBackend::new(secret)));
+    let secret = &CONFIG.team_cookie_secret.as_bytes();
+    chain.link_around(SessionStorage::new(SignedCookieBackend::new(secret.to_vec())));
 
     chain.around(Logger);
 
