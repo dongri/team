@@ -51,7 +51,7 @@ pub fn setup<H: Handler>(handler: H) -> Chain {
     }
     chain.link_after(hbse);
 
-    let secret = &CONFIG.team_cookie_secret.as_bytes();
+    let secret = &CONFIG.team_secret_cookie.as_bytes();
     chain.link_around(SessionStorage::new(SignedCookieBackend::new(secret.to_vec())));
 
     chain.around(Logger);
