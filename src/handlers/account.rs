@@ -813,8 +813,8 @@ pub fn icon_upload_handler(req: &mut Request) -> IronResult<Response> {
     use params::{Params, Value};
 
     let timestamp = time::get_time().sec;
-    let filepath = format!("public/img/profile/icon/{:?}.png", timestamp);
-    let fileurl = format!("img/profile/icon/{:?}.png", timestamp);
+    let filepath = format!("public/img/profile/icons/{:?}.png", timestamp);
+    let fileurl = format!("img/profile/icons/{:?}.png", timestamp);
 
     match req.get_ref::<Params>().unwrap().find(&["file"]) {
         Some(&Value::File(ref file)) => {
