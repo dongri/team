@@ -84,16 +84,24 @@
 <hr />
 <div class="page-title">Profile Icon</div>
 <form action="/account/settings" method="post">
-  <div class="field">
-    <div class="control">
-      <input type="text" placeholder="Icon URL" name="icon_url" value="{{user.icon_url}}" class="input">
-    </div>
-  </div>
   <div>
     {{#if user.icon_url}}
-    <img src="{{user.icon_url}}" class="icon-img-large"> {{else}}
+    <img src="{{user.icon_url}}" class="icon-img-large">
+    {{else}}
     <canvas width="60" height="60" data-jdenticon-hash="{{user.username_hash}}" class="icon-img-large"></canvas>
     {{/if}}
+  </div>
+  <div class="field">
+    <label class="label-file">
+      <i aria-hidden="true" data-hidden="true" class="far fa-file-image toolbar-button-icon"></i>
+      Attach a file
+      <input type="file" name="image" style="display: none;">
+    </label>
+    <div class="field">
+      <div class="control">
+        <input type="text" placeholder="Icon URL" name="icon_url" value="{{user.icon_url}}" class="input" id="user_icon_url">
+      </div>
+    </div>
   </div>
   <div class="field">
     <div class="control">
@@ -102,5 +110,30 @@
   </div>
 </form>
 <hr />
+
+<script>
+
+  $(document).on('change', 'input[name="image"]', function () {
+    var fd = new FormData();
+    if ($("input[name='image']").val() !== '') {
+      fd.append("file", $("input[name='image']").prop("files")[0]);
+    }
+    fd.append("dir", $("#image").val());
+    var postData = {
+      type: "POST",
+      dataType: "text",
+      data: fd,
+      processData: false,
+      contentType: false
+    };
+    $.ajax(
+      "/account/icon/upload", postData
+    ).done(function (text) {
+      var json = JSON.parse(text);
+      $('#user_icon_url').val(json.fileurl);
+    });
+  });
+
+</script>
 
 {{/inline}} {{~> layout ~}}

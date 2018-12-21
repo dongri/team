@@ -12,4 +12,5 @@
 *.log
 
 /public/img/posts/*
+/public/img/profile/*
 !.gitkeep

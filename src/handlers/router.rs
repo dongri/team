@@ -30,6 +30,7 @@ pub fn create_router() -> Router {
     router.post("/account/username", account::post_username_update, "account/post_username");
     router.post("/account/preference/menu", account::post_preference_menu, "account/post_preference_menu");
     router.post("/account/preference/theme", account::post_preference_theme, "account/post_preference_theme");
+    router.post("/account/icon/upload", account::icon_upload_handler, "account/icon_upload");
 
     router.get("/gist/new", gist::new_handler, "gist/new");
     router.post("/gist/create", gist::create_handler, "gist/create");
