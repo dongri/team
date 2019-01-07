@@ -35,12 +35,14 @@
             </div>
             <div class="post-item-title"><a href="/gist/show/{{id}}">{{title}}</a></div>
           {{/if}}
-          {{#if tags}}
-            <div class="post-item-tags">
-              {{#each tags}}
-              <span class="tag is-light"><a href="/tag?name={{name}}">{{name}}</a></span>
-              {{/each}}
-            </div>
+          {{#if post}}
+            {{#if tags}}
+              <div class="post-item-tags">
+                {{#each tags}}
+                <span class="tag is-light"><a href="/tag?name={{name}}">{{name}}</a></span>
+                {{/each}}
+              </div>
+            {{/if}}
           {{/if}}
           <div class="post-item-created">{{formated_created}}</div>
       </div>

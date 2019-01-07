@@ -232,7 +232,7 @@ pub fn get_feeds(conn: &db::PostgresConnection, offset: &i32, limit: &i32) -> Re
         union
         (select 'comment' as comment, '' as gist, '' as post, c.post_id, p.kind, c.user_id, p.title as title, c.body, u.username, u.icon_url, c.created from post_comments as c join users as u on u.id=c.user_id join posts as p on c.post_id=p.id)
         union
-        (select  '' as comment, 'gist' as gist, '' as post, 0 as id, '' as kind, g.user_id, g.description as title, '' as body, u.username, u.icon_url, g.created from gists as g join users as u on u.id=g.user_id)
+        (select  '' as comment, 'gist' as gist, '' as post, g.id, '' as kind, g.user_id, g.description as title, '' as body, u.username, u.icon_url, g.created from gists as g join users as u on u.id=g.user_id)
         order by created desc offset $1::int limit $2::int", &[&offset, &limit]).unwrap() {
         match models::tag::get_tags_by_post_id(&conn, &row.get("id")) {
             Ok(tags) => {
