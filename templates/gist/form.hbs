@@ -77,6 +77,11 @@
     }
 
     function submitFunc() {
+      var title = document.getElementById("title").value;
+      if (title == '') {
+        alert("Gist description is empty");
+        return;
+      }
       document.getElementById("gist-code").value = editor.getValue();
       document.getElementById("gist-form").submit();
     }
