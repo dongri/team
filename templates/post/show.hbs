@@ -40,6 +40,18 @@
         </a>
       {{/if}}
     </div>
+    <div class="post-item-pin">
+      {{# if pinned}}
+      <form method="post" action="/{{kind}}/unpin/{{post.id}}">
+        <button class="button is-info is-outlined is-small">Unpin</button>
+      </form>
+      {{else}}
+      <form method="post" action="/{{kind}}/pin/{{post.id}}">
+        <button class="button is-info is-outlined is-small">Pin</button>
+      </form>
+      {{/if}}
+    </div>
+
   </div>
 
   <div class="post-title">{{post.title}}</div>

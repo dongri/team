@@ -2,6 +2,29 @@
   Feed - Team
 {{/inline}}
 {{#*inline "page"}}
+  <div class="page-title">Pinned Post</div>
+  <ul class="post-items">
+  {{#each pinneds}}
+    <li>
+      <div class="post-item-body">
+        <div class="post-item">
+          <div class="post-item-title">
+            <a href="/post/show/{{id}}">{{title}}</a>
+          </div>
+          {{#if tags}}
+          <div class="post-item-tags">
+            {{#each tags}}
+            <span class="tag is-light"><a href="/tag?name={{name}}">{{name}}</a></span>
+            {{/each}}
+          </div>
+          {{/if}}
+          <div class="post-item-created">{{formated_created}}</div>
+        </div>
+      </div>
+    </li>
+  {{/each}}
+  </ul>
+
   <div class="page-title">Feed</div>
   <ul class="post-items">
   {{#each feeds}}

@@ -288,11 +288,13 @@ pub fn show_handler(req: &mut Request) -> IronResult<Response> {
         stocked: bool,
         kind: String,
         kind_title: String,
+        pinned: bool,
     }
 
     let post: models::post::Post;
     let comments: Vec<models::post::Comment>;
     let stocked: bool;
+    let pinned: bool;
 
     match models::post::get_by_id(&conn, &id) {
         Ok(post_obj) => {
@@ -317,6 +319,16 @@ pub fn show_handler(req: &mut Request) -> IronResult<Response> {
     match models::post::is_stocked(&conn, &login_id, &id) {
         Ok(is_stocked) => {
             stocked = is_stocked;
+        }
+        Err(e) => {
+            error!("Errored: {:?}", e);
+            return Ok(Response::with(status::InternalServerError));
+        }
+    }
+
+    match models::post::is_pinned(&conn, &id) {
+        Ok(is_pinned) => {
+            pinned = is_pinned;
         }
         Err(e) => {
             error!("Errored: {:?}", e);
@@ -350,6 +362,7 @@ pub fn show_handler(req: &mut Request) -> IronResult<Response> {
         stocked: stocked,
         kind: kind.to_string(),
         kind_title: helper::uppercase_first_letter(kind),
+        pinned: pinned,
     };
 
     resp.set_mut(Template::new("post/show", to_json(&data)))

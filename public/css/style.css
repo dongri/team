@@ -179,6 +179,10 @@ a.navbar-item {
   display: inline-block;
   margin-top: 3px;
 }
+.post-item-pin {
+  display: inline-block;
+  margin-top: 3px;
+}
 .fa-users {
   color: #3273dc;
   font-size: 20px;

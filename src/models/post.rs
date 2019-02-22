@@ -526,3 +526,65 @@ pub fn share_post(conn: &db::PostgresConnection, post_id: &i32) -> Result<(), Er
         &[&post_id]
     ).map(|_| ())
 }
+
+pub fn pin_post(conn: &db::PostgresConnection, user_id: &i32, post_id: &i32) -> Result<(), Error> {
+    conn.execute(
+        "INSERT INTO pinneds (user_id, post_id) VALUES ($1, $2);",
+        &[&user_id, &post_id]
+    ).map(|_| ())
+}
+
+pub fn unpin_post(conn: &db::PostgresConnection, post_id: &i32) -> Result<(), Error> {
+    conn.execute(
+        "update pinneds set deleted = true where post_id = $1",
+        &[&post_id]
+    ).map(|_| ())
+}
+
+pub fn pinned_list(conn: &db::PostgresConnection) -> Result<Vec<Post>, Error> {
+    let mut posts: Vec<Post> = Vec::new();
+    for row in &conn.query("
+        SELECT p.id, p.kind, p.user_id, p.title, p.body, p.created, p.shared, p.status, u.username, u.icon_url
+        from posts as p
+        join pinneds as s on s.post_id = p.id
+        join users as u on u.id = p.user_id
+        where s.deleted = false
+        order by s.id desc", &[]).unwrap() {
+        match models::tag::get_tags_by_post_id(&conn, &row.get("id")) {
+            Ok(tags) => {
+                let mut post = Post {
+                    id: row.get("id"),
+                    kind: row.get("kind"),
+                    user_id: row.get("user_id"),
+                    title: row.get("title"),
+                    body: row.get("body"),
+                    created: row.get("created"),
+                    formated_created: "".to_string(),
+                    shared: row.get("shared"),
+                    status: row.get("status"),
+                    user: models::user::User{
+                        id: row.get("user_id"),
+                        username: row.get("username"),
+                        icon_url: row.get("icon_url"),
+                        username_hash: helper::username_hash(row.get("username")),
+                    },
+                    tags: tags,
+                };
+                post.formated_created = helper::jst_time_formatter(post.created);
+                posts.push(post);
+            },
+            Err(e) => {
+                error!("Errored: {:?}", e);
+            }
+        }
+    }
+    Ok(posts)
+}
+
+pub fn is_pinned(conn: &db::PostgresConnection, post_id: &i32) -> Result<bool, Error> {
+    let rows = &conn.query("SELECT count(*)::int as count from pinneds where deleted = false and post_id = $1", &[&post_id]).unwrap();
+    let row = rows.get(0);
+    let count: i32 = row.get("count");
+    let pinned = count > 0;
+    Ok(pinned)
+}

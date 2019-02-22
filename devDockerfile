@@ -3,6 +3,6 @@ LABEL maintainer "Dongri Jin <dongrify@gmail.com>"
 
 ADD . /source
 WORKDIR /source
-RUN cargo install --vers 7.0.4 cargo-watch
+RUN cargo install --vers 7.2.0 cargo-watch
 EXPOSE 3000
 CMD cargo watch -x 'run' -i 'public/img/posts/*'

@@ -57,6 +57,9 @@ pub fn create_router() -> Router {
     router.post("/:kind/unstock/:id", post::stock::unstock_handler, "post/unstock");
     router.post("/:kind/share/:id", post::share::share_handler, "post/share");
 
+    router.post("/:kind/pin/:id", post::pin::pin_handler, "post/pin");
+    router.post("/:kind/unpin/:id", post::pin::unpin_handler, "post/unpin");
+
     router.get("/stocked/list", post::stock::stocked_list_handler, "stocked/list");
     router.get("/draft/list", post::draft::draft_list_handler, "draft/list");
 

@@ -48,6 +48,7 @@ pub fn index_handler(req: &mut Request) -> IronResult<Response> {
         total_page: i32,
         next_page: i32,
         prev_page: i32,
+        pinneds: Vec<models::post::Post>,
     }
 
     let mut page = page_param.parse::<i32>().unwrap();
@@ -58,6 +59,7 @@ pub fn index_handler(req: &mut Request) -> IronResult<Response> {
     let limit = PAGINATES_PER;
 
     let feeds: Vec<models::post::Feed>;
+    let pinneds: Vec<models::post::Post>;
     let count: i32;
 
     match models::post::get_feeds(&conn, &offset, &limit) {
@@ -80,6 +82,16 @@ pub fn index_handler(req: &mut Request) -> IronResult<Response> {
         }
     }
 
+    match models::post::pinned_list(&conn) {
+        Ok(pinneds_db) => {
+            pinneds = pinneds_db;
+        }
+        Err(e) => {
+            error!("Errored: {:?}", e);
+            return Ok(Response::with(status::InternalServerError));
+        }
+    }
+
     let data = Data {
         logged_in: login_id != 0,
         login_user: login_user,
@@ -88,6 +100,7 @@ pub fn index_handler(req: &mut Request) -> IronResult<Response> {
         total_page: count / PAGINATES_PER + 1,
         next_page: page + 1,
         prev_page: page - 1,
+        pinneds: pinneds,
     };
 
     resp.set_mut(Template::new("index", to_json(&data)))

@@ -114,3 +114,12 @@ create table preferences (
   created       timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated       timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+create table pinneds (
+  id            serial primary key,
+  post_id       serial REFERENCES posts (id) ON DELETE CASCADE NOT NULL,
+  user_id       serial REFERENCES users (id) ON DELETE CASCADE NOT NULL,
+  deleted       boolean DEFAULT false,
+  created       timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated       timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
