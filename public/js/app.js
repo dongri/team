@@ -79,7 +79,7 @@ $(document).ready(function(){
 
   // Markdown
   var md = window.markdownit({
-    html: true,
+    html: false,
     linkify: true,
     breaks: true,
   });
