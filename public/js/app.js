@@ -79,7 +79,7 @@ $(document).ready(function(){
 
   // Markdown
   var md = window.markdownit({
-    html: true,
+    html: false,
     linkify: true,
     breaks: true,
   });
@@ -94,10 +94,10 @@ $(document).ready(function(){
   });
 
   $(".tweet-body").each(function (index, element) {
-    var htmlText = $(element).html();
-    htmlText = htmlText.replace(/\n+$/g, '');
-    htmlText = htmlText.replace(/\r?\n/g, '<br>');
-    $(element).html(htmlText);
+    // var htmlText = $(element).html();
+    // htmlText = htmlText.replace(/\n+$/g, '');
+    // htmlText = htmlText.replace(/\r?\n/g, '<br>');
+    // $(element).html(htmlText);
     $(element).show();
   });
 
