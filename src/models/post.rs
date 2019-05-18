@@ -588,3 +588,10 @@ pub fn is_pinned(conn: &db::PostgresConnection, post_id: &i32) -> Result<bool, E
     let pinned = count > 0;
     Ok(pinned)
 }
+
+pub fn pinned_count(conn: &db::PostgresConnection) -> Result<i32, Error> {
+    let rows = &conn.query("SELECT count(*)::int as count from pinneds where deleted = false", &[]).unwrap();
+    let row = rows.get(0);
+    let count = row.get("count");
+    Ok(count)
+}

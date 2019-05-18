@@ -151,7 +151,7 @@ pub fn pinned_list_handler(req: &mut Request) -> IronResult<Response> {
         }
     }
 
-    match models::post::stocked_count(&conn, &login_id) {
+    match models::post::pinned_count(&conn) {
         Ok(count_db) => {
             count = count_db;
         }
