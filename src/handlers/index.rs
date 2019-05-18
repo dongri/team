@@ -82,7 +82,9 @@ pub fn index_handler(req: &mut Request) -> IronResult<Response> {
         }
     }
 
-    match models::post::pinned_list(&conn) {
+    let pinned_offset = 0;
+    let pinned_limit = 3;
+    match models::post::pinned_list(&conn, &pinned_offset, &pinned_limit) {
         Ok(pinneds_db) => {
             pinneds = pinneds_db;
         }

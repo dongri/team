@@ -541,7 +541,7 @@ pub fn unpin_post(conn: &db::PostgresConnection, post_id: &i32) -> Result<(), Er
     ).map(|_| ())
 }
 
-pub fn pinned_list(conn: &db::PostgresConnection) -> Result<Vec<Post>, Error> {
+pub fn pinned_list(conn: &db::PostgresConnection, offset: &i32, limit: &i32) -> Result<Vec<Post>, Error> {
     let mut posts: Vec<Post> = Vec::new();
     for row in &conn.query("
         SELECT p.id, p.kind, p.user_id, p.title, p.body, p.created, p.shared, p.status, u.username, u.icon_url
@@ -549,7 +549,7 @@ pub fn pinned_list(conn: &db::PostgresConnection) -> Result<Vec<Post>, Error> {
         join pinneds as s on s.post_id = p.id
         join users as u on u.id = p.user_id
         where s.deleted = false
-        order by s.id desc", &[]).unwrap() {
+        order by s.id desc offset $1::int limit $2::int", &[&offset, &limit]).unwrap() {
         match models::tag::get_tags_by_post_id(&conn, &row.get("id")) {
             Ok(tags) => {
                 let mut post = Post {

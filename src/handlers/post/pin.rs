@@ -1,3 +1,5 @@
+use hbs::Template;
+use hbs::handlebars::to_json;
 use iron::prelude::*;
 use iron::status;
 use iron::Url;
@@ -10,6 +12,8 @@ use env::CONFIG;
 use handlers;
 use helper;
 use models;
+
+pub const PAGINATES_PER: i32 = 10;
 
 pub fn pin_handler(req: &mut Request) -> IronResult<Response> {
     let conn = get_pg_connection!(req);
@@ -89,85 +93,85 @@ pub fn unpin_handler(req: &mut Request) -> IronResult<Response> {
     }
 }
 
-// pub fn pinned_list_handler(req: &mut Request) -> IronResult<Response> {
-//     let conn = get_pg_connection!(req);
-//     let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
-//     match handlers::account::current_user(req, &conn) {
-//         Ok(user) => { login_user = user; }
-//         Err(e) => { error!("Errored: {:?}", e); }
-//     }
-//     let login_id = login_user.id;
-//     if login_id == 0 {
-//         return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/signin")))));
-//     }
+pub fn pinned_list_handler(req: &mut Request) -> IronResult<Response> {
+    let conn = get_pg_connection!(req);
+    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
+    match handlers::account::current_user(req, &conn) {
+        Ok(user) => { login_user = user; }
+        Err(e) => { error!("Errored: {:?}", e); }
+    }
+    let login_id = login_user.id;
+    if login_id == 0 {
+        return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/signin")))));
+    }
 
-//     let page_param: String;
+    let page_param: String;
 
-//     {
-//         use params::{Params, Value};
-//         let map = req.get_ref::<Params>().unwrap();
-//         match map.get("page") {
-//             Some(&Value::String(ref name)) => {
-//                 page_param = name.to_string();
-//             }
-//             _ => page_param = "1".to_string(),
-//         }
-//     }
+    {
+        use params::{Params, Value};
+        let map = req.get_ref::<Params>().unwrap();
+        match map.get("page") {
+            Some(&Value::String(ref name)) => {
+                page_param = name.to_string();
+            }
+            _ => page_param = "1".to_string(),
+        }
+    }
 
-//     let mut resp = Response::new();
+    let mut resp = Response::new();
 
-//     #[derive(Serialize, Debug)]
-//     struct Data {
-//         logged_in: bool,
-//         login_user: models::user::UserWithPreference,
-//         posts: Vec<models::post::Post>,
-//         current_page: i32,
-//         total_page: i32,
-//         next_page: i32,
-//         prev_page: i32,
-//     }
+    #[derive(Serialize, Debug)]
+    struct Data {
+        logged_in: bool,
+        login_user: models::user::UserWithPreference,
+        pinneds: Vec<models::post::Post>,
+        current_page: i32,
+        total_page: i32,
+        next_page: i32,
+        prev_page: i32,
+    }
 
-//     let mut page = page_param.parse::<i32>().unwrap();
-//     if page <= 0 {
-//         page = 1;
-//     }
-//     let offset = (page - 1) * PAGINATES_PER;
-//     let limit = PAGINATES_PER;
+    let mut page = page_param.parse::<i32>().unwrap();
+    if page <= 0 {
+        page = 1;
+    }
+    let offset = (page - 1) * PAGINATES_PER;
+    let limit = PAGINATES_PER;
 
-//     let posts: Vec<models::post::Post>;
-//     let count: i32;
+    let pinneds: Vec<models::post::Post>;
+    let count: i32;
 
-//     match models::post::stocked_list(&conn, &login_id, &offset, &limit) {
-//         Ok(posts_db) => {
-//             posts = posts_db;
-//         }
-//         Err(e) => {
-//             error!("Errored: {:?}", e);
-//             return Ok(Response::with(status::InternalServerError));
-//         }
-//     }
+    match models::post::pinned_list(&conn, &offset, &limit) {
+        Ok(pinneds_db) => {
+            pinneds = pinneds_db;
+        }
+        Err(e) => {
+            error!("Errored: {:?}", e);
+            return Ok(Response::with(status::InternalServerError));
+        }
+    }
 
-//     match models::post::stocked_count(&conn, &login_id) {
-//         Ok(count_db) => {
-//             count = count_db;
-//         }
-//         Err(e) => {
-//             error!("Errored: {:?}", e);
-//             return Ok(Response::with(status::InternalServerError));
-//         }
-//     }
+    match models::post::stocked_count(&conn, &login_id) {
+        Ok(count_db) => {
+            count = count_db;
+        }
+        Err(e) => {
+            error!("Errored: {:?}", e);
+            return Ok(Response::with(status::InternalServerError));
+        }
+    }
 
-//     let data = Data {
-//         logged_in: login_id != 0,
-//         login_user: login_user,
-//         posts: posts,
-//         current_page: page,
-//         total_page: count / PAGINATES_PER + 1,
-//         next_page: page + 1,
-//         prev_page: page - 1,
-//     };
+    let data = Data {
+        logged_in: login_id != 0,
+        login_user: login_user,
+        pinneds: pinneds,
+        current_page: page,
+        total_page: count / PAGINATES_PER + 1,
+        next_page: page + 1,
+        prev_page: page - 1,
+    };
 
-//     resp.set_mut(Template::new("stock/list", to_json(&data)))
-//         .set_mut(status::Ok);
-//     return Ok(resp);
-// }
+    resp.set_mut(Template::new("pinned/list", to_json(&data)))
+        .set_mut(status::Ok);
+    return Ok(resp);
+}

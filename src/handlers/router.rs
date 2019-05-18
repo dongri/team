@@ -32,6 +32,8 @@ pub fn create_router() -> Router {
     router.post("/account/preference/theme", account::post_preference_theme, "account/post_preference_theme");
     router.post("/account/icon/upload", account::icon_upload_handler, "account/icon_upload");
 
+    router.get("/pinned/list", post::pin::pinned_list_handler, "piined/list");
+
     router.get("/gist/new", gist::new_handler, "gist/new");
     router.post("/gist/create", gist::create_handler, "gist/create");
     router.get("/gist/list", gist::list_handler, "gist/list");

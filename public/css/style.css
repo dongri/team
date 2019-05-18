@@ -148,7 +148,12 @@ a.navbar-item {
 .pagination {
   margin-top: 30px;
 }
-
+.more_pinned {
+  margin-bottom: 20px;
+}
+.more_pinned a {
+  font-size: 13px;
+}
 /* tags */
 .tag-name {
   display: inline-flex;
