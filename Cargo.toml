@@ -37,7 +37,7 @@ chrono = { version = "0.3", features = ["serde", "rustc-serialize"] }
 
 diff = "0.1.10"
 
-hyper = "0.11.0"
+hyper = "0.14.5"
 hyper-tls = "0.1.1"
 futures = "0.1.14"
 tokio-core = "0.1.8"
