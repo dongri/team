@@ -31,7 +31,7 @@ rust-crypto = "0.2.36"
 
 slack-hook = "0.4"
 
-time = "0.1"
+time = "0.2"
 
 chrono = { version = "0.3", features = ["serde", "rustc-serialize"] }
 
