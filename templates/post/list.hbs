@@ -1,54 +1,20 @@
-{{#*inline "title"}}
-  {{kind_title}} - Team
-{{/inline}}
+{{#*inline "title"}}{{kind_title}} - Team{{/inline}}
 {{#*inline "page"}}
-  <button type="button" class="button is-info is-outlined button-new" onClick="location.href='/{{kind}}/new'">{{new_title}}</button>
-  <div class="page-title">{{kind}}</div>
-  <ul class="post-items">
-  {{#each posts}}
-    <li>
-      <div class="post-item-icon">
-        <a href="/{{user.username}}">
-          {{#if user.icon_url}}
-            <img src="{{user.icon_url}}" class="icon-img-normal">
-          {{else}}
-            <canvas width="40" height="40" data-jdenticon-hash="{{user.username_hash}}" class="icon-img-normal"></canvas>
-          {{/if}}
-        </a>
-      </div>
-      <div class="post-item-body">
-        <div class="post-item">
-          <div class="post-item-description">
-            @{{user.username}}
-          </div>
-          <div class="post-item-title">
-            <a href="/{{kind}}/show/{{id}}">{{title}}</a>
-          </div>
-          {{#if tags}}
-          <div class="post-item-tags">
-            {{#each tags}}
-              <span class="tag is-light"><a href="/tag?name={{name}}">{{name}}</a></span>
-            {{/each}}
-          </div>
-          {{/if}}
-          <div class="post-item-created">{{formated_created}}</div>
-        </div>
-      </div>
-    </li>
-  {{/each}}
+  <div class="page-head">
+    <h1 class="page-title">{{kind_title}}</h1>
+    <a class="btn btn-primary" href="/{{kind}}/new"><i class="fas fa-pen"></i> {{new_title}}</a>
+  </div>
+
+  <ul class="item-list">
+    {{#each posts}}
+    {{> partials/post_item}}
+    {{/each}}
   </ul>
 
-  <nav class="pagination is-centered" role="navigation" aria-label="pagination">
-    <a class="pagination-previous" href="/{{kind}}/list?page={{prev_page}}">Previous</a>
-    <a class="pagination-next" href="/{{kind}}/list?page={{next_page}}">Next page</a>
-    <ul class="pagination-list">
-      <li>
-        <a class="pagination-link" aria-label="Page 46" aria-current="page">
-          {{current_page}} of {{total_page}}
-        </a>
-      </li>
-    </ul>
+  <nav class="pagination" role="navigation" aria-label="pagination">
+    <a class="page-btn" href="/{{kind}}/list?page={{prev_page}}">&larr; Prev</a>
+    <span class="page-status">{{current_page}} / {{total_page}}</span>
+    <a class="page-btn" href="/{{kind}}/list?page={{next_page}}">Next &rarr;</a>
   </nav>
-
 {{/inline}}
 {{~> layout ~}}

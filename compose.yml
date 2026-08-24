@@ -1,5 +1,3 @@
-version: "3"
-
 services:
 
   team_postgres:
@@ -15,17 +13,11 @@ services:
     container_name: team_server
     build:
       context: .
-      dockerfile: devDockerfile
+      dockerfile: Dockerfile.dev
     environment:
+      # Other variables come from the mounted .env (loaded by the app itself).
+      # The DB host differs inside the container, so only this one is overridden.
       - TEAM_DATABASE_URL=postgres://postgres:@team_postgres:5432/team
-      - TEAM_DOMAIN=${TEAM_DOMAIN}
-      - TEAM_SLACK=${TEAM_SLACK}
-      - TEAM_GOOGLE_CLIENT_ID=${TEAM_GOOGLE_CLIENT_ID}
-      - TEAM_GOOGLE_CLIENT_SECRET=${TEAM_GOOGLE_CLIENT_SECRET}
-      - TEAM_GOOGLE_REDIRECT_URL=${TEAM_GOOGLE_REDIRECT_URL}
-      - TEAM_GOOGLE_ALLOW_DOMAIN=${TEAM_GOOGLE_ALLOW_DOMAIN}
-      - TEAM_SECRET_COOKIE=${TEAM_SECRET_COOKIE}
-      - RUST_BACKTRACE=${TEAM_RUST_BACKTRACE}
     volumes:
       - .:/source
     logging:

@@ -1,77 +1,121 @@
-# team
+# Team
 
-### 百闻不如一见
+A knowledge-sharing tool for teams. Bring articles, daily reports, code snippets, and short updates together in one place, with everything broadcast to Slack.
 
-https://teamx.herokuapp.com/
-```
-username: user
-password: test
-```
+- **Post** — knowledge articles written in Markdown (tags, comments, stock, pin, co-editing)
+- **Nippo** — daily reports with a template-equipped editor
+- **Gist** — code snippets with syntax highlighting
+- **Tweet** — short updates and replies
+- **Slack notifications** — every activity is delivered as a unified Block Kit message
+- **Auth** — username/password or Google sign-in (with optional domain restriction)
+- Light / dark theme
 
-### env
-```
-$ vim ~/.bashrc
+## Screenshots
 
-export TEAM_DATABASE_URL=postgres://root:@localhost:5432/team
-export TEAM_DOMAIN=http://localhost:3000
-export TEAM_SLACK=https://hooks.slack.com/services/xxxx/xxxxxxxx
-export TEAM_GOOGLE_CLIENT_ID=xxxxxxxxxx.apps.googleusercontent.com
-export TEAM_GOOGLE_CLIENT_SECRET=xxxxxxxxxx
-export TEAM_GOOGLE_REDIRECT_URL=http://localhost:3000/auth/google
-export TEAM_GOOGLE_ALLOW_DOMAIN=yourcompany.com
-export TEAM_SECRET_COOKIE=zqXjwojD9MMnbAoL2mT3o
-export TEAM_RUST_BACKTRACE=1
-```
+| Feed | Post |
+|---|---|
+| ![Feed](screenshots/feed.png) | ![Post](screenshots/post.png) |
 
-# Development (Docker)
+| Editor | Tweet |
+|---|---|
+| ![Editor](screenshots/editor.png) | ![Tweet](screenshots/tweet.png) |
 
-### up
-```
-$ rm /tmp/postgres/*
-$ docker-compose up
-```
-http://localhost:3000
+## Tech Stack
 
-# Development (Mac)
+- **Backend**: Rust / [Axum](https://github.com/tokio-rs/axum) + Tokio
+- **Database**: PostgreSQL (tokio-postgres + deadpool)
+- **Templates**: Handlebars (server-side rendering)
+- **Frontend**: Vanilla JS + custom CSS
 
-### database
-```
-$ createdb team
-```
-ddl.sql
+## Setup
 
-### cargo-watch
-```
-$ cargo install cargo-watch
+### 1. Environment variables
+
+```sh
+cp .env.example .env
 ```
 
-### run
-```
-$ cargo watch -x 'run'
-```
-http://localhost:3000
+`.env` is loaded automatically by both the app itself (dotenvy) and docker compose.
+See [.env.example](.env.example) for a description of each variable.
 
-# Production
-```
-$ ./run.sh
+### 2-a. Run with Docker
+
+```sh
+docker compose up
 ```
 
-# docker file
-https://github.com/dongri/docker-rust
+The app starts at http://localhost:3000 (PostgreSQL included; the source
+directory is mounted, so changes rebuild automatically).
 
-# Screen Shot
+### 2-b. Run locally
 
-<a data-flickr-embed="true"  href="https://www.flickr.com/photos/140596581@N07/27373734497/in/dateposted-public/" title="1"><img src="https://farm1.staticflickr.com/978/27373734497_a45fa1a8ed_c.jpg" width="800" height="528" alt="1"></a>
+```sh
+createdb team
+psql team < ddl.sql
 
-<a data-flickr-embed="true"  href="https://www.flickr.com/photos/140596581@N07/42244553111/in/dateposted-public/" title="2"><img src="https://farm1.staticflickr.com/830/42244553111_6da609ae89_c.jpg" width="800" height="528" alt="2"></a>
+cargo run
+# or with hot reload during development
+cargo install cargo-watch
+cargo watch -x run
+```
 
-<a data-flickr-embed="true"  href="https://www.flickr.com/photos/140596581@N07/42244553011/in/dateposted-public/" title="3"><img src="https://farm1.staticflickr.com/973/42244553011_306ff88d55_c.jpg" width="800" height="528" alt="3"></a>
+## Test
 
-<a data-flickr-embed="true"  href="https://www.flickr.com/photos/140596581@N07/42244552961/in/dateposted-public/" title="4"><img src="https://farm1.staticflickr.com/903/42244552961_1f467f751c_c.jpg" width="800" height="528" alt="4"></a>
+```sh
+cargo test
+```
 
-<a data-flickr-embed="true"  href="https://www.flickr.com/photos/140596581@N07/42244552801/in/dateposted-public/" title="5"><img src="https://farm1.staticflickr.com/952/42244552801_d8c2848163_c.jpg" width="800" height="528" alt="5"></a>
+## Deploy
 
-# License
+### Docker Compose
+
+[compose.prod.yml](compose.prod.yml) builds a release image
+([Dockerfile](Dockerfile)) and runs it. Point `TEAM_DATABASE_URL` in `.env`
+to your database, then:
+
+```sh
+docker compose -f compose.prod.yml up --build -d
+```
+
+### Deploying directly on a server
+
+1. Build (or transfer a binary built by CI):
+
+   ```sh
+   cargo build --release
+   ```
+
+2. Place `target/release/team` on the server along with the `templates/` and
+   `public/` directories (templates and static assets are read from the
+   working directory at runtime).
+
+3. Run it as a systemd service:
+
+   ```ini
+   # /etc/systemd/system/team.service
+   [Unit]
+   Description=Team
+   After=network.target postgresql.service
+
+   [Service]
+   WorkingDirectory=/opt/team
+   ExecStart=/opt/team/team
+   EnvironmentFile=/opt/team/.env
+   Restart=always
+
+   [Install]
+   WantedBy=multi-user.target
+   ```
+
+   ```sh
+   sudo systemctl enable --now team
+   ```
+
+4. In production, terminate TLS with a reverse proxy such as Nginx and set
+   `TEAM_DOMAIN` to the public URL (e.g. `https://team.example.com`).
+
+## License
+
 MIT License
 
 Copyright (c) 2019 Dongri Jin

@@ -1,69 +1,48 @@
-{{#*inline "title"}}
-  Gist - Team
-{{/inline}}
+{{#*inline "title"}}New Gist - Team{{/inline}}
 {{#*inline "page_head"}}
-{{> gist/head }}
+{{> gist/head}}
 {{/inline}}
-
 {{#*inline "page"}}
+  <h1 class="page-title">New Gist</h1>
 
-  <form id="gist-form" action="/gist/create" method="post">
+  <form id="gist-form" action="/gist/create" method="post" class="post-form">
     <input type="hidden" value="" name="gist-code" id="gist-code">
-    <div class="field">
-      <div class="control">
-        <input type="text" placeholder="Gist description..." name="gist-description" class="input" id="title" required>
-      </div>
+    <div class="form-field">
+      <input type="text" placeholder="Gist description…" name="gist-description" class="input input-lg" id="title" required>
     </div>
-    <div class="field">
-      <div class="control">
-        <input type="text" placeholder="Filename (hello.go)" name="gist-filename" class="input" id="mode" required>
-      </div>
+    <div class="form-field">
+      <input type="text" placeholder="Filename (hello.go)" name="gist-filename" class="input mono" id="mode" required>
     </div>
-    <div class="field">
-      <div class="control">
-        <textarea id="code" name="code" style="display: none;" required></textarea>
-      </div>
+    <div class="form-field gist-editor card">
+      <textarea id="code" name="code" hidden></textarea>
     </div>
-    <div class="field">
-      <div class="control">
-        <button type="button" class="button is-info is-outlined" name='action' onclick="submitFunc()" value="publish">Post</button>
-      </div>
+    <div class="form-actions">
+      <button type="button" class="btn btn-primary" onclick="submitFunc()">Create Gist</button>
     </div>
   </form>
 
   <script>
-
     CodeMirror.modeURL = "/codemirror/mode/%N/%N.js";
-    
     var editor = CodeMirror.fromTextArea(document.getElementById("code"), {
       lineNumbers: true,
       styleActiveLine: true,
       matchBrackets: true
     });
-    editor.setOption("theme", "blackboard");
-
+    editor.setOption("theme", document.documentElement.getAttribute("data-theme") === "black" ? "blackboard" : "default");
     editor.setOption("mode", "text/plain");
     CodeMirror.autoLoadMode(editor, "null");
-  
+
     var modeInput = document.getElementById("mode");
-    CodeMirror.on(modeInput, "blur", function(e) {
-      change();
-    });
+    modeInput.addEventListener("blur", change);
 
     function change() {
       var val = modeInput.value, m, mode, spec;
       if (m = /.+\.([^.]+)$/.exec(val)) {
         var info = CodeMirror.findModeByExtension(m[1]);
-        if (info) {
-          mode = info.mode;
-          spec = info.mime;
-        }
+        if (info) { mode = info.mode; spec = info.mime; }
       } else if (/\//.test(val)) {
         var info = CodeMirror.findModeByMIME(val);
-        if (info) {
-          mode = info.mode;
-          spec = val;
-        }
+        if (info) { mode = info.mode; spec = val; }
       } else {
         mode = spec = val;
       }
@@ -78,15 +57,13 @@
 
     function submitFunc() {
       var title = document.getElementById("title").value;
-      if (title == '') {
+      if (title === '') {
         alert("Gist description is empty");
         return;
       }
       document.getElementById("gist-code").value = editor.getValue();
       document.getElementById("gist-form").submit();
     }
-
   </script>
-
 {{/inline}}
 {{~> layout ~}}

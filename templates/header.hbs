@@ -1,70 +1,60 @@
-<nav class="navbar is-{{login_user.theme}} topNav site-header">
-  <div class="container">
-    <div class="navbar-brand navbar-{{login_user.theme}}">
-      <a class="navbar-item" href="/">
-        <div class="site-title">Team</div>
+<nav class="nav">
+  <div class="nav-inner">
+    <a class="brand" href="/" aria-label="Team">
+      <img class="brand-logo" src="/img/logo.svg" alt="Team">
+    </a>
+
+    {{#if logged_in}}
+    <form class="nav-search" action="/search" method="get" role="search">
+      <i class="fas fa-search nav-search-icon"></i>
+      <input type="search" name="keyword" placeholder="Search…" value="{{keyword}}" autocomplete="off">
+    </form>
+
+    <div class="nav-links">
+      {{#each login_user.menu}}
+      {{#unless (eq this "tag")}}
+      <a class="nav-link" href="/{{this}}/list">{{this}}</a>
+      {{/unless}}
+      {{/each}}
+    </div>
+
+    <div class="nav-actions">
+      {{#each login_user.menu}}
+      {{#if (eq this "tag")}}
+      <a class="nav-icon" href="/tag/list" aria-label="Tags" title="Tags">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.83z"/>
+          <line x1="7" y1="7" x2="7.01" y2="7"/>
+        </svg>
       </a>
-    </div>
-    <div id="topNav" class="navbar-menu">
-      <div class="navbar-start">
-        <div class="navbar-item">
-          <form action="/search" method="get">
-          <input class="input site-search site-search-{{login_user.theme}}" type="text" placeholder="Search ..." name="keyword" value="{{keyword}}">
-          </form>
+      {{/if}}
+      {{/each}}
+      <a class="nav-icon" href="/notifications" aria-label="Notifications" title="Notifications" id="notification-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+        </svg>
+      </a>
+      <div class="dropdown" id="user-dropdown">
+        <button class="avatar-btn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Account menu">
+          {{> partials/avatar login_user cls="avatar-sm" px=28}}
+        </button>
+        <div class="dropdown-menu" role="menu">
+          <div class="dropdown-header">@{{login_user.username}}</div>
+          <a class="dropdown-item" href="/{{login_user.username}}">Your profile</a>
+          <a class="dropdown-item" href="/stocked/list">Stocked</a>
+          <a class="dropdown-item" href="/draft/list">Draft</a>
+          <a class="dropdown-item" href="/account/settings">Settings</a>
+          <hr class="dropdown-divider">
+          <a class="dropdown-item" href="/signout">Sign out</a>
         </div>
       </div>
-      <div class="navbar-end navbar-{{login_user.theme}}">
-        {{#if logged_in}}
-        <a href="/notifications"><i class="far fa-bell notificatioin notificatioin-{{login_user.theme}}" id="notification-icon"></i></a>
-        <a class="navbar-item" href="/" id="menu-feed">Feed</a>
-         {{#each login_user.menu}}
-          <a class="navbar-item" href="/{{this}}/list">{{this}}</a>
-         {{/each}}
-        <div class="dropdown">
-          <div class="dropdown-trigger">
-            <button class="button user-icon-btn is-{{login_user.theme}} user-icon-btn-{{login_user.theme}}" aria-haspopup="true" aria-controls="dropdown-menu">
-              <span>
-                {{#if login_user.icon_url}}
-                <img src="{{login_user.icon_url}}" class="icon-img-small">
-                {{else}}
-                <canvas width="20" height="20" data-jdenticon-hash="{{login_user.username_hash}}" class="icon-img-small"></canvas>
-                {{/if}}
-              </span>
-              <span class="icon is-small" style="margin-left: -5px;">
-                <i class="fas fa-angle-down" aria-hidden="true"></i>
-              </span>
-            </button>
-          </div>
-          <div class="dropdown-menu" id="dropdown-menu" role="menu">
-            <div class="dropdown-content">
-              <a class="dropdown-item" href="/{{login_user.username}}">Your profile</a>
-              <a class="dropdown-item" href="/stocked/list">Stocked</a>
-              <a class="dropdown-item" href="/draft/list">Draft</a>
-              <a class="dropdown-item" href="/account/settings">Settings</a>
-              <hr class="dropdown-divider">
-              <a class="dropdown-item"href="/signout">Sign out</a>
-            </div>
-          </div>
-        </div>
-        {{else}}
-        <div class="navbar-item">
-          <div class="field is-grouped">
-            <p class="control">
-              <a class="button is-small" href="/signup">
-                <span>
-                  Sign up
-                </span>
-              </a>
-            </p>
-            <p class="control">
-              <a class="button is-small" href="/signin">
-                <span>Sing in</span>
-              </a>
-            </p>
-          </div>
-        </div>
-        {{/if}}
-      </div>
     </div>
+    {{else}}
+    <div class="nav-actions">
+      <a class="btn btn-ghost btn-sm" href="/signin">Sign in</a>
+      <a class="btn btn-primary btn-sm" href="/signup">Sign up</a>
+    </div>
+    {{/if}}
   </div>
 </nav>

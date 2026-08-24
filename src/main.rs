@@ -1,96 +1,49 @@
-extern crate handlebars_iron as hbs;
-extern crate iron;
-extern crate iron_sessionstorage;
-extern crate mount;
-extern crate params;
-extern crate persistent;
-extern crate router;
-extern crate staticfile;
-extern crate urlencoded;
-
-extern crate postgres;
-extern crate r2d2;
-extern crate r2d2_postgres;
-
-extern crate envy;
-extern crate serde;
-#[macro_use]
-extern crate serde_json;
-
-#[macro_use]
-extern crate serde_derive;
-
-extern crate crypto;
-
-extern crate slack_hook;
-
-extern crate chrono;
-extern crate time;
-
-extern crate diff;
-
-extern crate futures;
-extern crate hyper;
-extern crate hyper_tls;
-extern crate tokio_core;
-
-#[macro_use]
-extern crate lazy_static;
-
-extern crate fern;
-#[macro_use]
-extern crate log;
-
-extern crate oauth2;
-extern crate reqwest;
-extern crate url;
-
-use iron::prelude::*;
-use router::Router;
-use persistent::Read as PRead;
-
-#[macro_use]
+mod auth;
+mod config;
 mod db;
+mod error;
 mod handlers;
 mod models;
-mod helper;
-mod env;
-mod middlewares;
+mod services;
+mod state;
+mod util;
+mod views;
 
-fn setup_fern(level: log::LogLevelFilter, verbose: bool) {
-    fern::Dispatch::new()
-        .format(|out, message, record| {
-            out.finish(format_args!(
-                "[{}][{}/{}:{}][{}] {}",
-                chrono::Local::now().to_rfc3339(),
-                record.location().module_path(),
-                record.location().file(),
-                record.location().line(),
-                record.level(),
-                message
-            ))
-        })
-        .level(level)
-        .chain(std::io::stdout())
-        .filter(move |meta: &log::LogMetadata| verbose || meta.target().starts_with("team"))
-        .apply()
-        .unwrap()
-}
+use handlebars::{DirectorySourceOptions, Handlebars};
+use tracing_subscriber::EnvFilter;
 
-fn main() {
-    setup_fern(log::LogLevelFilter::Debug, false);
-    let mount = handlers::router::mount_path();
-    let mut chain = middlewares::setup(mount);
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
+    // Load .env if present; real environment variables take precedence.
+    dotenvy::dotenv().ok();
 
-    match db::get_pool(&env::CONFIG.team_database_url.as_str()) {
-        Ok(pool) => chain.link(PRead::<db::PostgresDB>::both(pool)),
-        Err(err) => {
-            error!("postgres: {}", err);
-            std::process::exit(-1);
-        }
-    };
+    tracing_subscriber::fmt()
+        .with_env_filter(
+            EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| EnvFilter::new("team=debug,tower_http=info")),
+        )
+        .init();
 
-    let listen = format!("{}:{}", "0.0.0.0", &env::CONFIG.port);
-    info!("Listen {:?}", listen);
-    Iron::new(chain).http(listen).unwrap();
+    let config = config::Config::from_env();
+    if config.team_secret_cookie == config::DEFAULT_SECRET_COOKIE {
+        tracing::warn!(
+            "TEAM_SECRET_COOKIE is the built-in default — set a long random value in production"
+        );
+    }
+
+    let mut templates = Handlebars::new();
+    #[cfg(debug_assertions)]
+    templates.set_dev_mode(true);
+    templates.register_templates_directory("./templates", DirectorySourceOptions::default())?;
+
+    let pool = db::create_pool(&config.team_database_url)?;
+
+    let listen = format!("0.0.0.0:{}", config.port);
+    let state = state::AppState::new(pool, config, templates);
+    let app = handlers::router::create_router(state);
+
+    tracing::info!("Listening on {}", listen);
+    let listener = tokio::net::TcpListener::bind(&listen).await?;
+    axum::serve(listener, app).await?;
+    Ok(())
 }

@@ -1,139 +1,93 @@
-use iron::{Request, status};
-use iron::modifiers::Redirect;
-use iron::prelude::IronResult;
-use iron::prelude::*;
-use iron::Url;
-use router::Router;
-use hbs::Template;
-use persistent;
-use hbs::handlebars::to_json;
+use axum::extract::{Path, Query, State};
+use axum::http::StatusCode;
+use axum::response::{IntoResponse, Redirect, Response};
+use axum::Form;
+use serde::{Deserialize, Serialize};
 
-use db;
-use models;
-use helper;
-use handlers;
-use env::CONFIG;
+use crate::auth::AuthUser;
+use crate::error::AppResult;
+use crate::handlers::PageQuery;
+use crate::models;
+use crate::models::user::UserWithPreference;
+use crate::services;
+use crate::state::AppState;
+use crate::util::Page;
+use crate::views::render;
 
-pub const PAGINATES_PER: i32 = 10;
+fn show_path(id: i32) -> String {
+    format!("/gist/show/{}", id)
+}
 
-pub fn new_handler(req: &mut Request) -> IronResult<Response> {
-    let conn = get_pg_connection!(req);
-    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
-    match handlers::account::current_user(req, &conn) {
-        Ok(user) => { login_user = user; }
-        Err(e) => { error!("Errored: {:?}", e); }
+pub async fn new_form(
+    State(state): State<AppState>,
+    AuthUser(login_user): AuthUser,
+) -> AppResult<Response> {
+    #[derive(Serialize)]
+    struct Data {
+        logged_in: bool,
+        login_user: UserWithPreference,
     }
-    let login_id = login_user.id;
-    if login_id == 0 {
-        return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/signin")))));
-    }
+    let data = Data {
+        logged_in: true,
+        login_user,
+    };
+    Ok(render(&state, "gist/form", &data)?.into_response())
+}
 
-    let mut resp = Response::new();
+#[derive(Deserialize)]
+pub struct GistForm {
+    #[serde(rename = "gist-description")]
+    pub description: String,
+    #[serde(rename = "gist-filename")]
+    pub filename: String,
+    #[serde(rename = "gist-code")]
+    pub code: String,
+}
+
+pub async fn create(
+    State(state): State<AppState>,
+    AuthUser(login_user): AuthUser,
+    Form(form): Form<GistForm>,
+) -> AppResult<Response> {
+    let id = models::gist::create(
+        &state.pool,
+        login_user.id,
+        &form.description,
+        &form.filename,
+        &form.code,
+    )
+    .await?;
+
+    services::notify_slack(
+        &state,
+        login_user.id,
+        services::SlackEvent {
+            emoji: ":computer:",
+            label: "New Gist".to_string(),
+            title: form.description.clone(),
+            body: form.code.clone(),
+            code: true,
+            path: show_path(id),
+            mentions: Vec::new(),
+        },
+    )
+    .await;
+    Ok(Redirect::to(&show_path(id)).into_response())
+}
+
+pub async fn list(
+    State(state): State<AppState>,
+    AuthUser(login_user): AuthUser,
+    Query(q): Query<PageQuery>,
+) -> AppResult<Response> {
+    let page = Page::new(q.page);
+    let gists = models::gist::list(&state.pool, page.offset, page.limit).await?;
+    let count = models::gist::count(&state.pool).await?;
 
     #[derive(Serialize)]
     struct Data {
         logged_in: bool,
-        login_user: models::user::UserWithPreference,
-    }
-    let data = Data {
-        logged_in: login_id != 0,
-        login_user: login_user,
-    };
-    resp.set_mut(helper::template("gist/form", to_json(&data)))
-        .set_mut(status::Ok);
-    return Ok(resp);
-}
-
-pub fn create_handler(req: &mut Request) -> IronResult<Response> {
-    let conn = get_pg_connection!(req);
-    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
-    match handlers::account::current_user(req, &conn) {
-        Ok(user) => { login_user = user; }
-        Err(e) => { error!("Errored: {:?}", e); }
-    }
-    let login_id = login_user.id;
-    if login_id == 0 {
-        return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/signin")))));
-    }
-
-    let description: String;
-    let filename: String;
-    let code: String;
-
-    {
-        use params::{Params, Value};
-        let map = req.get_ref::<Params>().unwrap();
-
-        match map.get("gist-description") {
-            Some(&Value::String(ref name)) => {
-                description = name.to_string();
-            }
-            _ => return Ok(Response::with(status::BadRequest)),
-        }
-
-        match map.get("gist-filename") {
-            Some(&Value::String(ref name)) => {
-                filename = name.to_string();
-            }
-            _ => return Ok(Response::with(status::BadRequest)),
-        }
-        match map.get("gist-code") {
-            Some(&Value::String(ref name)) => {
-                code = name.to_string();
-            }
-            _ => return Ok(Response::with(status::BadRequest)),
-        }
-    }
-
-    match models::gist::create(&conn, &login_id, &description, &filename, &code) {
-        Ok(id) => {
-            let title = String::from("New gist");
-            let path = String::from("gist");
-            let code = &format!("{}{}{}", "```\n", &code, "\n```").to_string();
-            helper::post_to_slack(&conn, &login_id, &title, &code, &id, Vec::new(), &path);
-            let url = Url::parse(&format!("{}/gist/show/{}", &CONFIG.team_domain, id)
-                                     .to_string()).unwrap();
-            return Ok(Response::with((status::Found, Redirect(url))));
-        }
-        Err(e) => {
-            error!("Errored: {:?}", e);
-            return Ok(Response::with(status::InternalServerError));
-        }
-    }
-}
-
-
-pub fn list_handler(req: &mut Request) -> IronResult<Response> {
-    let conn = get_pg_connection!(req);
-    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
-    match handlers::account::current_user(req, &conn) {
-        Ok(user) => { login_user = user; }
-        Err(e) => { error!("Errored: {:?}", e); }
-    }
-    let login_id = login_user.id;
-    if login_id == 0 {
-        return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/signin")))));
-    }
-
-    let page_param: String;
-
-    {
-        use params::{Params, Value};
-        let map = req.get_ref::<Params>().unwrap();
-        match map.get("page") {
-            Some(&Value::String(ref name)) => {
-                page_param = name.to_string();
-            }
-            _ => page_param = "1".to_string(),
-        }
-    }
-
-    let mut resp = Response::new();
-
-    #[derive(Serialize, Debug)]
-    struct Data {
-        logged_in: bool,
-        login_user: models::user::UserWithPreference,
+        login_user: UserWithPreference,
         gists: Vec<models::gist::Gist>,
         current_page: i32,
         total_page: i32,
@@ -141,473 +95,208 @@ pub fn list_handler(req: &mut Request) -> IronResult<Response> {
         prev_page: i32,
     }
 
-    let mut page = page_param.parse::<i32>().unwrap();
-    if page <= 0 {
-        page = 1;
-    }
-    let offset = (page - 1) * PAGINATES_PER;
-    let limit = PAGINATES_PER;
-
-    let gists: Vec<models::gist::Gist>;
-    let count: i32;
-
-    match models::gist::list(&conn, &offset, &limit) {
-        Ok(gists_db) => {
-            gists = gists_db;
-        }
-        Err(e) => {
-            error!("Errored: {:?}", e);
-            return Ok(Response::with(status::InternalServerError));
-        }
-    }
-
-    match models::gist::count(&conn) {
-        Ok(count_db) => {
-            count = count_db;
-        }
-        Err(e) => {
-            error!("Errored: {:?}", e);
-            return Ok(Response::with(status::InternalServerError));
-        }
-    }
-
     let data = Data {
-        logged_in: login_id != 0,
-        login_user: login_user,
-        gists: gists,
-        current_page: page,
-        total_page: count / PAGINATES_PER + 1,
-        next_page: page + 1,
-        prev_page: page - 1,
+        logged_in: true,
+        login_user,
+        gists,
+        current_page: page.current,
+        total_page: page.total_pages(count),
+        next_page: page.current + 1,
+        prev_page: page.current - 1,
     };
-
-    resp.set_mut(Template::new("gist/list", to_json(&data)))
-        .set_mut(status::Ok);
-    return Ok(resp);
+    Ok(render(&state, "gist/list", &data)?.into_response())
 }
 
-pub fn show_handler(req: &mut Request) -> IronResult<Response> {
-    let conn = get_pg_connection!(req);
-    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
-    match handlers::account::current_user(req, &conn) {
-        Ok(user) => { login_user = user; }
-        Err(e) => { error!("Errored: {:?}", e); }
-    }
-    let login_id = login_user.id;
-    if login_id == 0 {
-        return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/signin")))));
-    }
+pub async fn show(
+    State(state): State<AppState>,
+    AuthUser(login_user): AuthUser,
+    Path(id): Path<i32>,
+) -> AppResult<Response> {
+    let gist = models::gist::get_by_id(&state.pool, id).await?;
+    let comments = models::gist::get_comments_by_gist_id(&state.pool, id).await?;
 
-    let mut resp = Response::new();
-
-    let ref id_str = req.extensions
-        .get::<Router>()
-        .unwrap()
-        .find("id")
-        .unwrap_or("/");
-    let id = id_str.parse::<i32>().unwrap();
-
-    #[derive(Serialize, Debug, Default)]
+    #[derive(Serialize)]
     struct GistComment {
         comment: models::gist::Comment,
         editable: bool,
     }
 
+    let gist_comments: Vec<GistComment> = comments
+        .into_iter()
+        .map(|comment| GistComment {
+            editable: comment.user_id == login_user.id,
+            comment,
+        })
+        .collect();
+
     #[derive(Serialize)]
     struct Data {
         logged_in: bool,
-        login_user: models::user::UserWithPreference,
+        login_user: UserWithPreference,
         gist: models::gist::Gist,
         editable: bool,
         deletable: bool,
         comments: Vec<GistComment>,
     }
 
-    let gist: models::gist::Gist;
-    let comments: Vec<models::gist::Comment>;
-
-    match models::gist::get_by_id(&conn, &id) {
-        Ok(gist_obj) => {
-            gist = gist_obj;
-        }
-        Err(e) => {
-            error!("Errored: {:?}", e);
-            return Ok(Response::with(status::InternalServerError));
-        }
-    }
-
-    match models::gist::get_comments_by_gist_id(&conn, &id) {
-        Ok(comments_obj) => {
-            comments = comments_obj;
-        }
-        Err(e) => {
-            error!("Errored: {:?}", e);
-            return Ok(Response::with(status::InternalServerError));
-        }
-    }
-
-    let mut gist_comments: Vec<GistComment> = Vec::new();
-    for comment in comments {
-        let owner_id = comment.user_id;
-        let pc = GistComment{
-            comment: comment,
-            editable: owner_id == login_id,
-        };
-        gist_comments.push(pc);
-    }
-
-    let owner_id = gist.user_id;
-    let deletable = owner_id == login_id;
-    let editable = owner_id == login_id;
+    let owner = gist.user_id == login_user.id;
     let data = Data {
-        logged_in: login_id != 0,
-        login_user: login_user,
-        gist: gist,
-        editable: editable,
-        deletable: deletable,
+        logged_in: true,
+        login_user,
+        editable: owner,
+        deletable: owner,
+        gist,
         comments: gist_comments,
     };
-
-    resp.set_mut(Template::new("gist/show", to_json(&data)))
-        .set_mut(status::Ok);
-    return Ok(resp);
+    Ok(render(&state, "gist/show", &data)?.into_response())
 }
 
-pub fn edit_handler(req: &mut Request) -> IronResult<Response> {
-    let conn = get_pg_connection!(req);
-    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
-    match handlers::account::current_user(req, &conn) {
-        Ok(user) => { login_user = user; }
-        Err(e) => { error!("Errored: {:?}", e); }
-    }
-    let login_id = login_user.id;
-    if login_id == 0 {
-        return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/signin")))));
+pub async fn edit(
+    State(state): State<AppState>,
+    AuthUser(login_user): AuthUser,
+    Path(id): Path<i32>,
+) -> AppResult<Response> {
+    let gist = models::gist::get_by_id(&state.pool, id).await?;
+    if gist.user_id != login_user.id {
+        return Ok(StatusCode::FORBIDDEN.into_response());
     }
 
-    let mut resp = Response::new();
     #[derive(Serialize)]
     struct Data {
         logged_in: bool,
-        login_user: models::user::UserWithPreference,
+        login_user: UserWithPreference,
         gist: models::gist::Gist,
     }
 
-    let gist: models::gist::Gist;
-
-    let ref id_str = req.extensions
-        .get::<Router>()
-        .unwrap()
-        .find("id")
-        .unwrap_or("/");
-    let id = id_str.parse::<i32>().unwrap();
-
-    match models::gist::get_by_id(&conn, &id) {
-        Ok(gist_obj) => {
-            if gist_obj.user_id != login_id {
-                return Ok(Response::with(status::Forbidden));
-            }
-            gist = gist_obj;
-        }
-        Err(e) => {
-            error!("Errored: {:?}", e);
-            return Ok(Response::with(status::InternalServerError));
-        }
-    }
-
     let data = Data {
-        logged_in: login_id != 0,
-        login_user: login_user,
-        gist: gist,
+        logged_in: true,
+        login_user,
+        gist,
     };
-    resp.set_mut(Template::new("gist/edit", to_json(&data)))
-        .set_mut(status::Ok);
-    return Ok(resp);
+    Ok(render(&state, "gist/edit", &data)?.into_response())
 }
 
-pub fn update_handler(req: &mut Request) -> IronResult<Response> {
-    let conn = get_pg_connection!(req);
-    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
-    match handlers::account::current_user(req, &conn) {
-        Ok(user) => { login_user = user; }
-        Err(e) => { error!("Errored: {:?}", e); }
-    }
-    let login_id = login_user.id;
-    if login_id == 0 {
-        return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/signin")))));
-    }
-
-    use params::{Params, Value};
-
-    let id: i32;
-    let description: String;
-    let filename: String;
-    let code: String;
-
-    let old_gist: models::gist::Gist;
-    {
-        let map = req.get_ref::<Params>().unwrap();
-        match map.find(&["id"]) {
-            Some(&Value::String(ref name)) => {
-                id = name.to_string().parse::<i32>().unwrap();
-            }
-            _ => return Ok(Response::with(status::BadRequest)),
-        }
-
-        match map.find(&["gist-description"]) {
-            Some(&Value::String(ref name)) => {
-                description = name.to_string();
-            }
-            _ => return Ok(Response::with(status::BadRequest)),
-        }
-
-        match map.find(&["gist-filename"]) {
-            Some(&Value::String(ref name)) => {
-                filename = name.to_string();
-            }
-            _ => return Ok(Response::with(status::BadRequest)),
-        }
-
-        match map.find(&["gist-code"]) {
-            Some(&Value::String(ref name)) => {
-                code = name.to_string();
-            },
-            _ => return Ok(Response::with(status::BadRequest)),
-        }
-    }
-
-    match models::gist::get_by_id(&conn, &id) {
-        Ok(gist_obj) => {
-            old_gist = gist_obj;
-            if old_gist.user_id != login_id {
-                return Ok(Response::with(status::Forbidden));
-            }
-        }
-        Err(e) => {
-            error!("Errored: {:?}", e);
-            return Ok(Response::with(status::InternalServerError));
-        }
-    }
-
-    match models::gist::update(&conn, &id, &description, &filename, &code) {
-        Ok(_) => {
-            let title = String::from("Edit gist");
-            let path = String::from("post");
-            let code = &format!("{}{}{}", "```\n", &code, "\n```").to_string();
-            helper::post_to_slack(&conn, &login_id, &title, &code, &id, Vec::new(), &path);
-            let url = Url::parse(&format!("{}/gist/show/{}", &CONFIG.team_domain, id)
-                                     .to_string()).unwrap();
-            return Ok(Response::with((status::Found, Redirect(url))));
-        }
-        Err(e) => {
-            error!("Errored: {:?}", e);
-            return Ok(Response::with(status::InternalServerError));
-        }
-    }
+#[derive(Deserialize)]
+pub struct GistUpdateForm {
+    pub id: i32,
+    #[serde(rename = "gist-description")]
+    pub description: String,
+    #[serde(rename = "gist-filename")]
+    pub filename: String,
+    #[serde(rename = "gist-code")]
+    pub code: String,
 }
 
-pub fn delete_handler(req: &mut Request) -> IronResult<Response> {
-    let conn = get_pg_connection!(req);
-    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
-    match handlers::account::current_user(req, &conn) {
-        Ok(user) => { login_user = user; }
-        Err(e) => { error!("Errored: {:?}", e); }
-    }
-    if login_user.id == 0 {
-        return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/signin")))));
-    }
-
-    let ref id_str = req.extensions
-        .get::<Router>()
-        .unwrap()
-        .find("id")
-        .unwrap_or("/");
-    let id = id_str.parse::<i32>().unwrap();
-
-    match models::gist::get_by_id(&conn, &id) {
-        Ok(gist) => {
-            if gist.user_id != login_user.id {
-                return Ok(Response::with(status::Forbidden));
-            }
-        }
-        Err(e) => {
-            error!("Errored: {:?}", e);
-            return Ok(Response::with(status::InternalServerError));
-        }
+pub async fn update(
+    State(state): State<AppState>,
+    AuthUser(login_user): AuthUser,
+    Form(form): Form<GistUpdateForm>,
+) -> AppResult<Response> {
+    let old_gist = models::gist::get_by_id(&state.pool, form.id).await?;
+    if old_gist.user_id != login_user.id {
+        return Ok(StatusCode::FORBIDDEN.into_response());
     }
 
-    match models::gist::delete_by_id(&conn, &id) {
-        Ok(_) => {
-            return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/gist/list")))));
-        }
-        Err(e) => {
-            error!("Errored: {:?}", e);
-            Ok(Response::with(status::InternalServerError))
-        }
-    }
+    models::gist::update(
+        &state.pool,
+        form.id,
+        &form.description,
+        &form.filename,
+        &form.code,
+    )
+    .await?;
+
+    services::notify_slack(
+        &state,
+        login_user.id,
+        services::SlackEvent {
+            emoji: ":pencil2:",
+            label: "Edit Gist".to_string(),
+            title: form.description.clone(),
+            body: form.code.clone(),
+            code: true,
+            path: show_path(form.id),
+            mentions: Vec::new(),
+        },
+    )
+    .await;
+    Ok(Redirect::to(&show_path(form.id)).into_response())
 }
 
-pub fn comment_handler(req: &mut Request) -> IronResult<Response> {
-    let conn = get_pg_connection!(req);
-    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
-    match handlers::account::current_user(req, &conn) {
-        Ok(user) => { login_user = user; }
-        Err(e) => { error!("Errored: {:?}", e); }
+pub async fn delete(
+    State(state): State<AppState>,
+    AuthUser(login_user): AuthUser,
+    Path(id): Path<i32>,
+) -> AppResult<Response> {
+    let gist = models::gist::get_by_id(&state.pool, id).await?;
+    if gist.user_id != login_user.id {
+        return Ok(StatusCode::FORBIDDEN.into_response());
     }
-    let login_id = login_user.id;
-    if login_id == 0 {
-        return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/signin")))));
-    }
-
-    let id: i32;
-    let body: String;
-
-    use params::{Params, Value};
-    {
-        let map = req.get_ref::<Params>().unwrap();
-
-        match map.find(&["id"]) {
-            Some(&Value::String(ref name)) => {
-                id = name.parse::<i32>().unwrap();
-            }
-            _ => return Ok(Response::with(status::BadRequest)),
-        }
-
-        match map.find(&["body"]) {
-            Some(&Value::String(ref name)) => {
-                body = name.to_string();
-            }
-            _ => return Ok(Response::with(status::BadRequest)),
-        }
-    }
-
-    let mut mentions = Vec::new();
-
-    match models::gist::get_by_id(&conn, &id) {
-        Ok(post_obj) => {
-            mentions.push(post_obj.user.username);
-        }
-        Err(e) => {
-            error!("Errored: {:?}", e);
-            return Ok(Response::with(status::InternalServerError));
-        }
-    }
-
-    match models::gist::get_comments_by_gist_id(&conn, &id) {
-        Ok(comments_obj) => {
-            for comment in comments_obj {
-                let username: String = comment.user.username;
-                if !mentions.contains(&username) {
-                    mentions.push(username)
-                }
-            }
-        }
-        Err(e) => {
-            error!("Errored: {:?}", e);
-            return Ok(Response::with(status::InternalServerError));
-        }
-    }
-
-
-    match models::gist::add_comment(&conn, &login_id, &id, &body) {
-        Ok(_) => {
-            let title = String::from("New comment");
-            let path = String::from("gist");
-            helper::post_to_slack(&conn, &login_id, &title, &body, &id, mentions, &path);
-            let url = Url::parse(&format!("{}/gist/show/{}", &CONFIG.team_domain, id)
-                                     .to_string()).unwrap();
-            return Ok(Response::with((status::Found, Redirect(url))));
-        }
-        Err(e) => {
-            error!("Errored: {:?}", e);
-            return Ok(Response::with(status::InternalServerError));
-        }
-    }
+    models::gist::delete_by_id(&state.pool, id).await?;
+    Ok(Redirect::to("/gist/list").into_response())
 }
 
-pub fn comment_update_handler(req: &mut Request) -> IronResult<Response> {
-    let conn = get_pg_connection!(req);
-    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
-    match handlers::account::current_user(req, &conn) {
-        Ok(user) => { login_user = user; }
-        Err(e) => { error!("Errored: {:?}", e); }
-    }
-    let login_id = login_user.id;
-    if login_id == 0 {
-        return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/signin")))));
-    }
+#[derive(Deserialize)]
+pub struct CommentForm {
+    pub id: i32,
+    pub body: String,
+}
 
-    let id: i32;
-    let action: String;
-    let body: String;
-    let comment: models::gist::Comment;
-
-    {
-        let ref id_str = req.extensions
-            .get::<Router>()
-            .unwrap()
-            .find("id")
-            .unwrap_or("/");
-        id = id_str.parse::<i32>().unwrap();
-    }
-
-    use params::{Params, Value};
-    {
-        let map = req.get_ref::<Params>().unwrap();
-
-        match map.find(&["action"]) {
-            Some(&Value::String(ref name)) => {
-                action = name.to_string();
-            }
-            _ => return Ok(Response::with(status::BadRequest)),
-        }
-
-        match map.find(&["body"]) {
-            Some(&Value::String(ref name)) => {
-                body = name.to_string();
-            }
-            _ => return Ok(Response::with(status::BadRequest)),
+pub async fn comment(
+    State(state): State<AppState>,
+    AuthUser(login_user): AuthUser,
+    Form(form): Form<CommentForm>,
+) -> AppResult<Response> {
+    let gist = models::gist::get_by_id(&state.pool, form.id).await?;
+    let mut mentions = vec![gist.user.username.clone()];
+    for c in models::gist::get_comments_by_gist_id(&state.pool, form.id).await? {
+        if !mentions.contains(&c.user.username) {
+            mentions.push(c.user.username);
         }
     }
 
-    match models::gist::get_comment_by_id(&conn, &id) {
-        Ok(db_comment) => {
-            comment = db_comment;
-            if comment.user_id != login_id {
-                return Ok(Response::with(status::Forbidden));
-            }
-        }
-        Err(e) => {
-            error!("Errored: {:?}", e);
-            return Ok(Response::with(status::InternalServerError));
-        }
-    }
+    models::gist::add_comment(&state.pool, login_user.id, form.id, &form.body).await?;
+    services::notify_slack(
+        &state,
+        login_user.id,
+        services::SlackEvent {
+            emoji: ":speech_balloon:",
+            label: "New Comment".to_string(),
+            title: gist.description.clone(),
+            body: form.body.clone(),
+            code: false,
+            path: show_path(form.id),
+            mentions,
+        },
+    )
+    .await;
+    Ok(Redirect::to(&show_path(form.id)).into_response())
+}
 
-    if action == "update" {
-        match models::gist::update_comment_by_id(&conn, &id, &body) {
-            Ok(_) => {
-                let url = Url::parse(&format!("{}/gist/show/{}", &CONFIG.team_domain, comment.gist_id)
-                                         .to_string()).unwrap();
-                return Ok(Response::with((status::Found, Redirect(url))));
-            }
-            Err(e) => {
-                error!("Errored: {:?}", e);
-                return Ok(Response::with(status::InternalServerError));
-            }
-        }
+#[derive(Deserialize)]
+pub struct CommentUpdateForm {
+    pub action: String,
+    pub body: String,
+}
+
+pub async fn comment_update(
+    State(state): State<AppState>,
+    AuthUser(login_user): AuthUser,
+    Path(id): Path<i32>,
+    Form(form): Form<CommentUpdateForm>,
+) -> AppResult<Response> {
+    let comment = models::gist::get_comment_by_id(&state.pool, id).await?;
+    if comment.user_id != login_user.id {
+        return Ok(StatusCode::FORBIDDEN.into_response());
     }
-    if action == "delete" {
-        match models::gist::delete_comment_by_id(&conn, &id) {
-            Ok(_) => {
-                let url = Url::parse(&format!("{}/gist/show/{}", &CONFIG.team_domain, comment.gist_id)
-                                         .to_string()).unwrap();
-                return Ok(Response::with((status::Found, Redirect(url))));
-            }
-            Err(e) => {
-                error!("Errored: {:?}", e);
-                return Ok(Response::with(status::InternalServerError));
-            }
+    match form.action.as_str() {
+        "update" => {
+            models::gist::update_comment_by_id(&state.pool, id, &form.body).await?;
         }
+        "delete" => {
+            models::gist::delete_comment_by_id(&state.pool, id).await?;
+        }
+        _ => return Ok(StatusCode::BAD_REQUEST.into_response()),
     }
-    return Ok(Response::with(status::InternalServerError));
+    Ok(Redirect::to(&show_path(comment.gist_id)).into_response())
 }

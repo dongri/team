@@ -1,70 +1,42 @@
-{{#*inline "title"}}
-  Tweet - Team
-{{/inline}}
+{{#*inline "title"}}Tweet - Team{{/inline}}
 {{#*inline "page"}}
-  <div class="page-title">Tweet</div>
+  <h1 class="page-title">Tweet</h1>
 
-  <form action="/tweet/post" method="post" class="tweet-form">
-    <div class="field">
-      <div class="control">
-        <textarea placeholder="What's happening?" name="body" id="input-comment" class="textarea is-info" rows="2" required></textarea>
-      </div>
+  <form action="/tweet/post" method="post" class="tweet-form card">
+    <div class="tweet-form-row">
+      {{> partials/avatar login_user cls="avatar-md" px=40}}
+      <textarea placeholder="What's happening?" name="body" id="input-comment" class="textarea" rows="2" required></textarea>
     </div>
-    <div class="field">
-      <div class="control">
-        <button type="submit" class="button is-info is-outlined">Tweet</button>
-      </div>
+    <div class="tweet-form-actions">
+      <button type="submit" class="btn btn-primary">Tweet</button>
     </div>
   </form>
 
-  <ul class="post-items">
-  {{#each tweets}}
-    <li class="post-tweet" onclick="location.href='/tweet/show/{{id}}'">
-      <div class="post-item-icon">
-      <a href="/{{user.username}}">
-        {{#if user.icon_url}}
-          <img src="{{user.icon_url}}" class="icon-img-normal">
-        {{else}}
-          <canvas width="40" height="40" data-jdenticon-hash="{{user.username_hash}}" class="icon-img-normal"></canvas>
-        {{/if}}
+  <ul class="item-list">
+    {{#each tweets}}
+    <li class="item-card tweet-card" onclick="location.href='/tweet/show/{{id}}'">
+      <a class="item-avatar" href="/{{user.username}}" onclick="event.stopPropagation()">
+        {{> partials/avatar user cls="avatar-md" px=40}}
       </a>
-      </div>
-      <div class="post-item-body">
-        <div class="post-item">
-          <div class="post-item-description">
-            @{{user.username}} - {{formated_created}}
-          </div>
-          <div class="post-item-title">
-            <div class="tweet-body marked" style="display: none;">{{body}}</div>
-          </div>
-          <div class="post-tweet-action">
-            <div class="post-tweet-comment-icon">
-              <i class="far fa-comment"></i>
-              {{#if comment_count}}
-                {{comment_count}}
-              {{/if}}
-            </div>
-            <div class="post-tweet-like-icon">
-              <i class="far fa-heart"></i>
-            </div>
-          </div>
+      <div class="item-main">
+        <div class="item-meta">
+          <a class="item-user" href="/{{user.username}}" onclick="event.stopPropagation()">@{{user.username}}</a>
+          <span class="item-date">{{formated_created}}</span>
+        </div>
+        <div class="tweet-body marked" hidden>{{body}}</div>
+        <div class="tweet-actions">
+          <span class="tweet-action"><i class="far fa-comment"></i>{{#if comment_count}} {{comment_count}}{{/if}}</span>
+          <span class="tweet-action"><i class="far fa-heart"></i></span>
         </div>
       </div>
     </li>
-  {{/each}}
+    {{/each}}
   </ul>
 
-  <nav class="pagination is-centered" role="navigation" aria-label="pagination">
-    <a class="pagination-previous" href="/tweet/list?page={{prev_page}}">Previous</a>
-    <a class="pagination-next" href="/tweet/list?page={{next_page}}">Next page</a>
-    <ul class="pagination-list">
-      <li>
-        <a class="pagination-link" aria-label="Page 46" aria-current="page">
-          {{current_page}} of {{total_page}}
-        </a>
-      </li>
-    </ul>
+  <nav class="pagination" role="navigation" aria-label="pagination">
+    <a class="page-btn" href="/tweet/list?page={{prev_page}}">&larr; Prev</a>
+    <span class="page-status">{{current_page}} / {{total_page}}</span>
+    <a class="page-btn" href="/tweet/list?page={{next_page}}">Next &rarr;</a>
   </nav>
-
 {{/inline}}
 {{~> layout ~}}

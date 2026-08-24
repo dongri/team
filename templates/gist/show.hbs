@@ -1,167 +1,123 @@
-{{#*inline "title"}}
-  Gist - Team
-{{/inline}}
+{{#*inline "title"}}{{gist.description}} - Team{{/inline}}
 {{#*inline "page_head"}}
 {{> gist/head}}
 {{/inline}}
-
 {{#*inline "page"}}
-  <div class="post-item-action">
-    <div class="post-item-ed">
-      {{# if editable}}
-        <a href="/gist/edit/{{gist.id}}">
-          <button class="button is-danger is-outlined is-small">Edit</button>
-        </a>
+  <article class="post">
+    <div class="post-actions">
+      <span class="post-actions-spacer"></span>
+      {{#if editable}}
+      <a class="btn btn-ghost btn-sm" href="/gist/edit/{{gist.id}}"><i class="fas fa-edit"></i> Edit</a>
       {{/if}}
-      {{# if deletable}}
-        <a href="javascript:remove_gist('{{gist.id}}')">
-          <button class="button is-danger is-outlined is-small">Delete</button>
-        </a>
+      {{#if deletable}}
+      <button class="btn btn-danger btn-sm" type="button" onclick="removeGist('{{gist.id}}')"><i class="fas fa-trash-alt"></i> Delete</button>
       {{/if}}
     </div>
-  </div>
 
+    <h1 class="post-title">{{gist.description}}</h1>
 
-  <div class="post-item-icon">
-    <a href="/{{gist.user.username}}">
-      {{#if gist.user.icon_url}}
-        <img src="{{gist.user.icon_url}}" class="icon-img-normal">
-      {{else}}
-        <canvas width="40" height="40" data-jdenticon-hash="{{gist.user.username_hash}}" class="icon-img-normal"></canvas>
-      {{/if}}
-    </a>
-  </div>
-  <div class="post-item-description">
-    @{{gist.user.username}}
-  </div>
-  <div class="post-item-created">{{gist.formated_created}}</div>
+    <div class="post-byline">
+      <a class="item-avatar" href="/{{gist.user.username}}">
+        {{> partials/avatar gist.user cls="avatar-md" px=40}}
+      </a>
+      <div>
+        <a class="item-user" href="/{{gist.user.username}}">@{{gist.user.username}}</a>
+        <div class="item-date">{{gist.formated_created}}</div>
+      </div>
+    </div>
 
-  <div class="post-title">{{gist.description}}</div>
+    <div class="gist-file card">
+      <div class="gist-filename mono" id="gist-filename">{{gist.filename}}</div>
+      <textarea id="code" name="code" hidden>{{gist.code}}</textarea>
+    </div>
+  </article>
 
-  <div class="filename" id="gist-filename">{{gist.filename}}</div>
-  <textarea id="code" name="code" style="display: none;" required>{{gist.code}}</textarea>
-
-  <div class="comments">
-    <ul class="post-items">
+  <section class="comments">
+    <h2 class="section-title">Comments</h2>
+    <ul class="item-list">
       {{#each comments}}
-      <li class="post-item-comment">
-        <div class="post-item-icon">
-          <a href="/{{comment.user.username}}">
-            {{#if comment.user.icon_url}}
-            <img src="{{comment.user.icon_url}}" class="icon-img-normal"> {{else}}
-            <canvas width="40" height="40" data-jdenticon-hash="{{comment.user.username_hash}}" class="icon-img-normal"></canvas>
+      <li class="item-card comment-card">
+        <a class="item-avatar" href="/{{comment.user.username}}">
+          {{> partials/avatar comment.user cls="avatar-md" px=40}}
+        </a>
+        <div class="item-main">
+          <div class="item-meta">
+            <a class="item-user" href="/{{comment.user.username}}">@{{comment.user.username}}</a>
+            {{#if editable}}
+            <span class="comment-tools">
+              <button class="icon-btn" type="button" onclick="editComment({{comment.id}})" aria-label="Edit"><i class="fas fa-edit"></i></button>
+              <button class="icon-btn" type="button" onclick="removeComment({{comment.id}})" aria-label="Delete"><i class="fas fa-trash-alt"></i></button>
+            </span>
             {{/if}}
-          </a>
-        </div>
-        <div class="post-item-body">
-          <div class="post-item">
-            <div class="post-item-action">
-              {{#if editable}}
-              <a href="javascript:edit({{comment.id}})">
-                <i class="fa fa-edit" aria-hidden="true"></i>
-              </a>
-              <a href="javascript:remove({{comment.id}})">
-                <i class="fa fa-trash-alt" aria-hidden="true"></i>
-              </a>
-              {{/if}}
-            </div>
-            <div class="post-item-description">
-              @{{comment.user.username}}
-              <br/>
-            </div>
-            <div class="marked" style="display:none;" id="comment_view_{{comment.id}}">{{comment.body}}</div>
-            <form action="/gist/comment/{{comment.id}}" method="post" id="comment_input_{{comment.id}}" style="display:none;">
-              <input type="hidden" name="action" value="update" id="comment_action_{{comment.id}}" class="input">
-              <div class="field">
-                <div class="control">
-                  <textarea placeholder="comment" name="body" id="input-comment" class="textarea" required>{{comment.body}}</textarea>
-                </div>
-              </div>
-              <div class="field is-grouped">
-                <div class="control">
-                  <button type="submit" class="button is-info is-outlined">Update</button>
-                </div>
-              </div>
-            </form>
           </div>
+          <div class="marked" hidden id="comment_view_{{comment.id}}">{{comment.body}}</div>
+          <form action="/gist/comment/{{comment.id}}" method="post" id="comment_input_{{comment.id}}" hidden>
+            <input type="hidden" name="action" value="update" id="comment_action_{{comment.id}}">
+            <div class="form-field">
+              <textarea placeholder="Comment" name="body" class="textarea" required>{{comment.body}}</textarea>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">Update</button>
+          </form>
         </div>
       </li>
       {{/each}}
     </ul>
-  </div>
 
-  <form action="/gist/comment" method="post">
-    <input type="hidden" name="id" value="{{gist.id}}">
-    <div class="field">
-      <div class="control">
-        <textarea placeholder="Post a comment" name="body" id="input-comment" class="textarea is-info" required></textarea>
+    <form class="comment-form" action="/gist/comment" method="post">
+      <input type="hidden" name="id" value="{{gist.id}}">
+      <div class="form-field">
+        <textarea placeholder="Post a comment" name="body" id="input-comment" class="textarea" required></textarea>
       </div>
-    </div>
-    <div class="field">
-      <div class="control">
-        <button type="submit" class="button is-info is-outlined">Submit</button>
-      </div>
-    </div>
-  </form>
+      <button type="submit" class="btn btn-primary">Comment</button>
+    </form>
+  </section>
 
   <script>
     CodeMirror.modeURL = "/codemirror/mode/%N/%N.js";
     var editor = CodeMirror.fromTextArea(document.getElementById("code"), {
-        lineNumbers: true,
-        matchBrackets: true,
-        readOnly: true
+      lineNumbers: true,
+      matchBrackets: true,
+      readOnly: true,
+      viewportMargin: Infinity
     });
-    editor.setOption("theme", "blackboard");
+    editor.setOption("theme", document.documentElement.getAttribute("data-theme") === "black" ? "blackboard" : "default");
 
-    var modeInput = document.getElementById("gist-filename");
-    change();
-    function change() {
-        var val = modeInput.innerText, m, mode, spec;
-        if (m = /.+\.([^.]+)$/.exec(val)) {
-            var info = CodeMirror.findModeByExtension(m[1]);
-            if (info) {
-                mode = info.mode;
-                spec = info.mime;
-            }
-        } else if (/\//.test(val)) {
-            var info = CodeMirror.findModeByMIME(val);
-            if (info) {
-                mode = info.mode;
-                spec = val;
-            }
-        } else {
-            mode = spec = val;
-        }
-        if (mode) {
-            editor.setOption("mode", spec);
-            CodeMirror.autoLoadMode(editor, mode);
-        } else {
-            editor.setOption("mode", "text/plain");
-            CodeMirror.autoLoadMode(editor, "null");
-        }
+    (function () {
+      var val = document.getElementById("gist-filename").innerText.trim();
+      var m, mode, spec;
+      if (m = /.+\.([^.]+)$/.exec(val)) {
+        var info = CodeMirror.findModeByExtension(m[1]);
+        if (info) { mode = info.mode; spec = info.mime; }
+      } else if (/\//.test(val)) {
+        var info = CodeMirror.findModeByMIME(val);
+        if (info) { mode = info.mode; spec = val; }
+      } else {
+        mode = spec = val;
+      }
+      if (mode) {
+        editor.setOption("mode", spec);
+        CodeMirror.autoLoadMode(editor, mode);
+      } else {
+        editor.setOption("mode", "text/plain");
+        CodeMirror.autoLoadMode(editor, "null");
+      }
+    })();
+
+    function editComment(id) {
+      document.getElementById('comment_view_' + id).hidden = true;
+      document.getElementById('comment_input_' + id).hidden = false;
     }
-
-    function edit(comment_id) {
-      $("#comment_view_" + comment_id).hide();
-      $("#comment_input_" + comment_id).show();
-    }
-
-    function remove(comment_id) {
-      var confirmed = confirm('Are you sure?');
-      if (confirmed) {
-        $("#comment_action_" + comment_id).val("delete");
-        $("#comment_input_" + comment_id).submit();
+    function removeComment(id) {
+      if (confirm('Are you sure?')) {
+        document.getElementById('comment_action_' + id).value = 'delete';
+        document.getElementById('comment_input_' + id).submit();
       }
     }
-
-    function remove_gist(gist_id) {
-      var confirmed = confirm('Are you sure?');
-      if (confirmed) {
-        window.location.href = '/gist/delete/'+ gist_id;
+    function removeGist(id) {
+      if (confirm('Are you sure?')) {
+        window.location.href = '/gist/delete/' + id;
       }
     }
-
   </script>
-
 {{/inline}}
 {{~> layout ~}}

@@ -1,0 +1,18 @@
+services:
+
+  team_server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file: .env
+    volumes:
+      # Persist uploaded images across image rebuilds
+      - post_images:/source/public/img/posts
+      - profile_icons:/source/public/img/profile/icons
+    ports:
+      - "3000:3000"
+    restart: always
+
+volumes:
+  post_images:
+  profile_icons:

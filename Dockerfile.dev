@@ -1,0 +1,8 @@
+FROM rust:1
+LABEL maintainer="Dongri Jin <dongrium@gmail.com>"
+
+WORKDIR /source
+RUN cargo install cargo-watch
+
+EXPOSE 3000
+CMD cargo watch -x 'run' -i 'public/img/*'

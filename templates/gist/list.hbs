@@ -1,47 +1,34 @@
-{{#*inline "title"}}
-  Gist - Team
-{{/inline}}
+{{#*inline "title"}}Gist - Team{{/inline}}
 {{#*inline "page"}}
-  <button type="button" class="button is-info is-outlined button-new" onClick="location.href='/gist/new'">New Gist</button>
-  <div class="page-title">Gist</div>
-  <ul class="post-items">
-  {{#each gists}}
-    <li>
-      <div class="post-item-icon">
-      <a href="/{{user.username}}">
-        {{#if user.icon_url}}
-          <img src="{{user.icon_url}}" class="icon-img-normal">
-        {{else}}
-          <canvas width="40" height="40" data-jdenticon-hash="{{user.username_hash}}" class="icon-img-normal"></canvas>
-        {{/if}}
+  <div class="page-head">
+    <h1 class="page-title">Gist</h1>
+    <a class="btn btn-primary" href="/gist/new"><i class="fas fa-code"></i> New Gist</a>
+  </div>
+
+  <ul class="item-list">
+    {{#each gists}}
+    <li class="item-card">
+      <a class="item-avatar" href="/{{user.username}}">
+        {{> partials/avatar user cls="avatar-md" px=40}}
       </a>
-      </div>
-      <div class="post-item-body">
-        <div class="post-item">
-          <div class="post-item-description">
-            @{{user.username}}
-          </div>
-          <div class="post-item-title">
-            <a href="/gist/show/{{id}}">{{description}}</a>
-          </div>
-          <div class="post-item-created">{{formated_created}}</div>
+      <div class="item-main">
+        <div class="item-meta">
+          <a class="item-user" href="/{{user.username}}">@{{user.username}}</a>
+          <span class="item-date">{{formated_created}}</span>
         </div>
+        <div class="item-title">
+          <a href="/gist/show/{{id}}">{{description}}</a>
+        </div>
+        <div class="item-meta"><span class="mono">{{filename}}</span></div>
       </div>
     </li>
-  {{/each}}
+    {{/each}}
   </ul>
 
-  <nav class="pagination is-centered" role="navigation" aria-label="pagination">
-    <a class="pagination-previous" href="/gist/list?page={{prev_page}}">Previous</a>
-    <a class="pagination-next" href="/gist/list?page={{next_page}}">Next page</a>
-    <ul class="pagination-list">
-      <li>
-        <a class="pagination-link" aria-label="Page 46" aria-current="page">
-          {{current_page}} of {{total_page}}
-        </a>
-      </li>
-    </ul>
+  <nav class="pagination" role="navigation" aria-label="pagination">
+    <a class="page-btn" href="/gist/list?page={{prev_page}}">&larr; Prev</a>
+    <span class="page-status">{{current_page}} / {{total_page}}</span>
+    <a class="page-btn" href="/gist/list?page={{next_page}}">Next &rarr;</a>
   </nav>
-
 {{/inline}}
 {{~> layout ~}}

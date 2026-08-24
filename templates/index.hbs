@@ -1,92 +1,84 @@
-{{#*inline "title"}}
-  Feed - Team
-{{/inline}}
+{{#*inline "title"}}Feed - Team{{/inline}}
 {{#*inline "page"}}
-  <div class="page-title">Pinned</div>
-  <ul class="post-items">
-  {{#each pinneds}}
-    <li>
-      <div class="post-item-body">
-        <div class="post-item">
-          <div class="post-item-title">
-            <i class="fas fa-thumbtack"></i>&nbsp;&nbsp;<a href="/post/show/{{id}}">{{title}}</a>
+  {{#if pinneds}}
+  <section class="section">
+    <div class="section-head">
+      <h2 class="section-title"><i class="fas fa-thumbtack"></i> Pinned</h2>
+      <a class="section-more" href="/pinned/list">View all</a>
+    </div>
+    <ul class="item-list pinned-list">
+      {{#each pinneds}}
+      <li class="item-card pinned-card">
+        <div class="item-main">
+          <div class="item-title">
+            <a href="/{{kind}}/show/{{id}}">{{title}}</a>
           </div>
           {{#if tags}}
-          <div class="post-item-tags">
+          <div class="item-tags">
             {{#each tags}}
-            <span class="tag is-light"><a href="/tag?name={{name}}">{{name}}</a></span>
+            <a class="tag-pill" href="/tag?name={{name}}">{{name}}</a>
             {{/each}}
           </div>
           {{/if}}
-          <div class="post-item-created">{{formated_created}}</div>
+          <div class="item-meta"><span class="item-date">{{formated_created}}</span></div>
         </div>
-      </div>
-    </li>
-  {{/each}}
-  </ul>
-  <div class="more_pinned">
-    <a href="/pinned/list">More Pinned</a>
-  </div>
+      </li>
+      {{/each}}
+    </ul>
+  </section>
+  {{/if}}
 
-  <div class="page-title">Feed</div>
-  <ul class="post-items">
-  {{#each feeds}}
-    <li>
-      <div class="post-item-icon">
-        <a href="/{{user.username}}">
-          {{#if user.icon_url}}
-            <img src="{{user.icon_url}}" class="icon-img-normal">
-          {{else}}
-            <canvas width="40" height="40" data-jdenticon-hash="{{user.username_hash}}" class="icon-img-normal"></canvas>
-          {{/if}}
+  <section class="section">
+    <div class="section-head">
+      <h2 class="section-title">Feed</h2>
+    </div>
+    <ul class="item-list">
+      {{#each feeds}}
+      <li class="item-card">
+        <a class="item-avatar" href="/{{user.username}}">
+          {{> partials/avatar user cls="avatar-md" px=40}}
         </a>
-       </div>
-      <div class="post-item-body">
-        <div class="post-item">
+        <div class="item-main">
           {{#if comment}}
-            <div class="post-item-description">
-              @{{user.username}} commented on <a href="/{{kind}}/show/{{id}}">{{title}}</a>
-            </div>
-            <div class="post-item-title is-comment arrow_box">{{body}}</div>
+          <div class="item-meta">
+            <a class="item-user" href="/{{user.username}}">@{{user.username}}</a>
+            <span>commented on</span>
+            <a class="item-context" href="/{{kind}}/show/{{id}}">{{title}}</a>
+          </div>
+          <div class="comment-bubble">{{body}}</div>
           {{/if}}
           {{#if post}}
-            <div class="post-item-description">
-              @{{user.username}} created new post
-            </div>
-            <div class="post-item-title"><a href="/{{kind}}/show/{{id}}">{{title}}</a></div>
+          <div class="item-meta">
+            <a class="item-user" href="/{{user.username}}">@{{user.username}}</a>
+            <span>created a new post</span>
+          </div>
+          <div class="item-title"><a href="/{{kind}}/show/{{id}}">{{title}}</a></div>
+          {{#if tags}}
+          <div class="item-tags">
+            {{#each tags}}
+            <a class="tag-pill" href="/tag?name={{name}}">{{name}}</a>
+            {{/each}}
+          </div>
+          {{/if}}
           {{/if}}
           {{#if gist}}
-            <div class="post-item-description">
-              @{{user.username}} created new gist
-            </div>
-            <div class="post-item-title"><a href="/gist/show/{{id}}">{{title}}</a></div>
+          <div class="item-meta">
+            <a class="item-user" href="/{{user.username}}">@{{user.username}}</a>
+            <span>created a new gist</span>
+          </div>
+          <div class="item-title"><a href="/gist/show/{{id}}">{{title}}</a></div>
           {{/if}}
-          {{#if post}}
-            {{#if tags}}
-              <div class="post-item-tags">
-                {{#each tags}}
-                <span class="tag is-light"><a href="/tag?name={{name}}">{{name}}</a></span>
-                {{/each}}
-              </div>
-            {{/if}}
-          {{/if}}
-          <div class="post-item-created">{{formated_created}}</div>
-      </div>
-    </li>
-  {{/each}}
-  </ul>
-
-  <nav class="pagination is-centered" role="navigation" aria-label="pagination">
-    <a class="pagination-previous" href="/?page={{prev_page}}">Previous</a>
-    <a class="pagination-next" href="/?page={{next_page}}">Next page</a>
-    <ul class="pagination-list">
-      <li>
-        <a class="pagination-link" aria-label="Page 46" aria-current="page">
-          {{current_page}} of {{total_page}}
-        </a>
+          <div class="item-meta"><span class="item-date">{{formated_created}}</span></div>
+        </div>
       </li>
+      {{/each}}
     </ul>
-  </nav>
+  </section>
 
+  <nav class="pagination" role="navigation" aria-label="pagination">
+    <a class="page-btn" href="/?page={{prev_page}}">&larr; Prev</a>
+    <span class="page-status">{{current_page}} / {{total_page}}</span>
+    <a class="page-btn" href="/?page={{next_page}}">Next &rarr;</a>
+  </nav>
 {{/inline}}
 {{~> layout ~}}

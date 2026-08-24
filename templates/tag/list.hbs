@@ -1,12 +1,10 @@
-{{#*inline "title"}}
-  Tags - Team
-{{/inline}}
+{{#*inline "title"}}Tags - Team{{/inline}}
 {{#*inline "page"}}
-  <div class="page-title">Tags</div>
-  {{#each tags}}
-    <div class="tag-name">
-      <a href="/tag?name={{name}}">{{name}}</a>
-    </div>
-  {{/each}}
+  <h1 class="page-title">Tags</h1>
+  <div class="tag-cloud">
+    {{#each tags}}
+    <a class="tag-pill tag-pill-lg" href="/tag?name={{name}}">{{name}}</a>
+    {{/each}}
+  </div>
 {{/inline}}
 {{~> layout ~}}

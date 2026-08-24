@@ -1,34 +1,17 @@
-use std::error::Error;
-use r2d2;
-use r2d2_postgres::{PostgresConnectionManager, TlsMode};
-use iron::typemap::Key;
+use deadpool_postgres::{Manager, ManagerConfig, Pool, RecyclingMethod};
+use tokio_postgres::NoTls;
 
-pub type PostgresPool = r2d2::Pool<PostgresConnectionManager>;
-pub type PostgresConnection = r2d2::PooledConnection<PostgresConnectionManager>;
+pub type PgPool = Pool;
 
-pub struct PostgresDB;
-impl Key for PostgresDB {
-    type Value = PostgresPool;
-}
-
-macro_rules! get_pg_connection {
-    ($req:expr) => (match $req.get::<persistent::Read<db::PostgresDB>>() {
-        Ok(pool) => match pool.get() {
-            Ok(conn) => conn,
-            Err(_) => {
-                error!("Couldn't get a connection to pg!");
-                return Ok(Response::with(status::InternalServerError));
-            }
+pub fn create_pool(database_url: &str) -> anyhow::Result<PgPool> {
+    let pg_config: tokio_postgres::Config = database_url.parse()?;
+    let manager = Manager::from_config(
+        pg_config,
+        NoTls,
+        ManagerConfig {
+            recycling_method: RecyclingMethod::Fast,
         },
-        Err(_) => {
-            error!("Couldn't get the pg pool from the request!");
-            return Ok(Response::with(status::InternalServerError));
-        }
-    })
-}
-
-pub fn get_pool(uri: &str) -> Result<PostgresPool, Box<Error>> {
-    let manager = try!(PostgresConnectionManager::new(uri, TlsMode::None));
-    let pool = try!(r2d2::Pool::new(r2d2::Config::default(), manager));
+    );
+    let pool = Pool::builder(manager).max_size(16).build()?;
     Ok(pool)
 }

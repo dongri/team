@@ -1,192 +1,95 @@
-use iron::{Request, status};
-use iron::modifiers::Redirect;
-use iron::prelude::IronResult;
-use iron::prelude::*;
-use router::Router;
-use hbs::Template;
-use persistent;
-use hbs::handlebars::to_json;
+use axum::extract::{Multipart, Path, Query, State};
+use axum::http::StatusCode;
+use axum::response::{IntoResponse, Redirect, Response};
+use axum::{Form, Json};
+use axum_extra::extract::SignedCookieJar;
+use serde::{Deserialize, Serialize};
+use serde_json::json;
 
-use iron_sessionstorage;
-use iron_sessionstorage::traits::*;
+use crate::auth::{self, AuthUser, MaybeUser};
+use crate::error::AppResult;
+use crate::handlers::PageQuery;
+use crate::models;
+use crate::state::AppState;
+use crate::util::{self, Page};
+use crate::views::render;
 
-use db;
-use models;
-use helper;
-use handlers;
-use env;
-
-const PAGINATES_PER: i32 = 10;
-
-#[derive(Serialize, Debug, Default)]
-pub struct Login {
-    id: String,
+pub async fn get_signup(State(state): State<AppState>) -> AppResult<Response> {
+    let data = json!({ "google_enabled": state.config.google_configured() });
+    Ok(render(&state, "account/signup", &data)?.into_response())
 }
 
-impl iron_sessionstorage::Value for Login {
-    fn get_key() -> &'static str {
-        "logged_in_user"
-    }
-    fn into_raw(self) -> String {
-        self.id
-    }
-    fn from_raw(value: String) -> Option<Self> {
-        if value.is_empty() {
-            None
-        } else {
-            Some(Login { id: value })
-        }
-    }
+#[derive(Deserialize)]
+pub struct CredentialsForm {
+    pub username: String,
+    pub password: String,
 }
 
-#[derive(Serialize, Debug, Default)]
-pub struct RefUrl {
-    url: String,
+pub async fn post_signup(
+    State(state): State<AppState>,
+    jar: SignedCookieJar,
+    Form(form): Form<CredentialsForm>,
+) -> AppResult<Response> {
+    if form.username.is_empty() || form.password.is_empty() {
+        return Ok(StatusCode::BAD_REQUEST.into_response());
+    }
+    let password = util::hash_password(form.password).await?;
+    let user_id = models::user::create(&state.pool, &form.username, &password).await?;
+    let jar = auth::sign_in(jar, user_id);
+    Ok((jar, Redirect::to("/")).into_response())
 }
 
-impl iron_sessionstorage::Value for RefUrl {
-    fn get_key() -> &'static str {
-        "ref_url"
+pub async fn get_signin(
+    State(state): State<AppState>,
+    MaybeUser(user): MaybeUser,
+) -> AppResult<Response> {
+    if user.is_some() {
+        return Ok(Redirect::to("/").into_response());
     }
-    fn into_raw(self) -> String {
-        self.url
-    }
-    fn from_raw(value: String) -> Option<Self> {
-        if value.is_empty() {
-            None
-        } else {
-            Some(RefUrl { url: value })
-        }
-    }
+    let data = json!({ "google_enabled": state.config.google_configured() });
+    Ok(render(&state, "account/signin", &data)?.into_response())
 }
 
-pub fn get_signup_handler(_: &mut Request) -> IronResult<Response> {
-    let mut resp = Response::new();
-    resp.set_mut(Template::new("account/signup", {}))
-        .set_mut(status::Ok);
-    return Ok(resp);
-}
-
-pub fn post_signup_handler(req: &mut Request) -> IronResult<Response> {
-    let conn = get_pg_connection!(req);
-
-    let username: String;
-    let mut password: String;
-
+pub async fn post_signin(
+    State(state): State<AppState>,
+    jar: SignedCookieJar,
+    Form(form): Form<CredentialsForm>,
+) -> AppResult<Response> {
+    let user = models::user::get_with_password_by_username(&state.pool, &form.username).await?;
+    if user.username.is_empty()
+        || !util::verify_password(form.password.clone(), user.password.clone()).await
     {
-        use params::{Params, Value};
-        let map = req.get_ref::<Params>().unwrap();
+        return Ok(Redirect::to("/signin").into_response());
+    }
 
-        match map.get("username") {
-            Some(&Value::String(ref name)) => {
-                if name == "" {
-                    return Ok(Response::with(status::BadRequest));
+    // Transparently upgrade accounts still on the legacy hash scheme.
+    if util::password_needs_rehash(&user.password) {
+        match util::hash_password(form.password).await {
+            Ok(new_hash) => {
+                if let Err(e) = models::user::update_password(&state.pool, user.id, &new_hash).await
+                {
+                    tracing::error!("password rehash failed: {:?}", e);
                 }
-                username = name.to_string();
             }
-            _ => return Ok(Response::with(status::BadRequest)),
-        }
-        match map.get("password") {
-            Some(&Value::String(ref name)) => {
-                if name == "" {
-                    return Ok(Response::with(status::BadRequest));
-                }
-                password = name.to_string();
-            }
-            _ => return Ok(Response::with(status::BadRequest)),
+            Err(e) => tracing::error!("password rehash failed: {:?}", e),
         }
     }
 
-    password = helper::encrypt_password(password);
-    match models::user::create(&conn, &username, &password) {
-        Ok(user_id) => {
-            try!(req.session().set(Login { id: user_id.to_string() }));
-            return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/")))));
-        }
-        Err(e) => {
-            info!("Errored: {:?}", e);
-            return Ok(Response::with(status::InternalServerError));
-        }
-    }
+    let jar = auth::sign_in(jar, user.id);
+    let (jar, ref_url) = auth::take_ref_url(jar);
+    Ok((jar, Redirect::to(&ref_url)).into_response())
 }
 
-pub fn get_signin_handler(req: &mut Request) -> IronResult<Response> {
-    let mut resp = Response::new();
-    if try!(req.session().get::<Login>()).is_some() {
-        // Already logged in
-        return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/")))));
-    }
-    resp.set_mut(Template::new("account/signin", {}))
-        .set_mut(status::Ok);
-    return Ok(resp);
+pub async fn signout(jar: SignedCookieJar) -> Response {
+    let jar = auth::sign_out(jar);
+    (jar, Redirect::to("/signin")).into_response()
 }
 
-pub fn post_signin_handler(req: &mut Request) -> IronResult<Response> {
-    let conn = get_pg_connection!(req);
-
-    let username: String;
-    let mut password: String;
-
-    {
-        use params::{Params, Value};
-        let map = req.get_ref::<Params>().unwrap();
-
-        match map.get("username") {
-            Some(&Value::String(ref name)) => {
-                username = name.to_string();
-            }
-            _ => return Ok(Response::with(status::BadRequest)),
-        }
-        match map.get("password") {
-            Some(&Value::String(ref name)) => {
-                password = name.to_string();
-            }
-            _ => return Ok(Response::with(status::BadRequest)),
-        }
-    }
-
-    password = helper::encrypt_password(password);
-    match models::user::get_by_username_password(&conn, &username, &password) {
-        Ok(user) => {
-            if user.username != "" {
-                try!(req.session().set(Login { id: user.id.to_string() }));
-                let ref_url = req.session().get::<RefUrl>().ok().and_then(|x| x)
-                    .unwrap_or(RefUrl { url: "".to_string() });
-                let url = Url::parse(&format!("{}", ref_url.url)
-                    .to_string())
-                    .unwrap_or(helper::redirect_url("/"));
-                println!("==== Referer: {:?} =====", url.to_string());
-                return Ok(Response::with((status::Found, Redirect(url))));
-            } else {
-                return Ok(Response::with((status::Found,
-                                          Redirect(helper::redirect_url("/signin")))));
-            }
-        }
-        Err(e) => {
-            error!("Errored: {:?}", e);
-            return Ok(Response::with(status::InternalServerError));
-        }
-    }
-}
-
-pub fn get_signout_handler(req: &mut Request) -> IronResult<Response> {
-    try!(req.session().clear());
-    return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/signin")))));
-}
-
-pub fn get_settings_handler(req: &mut Request) -> IronResult<Response> {
-    let conn = get_pg_connection!(req);
-    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
-    match handlers::account::current_user(req, &conn) {
-        Ok(user) => { login_user = user; }
-        Err(e) => { error!("Errored: {:?}", e); }
-    }
-    let login_id = login_user.id;
-    if login_id == 0 {
-        return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/signin")))));
-    }
-
-    let mut resp = Response::new();
+pub async fn get_settings(
+    State(state): State<AppState>,
+    AuthUser(login_user): AuthUser,
+) -> AppResult<Response> {
+    let user = models::user::get_by_id(&state.pool, login_user.id).await?;
 
     #[derive(Serialize, Debug, Default)]
     struct Menu {
@@ -194,7 +97,30 @@ pub fn get_settings_handler(req: &mut Request) -> IronResult<Response> {
         checked: String,
     }
 
-    #[derive(Serialize, Default)]
+    let mut menu: Vec<Menu> = Vec::new();
+    for name in state.config.team_menu.split(',') {
+        menu.push(Menu {
+            name: name.to_string(),
+            checked: if login_user.menu.contains(&name.to_string()) {
+                "checked".to_string()
+            } else {
+                String::new()
+            },
+        });
+    }
+
+    let theme_light = if login_user.theme == "light" {
+        "checked"
+    } else {
+        ""
+    };
+    let theme_black = if login_user.theme == "black" {
+        "checked"
+    } else {
+        ""
+    };
+
+    #[derive(Serialize)]
     struct Data {
         logged_in: bool,
         user: models::user::User,
@@ -204,257 +130,112 @@ pub fn get_settings_handler(req: &mut Request) -> IronResult<Response> {
         theme_black: String,
     }
 
-    let user: models::user::User;
-
-    match models::user::get_by_id(&conn, &login_id) {
-        Ok(user_obj) => {
-            user = user_obj;
-        }
-        Err(e) => {
-            error!("Errored: {:?}", e);
-            return Ok(Response::with(status::InternalServerError));
-        }
-    }
-
-    // Menu
-    let default_menu = &env::CONFIG.team_menu;
-    let mut menu: Vec<Menu> = Vec::new();
-    for name in default_menu.split(",") {
-        let mut m = Menu{
-            name: "".to_string(),
-            checked: "".to_string(),
-        };
-        m.name = name.to_string();
-        if login_user.menu.contains(&m.name){
-            m.checked = "checked".to_string();
-        }
-        menu.push(m);
-    }
-
-    // Theme
-    let mut theme_light_checked = String::from("");
-    let mut theme_black_checked = String::from("");
-    if login_user.theme == "light" {
-        theme_light_checked = String::from("checked");
-    }
-    if login_user.theme == "black" {
-        theme_black_checked = String::from("checked");
-    }
-    
     let data = Data {
-        logged_in: login_id != 0,
-        login_user: login_user,
-        user: user,
-        menu: menu,
-        theme_light: theme_light_checked,
-        theme_black: theme_black_checked,
+        logged_in: true,
+        user,
+        menu,
+        theme_light: theme_light.to_string(),
+        theme_black: theme_black.to_string(),
+        login_user,
     };
-
-    resp.set_mut(Template::new("account/settings", to_json(&data)))
-        .set_mut(status::Ok);
-    return Ok(resp);
+    Ok(render(&state, "account/settings", &data)?.into_response())
 }
 
-pub fn post_settings_handler(req: &mut Request) -> IronResult<Response> {
-    let conn = get_pg_connection!(req);
-    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
-    match handlers::account::current_user(req, &conn) {
-        Ok(user) => { login_user = user; }
-        Err(e) => { error!("Errored: {:?}", e); }
-    }
-    let login_id = login_user.id;
-    if login_id == 0 {
-        return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/signin")))));
-    }
-
-    let icon_url: String;
-    {
-        use params::{Params, Value};
-        let map = req.get_ref::<Params>().unwrap();
-
-        match map.get("icon_url") {
-            Some(&Value::String(ref name)) => {
-                icon_url = name.to_string();
-            }
-            _ => return Ok(Response::with(status::BadRequest)),
-        }
-    }
-
-    match models::user::update_icon_url(&conn, &login_id, &icon_url) {
-        Ok(_) => {
-            return Ok(Response::with((status::Found,
-                                      Redirect(helper::redirect_url("/account/settings")))));
-        }
-        Err(e) => {
-            error!("Errored: {:?}", e);
-            return Ok(Response::with(status::InternalServerError));
-        }
-    }
+#[derive(Deserialize)]
+pub struct SettingsForm {
+    pub icon_url: String,
 }
 
-pub fn post_password_update(req: &mut Request) -> IronResult<Response> {
-    let conn = get_pg_connection!(req);
-
-    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
-    match handlers::account::current_user(req, &conn) {
-        Ok(user) => { login_user = user; }
-        Err(e) => { error!("Errored: {:?}", e); }
-    }
-    let login_id = login_user.id;
-    if login_id == 0 {
-        return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/signin")))));
-    }
-
-    let current_password: String;
-    let new_password: String;
-    let confirm_password: String;
-    {
-        use params::Params;
-
-        let map = &req.get_ref::<Params>().unwrap();
-        match helper::get_param(map, "current_password") {
-            Ok(value) => current_password = value,
-            Err(st) => return Ok(Response::with(st)),
-        }
-
-        match helper::get_param(map, "new_password") {
-            Ok(value) => new_password = value,
-            Err(st) => return Ok(Response::with(st)),
-        }
-
-        match helper::get_param(map, "confirm_password") {
-            Ok(value) => confirm_password = value,
-            Err(st) => return Ok(Response::with(st)),
-        }
-    }
-
-    if new_password != confirm_password {
-        return Ok(Response::with(status::BadRequest));
-    }
-
-    let current_password = helper::encrypt_password(current_password);
-    let user: models::user::UserWithPassword;
-
-    match models::user::get_with_password_by_id(&conn, &login_id) {
-        Ok(u) => user = u,
-        Err(_) => return Ok(Response::with(status::BadRequest)),
-    }
-
-    if current_password != user.password {
-        return Ok(Response::with(status::BadRequest));
-    }
-
-    match models::user::update_password(&conn, &login_id, &helper::encrypt_password(new_password)) {
-        Ok(_) => {
-            return Ok(Response::with((status::Found,
-                                      Redirect(helper::redirect_url("/account/settings")))));
-        }
-        Err(e) => {
-            error!("Errored: {:?}", e);
-            return Ok(Response::with(status::InternalServerError));
-        }
-    }
+pub async fn post_settings(
+    State(state): State<AppState>,
+    AuthUser(login_user): AuthUser,
+    Form(form): Form<SettingsForm>,
+) -> AppResult<Response> {
+    models::user::update_icon_url(&state.pool, login_user.id, &form.icon_url).await?;
+    Ok(Redirect::to("/account/settings").into_response())
 }
 
-pub fn post_username_update(req: &mut Request) -> IronResult<Response> {
-    let conn = get_pg_connection!(req);
-
-    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
-    match handlers::account::current_user(req, &conn) {
-        Ok(user) => { login_user = user; }
-        Err(e) => { error!("Errored: {:?}", e); }
-    }
-    let login_id = login_user.id;
-    if login_id == 0 {
-        return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/signin")))));
-    }
-
-    let username: String;
-    {
-        use params::Params;
-        let map = &req.get_ref::<Params>().unwrap();
-        match helper::get_param(map, "username") {
-            Ok(value) => username = value,
-            Err(st) => return Ok(Response::with(st)),
-        }
-    }
-
-    match models::user::update_username(&conn, &login_id, &username) {
-        Ok(_) => {
-            return Ok(Response::with((status::Found,
-                                      Redirect(helper::redirect_url("/account/settings")))));
-        }
-        Err(e) => {
-            error!("Errored: {:?}", e);
-            return Ok(Response::with(status::InternalServerError));
-        }
-    }
+#[derive(Deserialize)]
+pub struct PasswordForm {
+    pub current_password: String,
+    pub new_password: String,
+    pub confirm_password: String,
 }
 
-pub fn current_user(req: &mut Request, conn: &db::PostgresConnection) -> Result<models::user::UserWithPreference, String> {
-    let mut url = req.url.to_string();
-    if env::CONFIG.team_domain.starts_with("https") {
-        url = url.replace("http", "https")
+pub async fn update_password(
+    State(state): State<AppState>,
+    AuthUser(login_user): AuthUser,
+    Form(form): Form<PasswordForm>,
+) -> AppResult<Response> {
+    if form.new_password != form.confirm_password {
+        return Ok(StatusCode::BAD_REQUEST.into_response());
     }
-    let _ = req.session().set(RefUrl { url: url } );
-    let mut user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
-    let login = req.session()
-        .get::<Login>()
-        .ok()
-        .and_then(|x| x)
-        .unwrap_or(Login { id: "".to_string() });
-
-    if login.id == "" {
-        return Ok(user);
-    } else {
-        let login_id = login.id.parse::<i32>().unwrap();
-        match models::user::get_current_user(&conn, &login_id) {
-            Ok(user_obj) => {
-                user = user_obj;
-                Ok(user)
-            }
-            Err(e) => {
-                error!("Errored: {:?}", e);
-                Err(format!("{}", e))
-            }
-        }
+    let user = models::user::get_with_password_by_id(&state.pool, login_user.id).await?;
+    if !util::verify_password(form.current_password, user.password).await {
+        return Ok(StatusCode::BAD_REQUEST.into_response());
     }
+    let new_hash = util::hash_password(form.new_password).await?;
+    models::user::update_password(&state.pool, login_user.id, &new_hash).await?;
+    Ok(Redirect::to("/account/settings").into_response())
 }
 
-pub fn profile_post_handler(req: &mut Request) -> IronResult<Response> {
-    let conn = get_pg_connection!(req);
-    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
-    match handlers::account::current_user(req, &conn) {
-        Ok(user) => { login_user = user; }
-        Err(e) => { error!("Errored: {:?}", e); }
-    }
-    let login_id = login_user.id;
-    if login_id == 0 {
-        return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/signin")))));
-    }
+#[derive(Deserialize)]
+pub struct UsernameForm {
+    pub username: String,
+}
 
-    let mut resp = Response::new();
+pub async fn update_username(
+    State(state): State<AppState>,
+    AuthUser(login_user): AuthUser,
+    Form(form): Form<UsernameForm>,
+) -> AppResult<Response> {
+    models::user::update_username(&state.pool, login_user.id, &form.username).await?;
+    Ok(Redirect::to("/account/settings").into_response())
+}
 
-    let page_param: String;
+#[derive(Deserialize)]
+pub struct MenuForm {
+    pub menu_param: String,
+}
 
-    {
-        use params::{Params, Value};
-        let map = req.get_ref::<Params>().unwrap();
-        match map.get("page") {
-            Some(&Value::String(ref name)) => {
-                page_param = name.to_string();
-            }
-            _ => page_param = "1".to_string(),
-        }
-    }
+pub async fn preference_menu(
+    State(state): State<AppState>,
+    AuthUser(login_user): AuthUser,
+    Form(form): Form<MenuForm>,
+) -> AppResult<Response> {
+    models::user::set_preference_menu(&state.pool, login_user.id, &form.menu_param).await?;
+    Ok(Redirect::to("/account/settings").into_response())
+}
 
-    let ref username = req.extensions
-        .get::<Router>()
-        .unwrap()
-        .find("username")
-        .unwrap_or("/");
+#[derive(Deserialize)]
+pub struct ThemeForm {
+    pub theme: String,
+}
 
-    #[derive(Serialize, Debug)]
+pub async fn preference_theme(
+    State(state): State<AppState>,
+    AuthUser(login_user): AuthUser,
+    Form(form): Form<ThemeForm>,
+) -> AppResult<Response> {
+    models::user::set_preference_theme(&state.pool, login_user.id, &form.theme).await?;
+    Ok(Redirect::to("/account/settings").into_response())
+}
+
+async fn profile(
+    state: AppState,
+    login_user: models::user::UserWithPreference,
+    username: String,
+    kind: &str,
+    page: Option<i32>,
+) -> AppResult<Response> {
+    let page = Page::new(page);
+
+    let user = models::user::get_by_username(&state.pool, &username).await?;
+    let posts =
+        models::post::user_posts(&state.pool, &username, page.offset, page.limit, kind).await?;
+    let count = models::post::user_posts_count(&state.pool, &username, kind).await?;
+
+    #[derive(Serialize)]
     struct Data {
         logged_in: bool,
         login_user: models::user::UserWithPreference,
@@ -469,370 +250,150 @@ pub fn profile_post_handler(req: &mut Request) -> IronResult<Response> {
         kind_nippo_active: String,
     }
 
-    let mut page = page_param.parse::<i32>().unwrap();
-    let offset = (page - 1) * PAGINATES_PER;
-    let limit = PAGINATES_PER;
-
-    let user: models::user::User;
-    let posts: Vec<models::post::Post>;
-    let count: i32;
-
-    match models::user::get_by_username(&conn, &username) {
-        Ok(user_db) => {
-            user = user_db;
-        }
-        Err(e) => {
-            error!("Errored: {:?}", e);
-            return Ok(Response::with(status::InternalServerError));
-        }
-    }
-
-    match models::post::user_posts(&conn, &username, &offset, &limit, "post") {
-        Ok(posts_db) => {
-            posts = posts_db;
-        }
-        Err(e) => {
-            error!("Errored: {:?}", e);
-            return Ok(Response::with(status::InternalServerError));
-        }
-    }
-
-    match models::post::user_posts_count(&conn, username, "post") {
-        Ok(count_db) => {
-            count = count_db;
-        }
-        Err(e) => {
-            error!("Errored: {:?}", e);
-            return Ok(Response::with(status::InternalServerError));
-        }
-    }
-
-    if page == 0 {
-        page = 1;
-    }
     let data = Data {
-        logged_in: login_id != 0,
-        login_user: login_user,
-        user: user,
-        posts: posts,
-        current_page: page,
-        total_page: count / PAGINATES_PER + 1,
-        next_page: page + 1,
-        prev_page: page - 1,
-        kind: String::from("post"),
-        kind_post_active: String::from("is-active"),
-        kind_nippo_active: String::from(""),
+        logged_in: true,
+        login_user,
+        user,
+        posts,
+        current_page: page.current,
+        total_page: page.total_pages(count),
+        next_page: page.current + 1,
+        prev_page: page.current - 1,
+        kind: kind.to_string(),
+        kind_post_active: if kind == "post" { "is-active" } else { "" }.to_string(),
+        kind_nippo_active: if kind == "nippo" { "is-active" } else { "" }.to_string(),
     };
-
-    resp.set_mut(Template::new("account/profile", to_json(&data)))
-        .set_mut(status::Ok);
-    return Ok(resp);
+    Ok(render(&state, "account/profile", &data)?.into_response())
 }
 
-pub fn profile_nippo_handler(req: &mut Request) -> IronResult<Response> {
-    let conn = get_pg_connection!(req);
-    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
-    match handlers::account::current_user(req, &conn) {
-        Ok(user) => { login_user = user; }
-        Err(e) => { error!("Errored: {:?}", e); }
-    }
-    let login_id = login_user.id;
-    if login_id == 0 {
-        return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/signin")))));
-    }
-
-    let mut resp = Response::new();
-
-    let page_param: String;
-
-    {
-        use params::{Params, Value};
-        let map = req.get_ref::<Params>().unwrap();
-        match map.get("page") {
-            Some(&Value::String(ref name)) => {
-                page_param = name.to_string();
-            }
-            _ => page_param = "1".to_string(),
-        }
-    }
-
-    let ref username = req.extensions
-        .get::<Router>()
-        .unwrap()
-        .find("username")
-        .unwrap_or("/");
-
-    #[derive(Serialize, Debug)]
-    struct Data {
-        logged_in: bool,
-        login_user: models::user::UserWithPreference,
-        user: models::user::User,
-        posts: Vec<models::post::Post>,
-        current_page: i32,
-        total_page: i32,
-        next_page: i32,
-        prev_page: i32,
-        kind: String,
-        kind_post_active: String,
-        kind_nippo_active: String,
-    }
-
-    let mut page = page_param.parse::<i32>().unwrap();
-    let offset = (page - 1) * PAGINATES_PER;
-    let limit = PAGINATES_PER;
-
-    let user: models::user::User;
-    let posts: Vec<models::post::Post>;
-    let count: i32;
-
-    match models::user::get_by_username(&conn, &username) {
-        Ok(user_db) => {
-            user = user_db;
-        }
-        Err(e) => {
-            error!("Errored: {:?}", e);
-            return Ok(Response::with(status::InternalServerError));
-        }
-    }
-
-    match models::post::user_posts(&conn, &username, &offset, &limit, "nippo") {
-        Ok(posts_db) => {
-            posts = posts_db;
-        }
-        Err(e) => {
-            error!("Errored: {:?}", e);
-            return Ok(Response::with(status::InternalServerError));
-        }
-    }
-
-    match models::post::user_posts_count(&conn, username, "nippo") {
-        Ok(count_db) => {
-            count = count_db;
-        }
-        Err(e) => {
-            error!("Errored: {:?}", e);
-            return Ok(Response::with(status::InternalServerError));
-        }
-    }
-
-    if page == 0 {
-        page = 1;
-    }
-    let data = Data {
-        logged_in: login_id != 0,
-        login_user: login_user,
-        user: user,
-        posts: posts,
-        current_page: page,
-        total_page: count / PAGINATES_PER + 1,
-        next_page: page + 1,
-        prev_page: page - 1,
-        kind: String::from("nippo"),
-        kind_post_active: String::from(""),
-        kind_nippo_active: String::from("is-active"),
-    };
-
-    resp.set_mut(Template::new("account/profile", to_json(&data)))
-        .set_mut(status::Ok);
-    return Ok(resp);
+pub async fn profile_post(
+    State(state): State<AppState>,
+    AuthUser(login_user): AuthUser,
+    Path(username): Path<String>,
+    Query(q): Query<PageQuery>,
+) -> AppResult<Response> {
+    profile(state, login_user, username, "post", q.page).await
 }
 
-use oauth2::Config;
-use iron::Url;
-
-pub fn get_auth_google_handler(req: &mut Request) -> IronResult<Response> {
-
-    let google_client_id = env::CONFIG.team_google_client_id.as_str();
-    let google_client_secret = env::CONFIG.team_google_client_secret.as_str();
-    let auth_url = "https://accounts.google.com/o/oauth2/v2/auth";
-    let token_url = "https://www.googleapis.com/oauth2/v3/token";
-    let mut config = Config::new(google_client_id, google_client_secret, auth_url, token_url);
-    // config = config.add_scope("https://www.googleapis.com/auth/plus.me");
-    config = config.add_scope("https://www.googleapis.com/auth/userinfo.email");
-    config = config.set_redirect_url(env::CONFIG.team_google_redirect_url.as_str());
-    config = config.set_state("S5nHXBzfeJBWmE9CmzLKLaFxfjwxqdvAyHPnFnS9");
-    let authorize_url = config.authorize_url();
-
-    let code: String;
-    {
-        use params::{Params, Value};
-        let map = req.get_ref::<Params>().unwrap();
-        match map.get("code") {
-            Some(&Value::String(ref name)) => {
-                code = name.to_string();
-            }
-            _ => code = "".to_string(),
-        }
-    }
-
-    if code == "" {
-        let url = Url::parse(&format!("{}",authorize_url).to_string()).unwrap();
-        return Ok(Response::with((status::Found, Redirect(url))));
-    } else {
-        let result = config.exchange_code(code);
-        match result {
-            Ok(token) => {
-                let allow_domain = env::CONFIG.team_google_allow_domain.as_str();
-                let email = helper::get_google_email(token.access_token.to_string());
-                let v: Vec<&str> = email.as_str().split("@").collect();
-                let username = v[0].to_string();
-                let domain = v[1];
-                if allow_domain != domain && allow_domain != "" {
-                    return Ok(Response::with((status::InternalServerError, "domain error")));
-                }
-
-                let ref_url = req.session().get::<RefUrl>().ok().and_then(|x| x)
-                    .unwrap_or(RefUrl { url: "".to_string() });
-                let url = Url::parse(&format!("{}", ref_url.url)
-                    .to_string())
-                    .unwrap_or(helper::redirect_url("/"));
-
-                let conn = get_pg_connection!(req);
-                let user: models::user::UserWithEmail;
-                match models::user::get_by_email(&conn, &email) {
-                    Ok(user_db) => {
-                        user = user_db;
-                        println!("{:?}", user);
-                    }
-                    Err(e) => {
-                        error!("Errored: {:?}", e);
-                        return Ok(Response::with(status::InternalServerError));
-                    }
-                }
-                if user.username == "" {
-                    match models::user::create_with_email(&conn, &username, &email) {
-                        Ok(user_id) => {
-                            try!(req.session().set(Login { id: user_id.to_string() }));
-                            return Ok(Response::with((status::Found, Redirect(url))));
-                        }
-                        Err(e) => {
-                            info!("Errored: {:?}", e);
-                            return Ok(Response::with(status::InternalServerError));
-                        }
-                    }
-                } else {
-                    try!(req.session().set(Login { id: user.id.to_string() }));
-                    return Ok(Response::with((status::Found, Redirect(url))));
-                }
-            }
-            Err(err) => {
-                error!("error: {}", err);
-            }
-        }
-    };
-
-    return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/signin")))));
+pub async fn profile_nippo(
+    State(state): State<AppState>,
+    AuthUser(login_user): AuthUser,
+    Path(username): Path<String>,
+    Query(q): Query<PageQuery>,
+) -> AppResult<Response> {
+    profile(state, login_user, username, "nippo", q.page).await
 }
 
-pub fn post_preference_menu(req: &mut Request) -> IronResult<Response> {
-    let conn = get_pg_connection!(req);
-    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
-    match handlers::account::current_user(req, &conn) {
-        Ok(user) => { login_user = user; }
-        Err(e) => { error!("Errored: {:?}", e); }
-    }
-    let login_id = login_user.id;
-    if login_id == 0 {
-        return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/signin")))));
-    }
-
-    let menu: String;
-    {
-        use params::Params;
-        let map = &req.get_ref::<Params>().unwrap();
-        match helper::get_param(map, "menu_param") {
-            Ok(value) => menu = value,
-            Err(st) => return Ok(Response::with(st)),
-        }
-    }
-
-    match models::user::set_preference_menu(&conn, &login_id, &menu) {
-        Ok(_) => {
-            return Ok(Response::with((status::Found,
-                                      Redirect(helper::redirect_url("/account/settings")))));
-        }
-        Err(e) => {
-            error!("Errored: {:?}", e);
-            return Ok(Response::with(status::InternalServerError));
-        }
-    }
+#[derive(Deserialize)]
+pub struct GoogleAuthQuery {
+    pub code: Option<String>,
+    pub state: Option<String>,
 }
 
-pub fn post_preference_theme(req: &mut Request) -> IronResult<Response> {
-    let conn = get_pg_connection!(req);
-    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
-    match handlers::account::current_user(req, &conn) {
-        Ok(user) => { login_user = user; }
-        Err(e) => { error!("Errored: {:?}", e); }
+pub async fn auth_google(
+    State(state): State<AppState>,
+    jar: SignedCookieJar,
+    Query(q): Query<GoogleAuthQuery>,
+) -> AppResult<Response> {
+    if !state.config.google_configured() {
+        return Ok(Redirect::to("/signin").into_response());
     }
-    let login_id = login_user.id;
-    if login_id == 0 {
-        return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/signin")))));
-    }
-
-    let theme: String;
-    {
-        use params::Params;
-        let map = &req.get_ref::<Params>().unwrap();
-        match helper::get_param(map, "theme") {
-            Ok(value) => theme = value,
-            Err(st) => return Ok(Response::with(st)),
-        }
-    }
-
-    match models::user::set_preference_theme(&conn, &login_id, &theme) {
-        Ok(_) => {
-            return Ok(Response::with((status::Found,
-                                      Redirect(helper::redirect_url("/account/settings")))));
-        }
-        Err(e) => {
-            error!("Errored: {:?}", e);
-            return Ok(Response::with(status::InternalServerError));
-        }
-    }
-}
-
-use time;
-use std::fs;
-use iron::mime::Mime;
-
-use env::CONFIG;
-
-pub fn icon_upload_handler(req: &mut Request) -> IronResult<Response> {
-    let conn = get_pg_connection!(req);
-    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
-    match handlers::account::current_user(req, &conn) {
-        Ok(user) => { login_user = user; }
-        Err(e) => { error!("Errored: {:?}", e); }
-    }
-    let login_id = login_user.id;
-    if login_id == 0 {
-        return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/signin")))));
-    }
-
-    use params::{Params, Value};
-
-    let timestamp = time::get_time().sec;
-    let filepath = format!("public/img/profile/icons/{:?}.png", timestamp);
-    let fileurl = format!("img/profile/icons/{:?}.png", timestamp);
-
-    match req.get_ref::<Params>().unwrap().find(&["file"]) {
-        Some(&Value::File(ref file)) => {
-            let a = &file.path;
-            let b = &filepath;
-            let _ = fs::copy(a, b);
-        }
+    let code = match q.code {
+        Some(code) if !code.is_empty() => code,
         _ => {
-            println!("no file");
+            // Start the flow: issue a per-request CSRF state token.
+            let (jar, token) = auth::set_oauth_state(jar);
+            let url = crate::services::google_authorize_url(&state, &token);
+            return Ok((jar, Redirect::to(&url)).into_response());
+        }
+    };
+
+    // Callback: the state must match the token we issued.
+    let (jar, expected_state) = auth::take_oauth_state(jar);
+    match (&expected_state, &q.state) {
+        (Some(expected), Some(got)) if expected == got => {}
+        _ => {
+            tracing::warn!("google oauth: state mismatch");
+            return Ok((jar, Redirect::to("/signin")).into_response());
         }
     }
-    #[derive(Serialize, Debug)]
-    struct Data {
-        fileurl: String,
-    }
-    let data = Data {
-        fileurl: format!("{}/{}", &CONFIG.team_domain, fileurl),
+
+    let email = match crate::services::google_email_for_code(&state, &code).await {
+        Ok(email) => email,
+        Err(e) => {
+            tracing::error!("google oauth failed: {:?}", e);
+            return Ok(Redirect::to("/signin").into_response());
+        }
     };
-    let content_type = "application/json".parse::<Mime>().unwrap();
-    return Ok(Response::with((content_type, status::Ok, to_json(&data).to_string())));
+
+    let allow_domain = state.config.team_google_allow_domain.as_str();
+    let mut parts = email.splitn(2, '@');
+    let username = parts.next().unwrap_or("").to_string();
+    let domain = parts.next().unwrap_or("");
+    if !allow_domain.is_empty() && allow_domain != domain {
+        return Ok((StatusCode::INTERNAL_SERVER_ERROR, "domain error").into_response());
+    }
+
+    let user = models::user::get_by_email(&state.pool, &email).await?;
+    let user_id = if user.username.is_empty() {
+        models::user::create_with_email(&state.pool, &username, &email).await?
+    } else {
+        user.id
+    };
+
+    let jar = auth::sign_in(jar, user_id);
+    let (jar, ref_url) = auth::take_ref_url(jar);
+    Ok((jar, Redirect::to(&ref_url)).into_response())
+}
+
+pub async fn icon_upload(
+    State(state): State<AppState>,
+    AuthUser(_login_user): AuthUser,
+    multipart: Multipart,
+) -> AppResult<Response> {
+    Ok(upload_and_respond(&state, multipart, "public/img/profile/icons").await)
+}
+
+/// Maximum accepted upload size. The router's body limit is set slightly
+/// above this so oversized requests fail here with a friendly message
+/// instead of a raw stream error.
+pub const MAX_UPLOAD_BYTES: usize = 20 * 1024 * 1024; // 20MB
+
+/// Save the uploaded `file` field and answer with `{fileurl}` JSON, or a
+/// 413 with `{error}` JSON when the upload is too large / malformed.
+pub async fn upload_and_respond(state: &AppState, multipart: Multipart, dir: &str) -> Response {
+    match save_uploaded_image(multipart, dir).await {
+        Ok(fileurl) => Json(json!({
+            "fileurl": format!("{}/{}", state.config.team_domain, fileurl),
+        }))
+        .into_response(),
+        Err(e) => {
+            tracing::warn!("upload failed: {:?}", e);
+            (
+                StatusCode::PAYLOAD_TOO_LARGE,
+                Json(json!({
+                    "error": "アップロードに失敗しました。ファイルサイズの上限は20MBです。",
+                })),
+            )
+                .into_response()
+        }
+    }
+}
+
+/// Save the `file` field of a multipart form under `dir`, returning the
+/// public URL path (without the leading `public/`).
+async fn save_uploaded_image(mut multipart: Multipart, dir: &str) -> anyhow::Result<String> {
+    let timestamp = chrono::Utc::now().timestamp();
+    let filepath = format!("{}/{}.png", dir, timestamp);
+    let fileurl = filepath.trim_start_matches("public/").to_string();
+
+    while let Some(field) = multipart.next_field().await? {
+        if field.name() == Some("file") {
+            let data = field.bytes().await?;
+            anyhow::ensure!(data.len() <= MAX_UPLOAD_BYTES, "file too large");
+            tokio::fs::create_dir_all(dir).await?;
+            tokio::fs::write(&filepath, &data).await?;
+        }
+    }
+    Ok(fileurl)
 }

@@ -1,52 +1,43 @@
 [package]
 name = "team"
-version = "0.1.0"
+version = "0.2.0"
+edition = "2021"
 authors = ["Dongri Jin <dongrify@gmail.com>"]
 
 [dependencies]
-iron = "0.5.1"
-router = "0.5.1"
-mount = "0.3.0"
-persistent = "0.3.0"
-staticfile = "0.4.0"
-params = "0.6.0"
-iron-sessionstorage = "0.6.6"
-urlencoded = "0.5.0"
-url = "1.0"
-oauth2 = "1.2.1"
-reqwest = "0.6.0"
+# Web framework
+axum = { version = "0.8", features = ["multipart"] }
+axum-extra = { version = "0.10", features = ["cookie-signed"] }
+tokio = { version = "1", features = ["full"] }
+tower-http = { version = "0.6", features = ["fs", "trace"] }
 
-postgres = { version = "0.14.1", features = ["with-chrono"] }
+# Database
+tokio-postgres = { version = "0.7", features = ["with-chrono-0_4"] }
+deadpool-postgres = "0.14"
 
-r2d2 = "0.7.2"
-r2d2_postgres = "0.12.0"
+# Templates
+handlebars = { version = "6", features = ["dir_source"] }
 
-handlebars-iron = "0.24.1"
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
 
-serde = "1.0.7"
-serde_json = "1.0.2"
-serde_derive = "1.0.7"
+# HTTP client (Slack / Webhook / Google OAuth)
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+url = "2"
 
-rust-crypto = "0.2.36"
+# Utilities
+argon2 = "0.5"
+chrono = { version = "0.4", features = ["serde"] }
+sha2 = "0.10"
+hex = "0.4"
+diff = "0.1"
+anyhow = "1"
+dotenvy = "0.15"
 
-slack-hook = "0.4"
-
-time = "0.1"
-
-chrono = { version = "0.3", features = ["serde", "rustc-serialize"] }
-
-diff = "0.1.10"
-
-hyper = "0.11.0"
-hyper-tls = "0.1.1"
-futures = "0.1.14"
-tokio-core = "0.1.8"
-
-log = "0.3"
-fern = "0.4"
-
-envy = "0.3"
-lazy_static = "0.2.8"
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 [features]
 integration_tests = []

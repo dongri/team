@@ -1,63 +1,44 @@
-{{#*inline "title"}}
-  Tweet - Team
-{{/inline}}
+{{#*inline "title"}}Tweet - Team{{/inline}}
 {{#*inline "page"}}
-  <div style="display: flex;">
-    <div class="post-item-icon">
-      <a href="/{{tweet.user.username}}">
-        {{#if tweet.user.icon_url}}
-          <img src="{{tweet.user.icon_url}}" class="icon-img-normal">
-        {{else}}
-          <canvas width="40" height="40" data-jdenticon-hash="{{tweet.user.username_hash}}" class="icon-img-normal"></canvas>
-        {{/if}}
-      </a>
-    </div>
-    <div class="post-item-body">
-      <div class="post-item-description">
-        @{{tweet.user.username}} - {{tweet.formated_created}}
+  <div class="item-card tweet-detail">
+    <a class="item-avatar" href="/{{tweet.user.username}}">
+      {{> partials/avatar tweet.user cls="avatar-md" px=40}}
+    </a>
+    <div class="item-main">
+      <div class="item-meta">
+        <a class="item-user" href="/{{tweet.user.username}}">@{{tweet.user.username}}</a>
+        <span class="item-date">{{tweet.formated_created}}</span>
       </div>
-      <div class="tweet-body marked" style="display: none;">{{tweet.body}}</div>
+      <div class="tweet-body marked" hidden>{{tweet.body}}</div>
     </div>
   </div>
-  <div class="comments">
-    <ul class="post-items">
+
+  <section class="comments">
+    <h2 class="section-title">Comments</h2>
+    <ul class="item-list">
       {{#each comments}}
-      <li class="post-item-comment">
-        <div class="post-item-icon">
-          <a href="/{{user.username}}">
-            {{#if user.icon_url}}
-            <img src="{{user.icon_url}}" class="icon-img-normal"> {{else}}
-            <canvas width="40" height="40" data-jdenticon-hash="{{user.username_hash}}" class="icon-img-normal"></canvas>
-            {{/if}}
-          </a>
-        </div>
-        <div class="post-item-body">
-          <div class="post-item">
-            <div class="post-item-description">
-              @{{user.username}}
-              <br/>
-            </div>
-            <div class="marked" style="display: none;" id="comment_view_{{id}}">{{body}}</div>
+      <li class="item-card comment-card">
+        <a class="item-avatar" href="/{{user.username}}">
+          {{> partials/avatar user cls="avatar-md" px=40}}
+        </a>
+        <div class="item-main">
+          <div class="item-meta">
+            <a class="item-user" href="/{{user.username}}">@{{user.username}}</a>
+            <span class="item-date">{{formated_created}}</span>
           </div>
+          <div class="marked" hidden id="comment_view_{{id}}">{{body}}</div>
         </div>
       </li>
       {{/each}}
     </ul>
-  </div>
 
-  <form action="/tweet/comment" method="post">
-    <input type="hidden" name="id" value="{{tweet.id}}">
-    <div class="field">
-      <div class="control">
-        <textarea placeholder="Post a comment" name="body" id="input-comment" class="textarea is-info" rows="2" required></textarea>
+    <form class="comment-form" action="/tweet/comment" method="post">
+      <input type="hidden" name="id" value="{{tweet.id}}">
+      <div class="form-field">
+        <textarea placeholder="Post a comment" name="body" id="input-comment" class="textarea" rows="2" required></textarea>
       </div>
-    </div>
-    <div class="field">
-      <div class="control">
-        <button type="submit" class="button is-info is-outlined">Submit</button>
-      </div>
-    </div>
-  </form>
-
+      <button type="submit" class="btn btn-primary">Comment</button>
+    </form>
+  </section>
 {{/inline}}
 {{~> layout ~}}

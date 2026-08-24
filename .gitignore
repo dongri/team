@@ -11,6 +11,9 @@
 
 *.log
 
+# Local environment variables
+.env
+
 /public/img/posts/*
 /public/img/profile/icons/*
 !.gitkeep

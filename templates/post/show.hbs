@@ -1,195 +1,148 @@
-{{#*inline "title"}}
-  {{post.title}} - Team
-{{/inline}}
+{{#*inline "title"}}{{post.title}} - Team{{/inline}}
 {{#*inline "page_head"}}
 {{> post/head}}
 {{/inline}}
 {{#*inline "page"}}
-  <div class="post-item-action">
-    <div class="post-item-shared">
-      {{# if shared}}
-        <i class="fa fa-users" aria-hidden="true"></i>
+  <article class="post">
+    <div class="post-actions">
+      {{#if shared}}
+      <span class="badge badge-info"><i class="fas fa-users"></i> Co-editing</span>
       {{else}}
-        {{# if deletable}}
-        <form method="post" action="/{{kind}}/share/{{post.id}}">
-          <button class="button is-info is-outlined is-small">Co-editing</button>
-        </form>
-        {{/if}}
+      {{#if deletable}}
+      <form method="post" action="/{{kind}}/share/{{post.id}}">
+        <button class="btn btn-ghost btn-sm"><i class="fas fa-users"></i> Co-editing</button>
+      </form>
       {{/if}}
-    </div>
-    <div class="post-item-stock">
-      {{# if stocked}}
+      {{/if}}
+
+      {{#if stocked}}
       <form method="post" action="/{{kind}}/unstock/{{post.id}}">
-        <button class="button is-info is-outlined is-small">Stocked</button>
+        <button class="btn btn-primary btn-sm"><i class="fas fa-bookmark"></i> Stocked</button>
       </form>
       {{else}}
       <form method="post" action="/{{kind}}/stock/{{post.id}}">
-        <button class="button is-info is-outlined is-small">Stock</button>
+        <button class="btn btn-ghost btn-sm"><i class="far fa-bookmark"></i> Stock</button>
       </form>
       {{/if}}
-    </div>
-    <div class="post-item-ed">
-      {{# if editable}}
-        <a href="/{{kind}}/edit/{{post.id}}">
-          <button class="button is-danger is-outlined is-small">Edit</button>
-        </a>
-      {{/if}}
-      {{# if deletable}}
-        <a href="javascript:remove_post('{{kind}}', '{{post.id}}')">
-          <button class="button is-danger is-outlined is-small">Delete</button>
-        </a>
-      {{/if}}
-    </div>
-    <div class="post-item-pin">
-      {{# if pinned}}
+
+      {{#if pinned}}
       <form method="post" action="/{{kind}}/unpin/{{post.id}}">
-        <button class="button is-info is-outlined is-small">Unpin</button>
+        <button class="btn btn-primary btn-sm"><i class="fas fa-thumbtack"></i> Unpin</button>
       </form>
       {{else}}
       <form method="post" action="/{{kind}}/pin/{{post.id}}">
-        <button class="button is-info is-outlined is-small">Pin</button>
+        <button class="btn btn-ghost btn-sm"><i class="fas fa-thumbtack"></i> Pin</button>
       </form>
+      {{/if}}
+
+      <span class="post-actions-spacer"></span>
+
+      {{#if editable}}
+      <a class="btn btn-ghost btn-sm" href="/{{kind}}/edit/{{post.id}}"><i class="fas fa-edit"></i> Edit</a>
+      {{/if}}
+      {{#if deletable}}
+      <button class="btn btn-danger btn-sm" type="button" onclick="removePost('{{kind}}', '{{post.id}}')"><i class="fas fa-trash-alt"></i> Delete</button>
       {{/if}}
     </div>
 
-  </div>
+    <h1 class="post-title">{{post.title}}</h1>
 
-  <div class="post-title">{{post.title}}</div>
-
-  <div class="post-item-info">
-    <div class="post-item-icon">
-      <a href="/{{post.user.username}}">
-        {{#if post.user.icon_url}}
-          <img src="{{post.user.icon_url}}" class="icon-img-normal">
-        {{else}}
-          <canvas width="20" height="20" data-jdenticon-hash="{{post.user.username_hash}}" class="post-user-icon"></canvas>
-        {{/if}}
+    <div class="post-byline">
+      <a class="item-avatar" href="/{{post.user.username}}">
+        {{> partials/avatar post.user cls="avatar-md" px=40}}
       </a>
+      <div>
+        <a class="item-user" href="/{{post.user.username}}">@{{post.user.username}}</a>
+        <div class="item-date">{{post.formated_created}}</div>
+      </div>
     </div>
-    <div class="post-item-body">
-      <div class="post-item-description">
-        @{{post.user.username}}<br/>
-      </div>
-      <div class="post-item-created">{{post.formated_created}}</div>
+
+    <div class="post-tags" id="tags_view">
+      <i class="fas fa-tags"></i>
+      {{#each post.tags}}
+      <a class="tag-pill" href="/tag?name={{name}}">{{name}}</a>
+      {{/each}}
+      <button class="icon-btn" type="button" onclick="editTags()" aria-label="Edit tags"><i class="fas fa-edit"></i></button>
     </div>
-  </div>
-
-  <div id="tags_view">
-    <i class="fas fa-tags"></i>
-    {{#each post.tags}}
-      <span class="tag is-light"><a href="/tag?name={{name}}">{{name}}</a></span>
-    {{/each}}
-    <a href="javascript:editTags()">
-      <i class="fa fa-edit" aria-hidden="true"></i>
-    </a>
-  </div>
-  <div id="tags_input" style="display:none;">
-    <form action="/{{kind}}/tags/{{post.id}}" method="post">
-      <input type="hidden" name="id" value="{{post.id}}">
-      <div class="field">
-        <div class="control">
-          <input type="text" value="{{#each post.tags}}{{name}},{{/each}}" name="tags" class="input is-primary">
+    <div id="tags_input" hidden>
+      <form action="/{{kind}}/tags/{{post.id}}" method="post" class="tags-form">
+        <input type="hidden" name="id" value="{{post.id}}">
+        <input type="text" value="{{#each post.tags}}{{name}},{{/each}}" name="tags" class="input">
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary btn-sm">Update tags</button>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="editTagsCancel()">Cancel</button>
         </div>
-      </div>
-      <div class="field is-grouped">
-        <div class="control">
-          <button type="submit" class="button is-info is-outlined is-small">Update Tag</button>
-          <button type="button" class="button is-text is-small" onclick="javascript:editTagsCancel()">Cancel</button>
-        </div>
-      </div>
-    </form>
-  </div>
+      </form>
+    </div>
 
-  <div class="post-markdown">
-    <div class="marked" style="display:none;">{{post.body}}</div>
-  </div>
+    <div class="post-markdown card">
+      <div class="marked" hidden>{{post.body}}</div>
+    </div>
+  </article>
 
-  <div class="comments">
-    <ul class="post-items">
-    {{#each comments}}
-      <li class="post-item-comment">
-        <div class="post-item-icon">
-          <a href="/{{comment.user.username}}">
-            {{#if comment.user.icon_url}}
-              <img src="{{comment.user.icon_url}}" class="icon-img-normal">
-            {{else}}
-              <canvas width="40" height="40" data-jdenticon-hash="{{comment.user.username_hash}}" class="icon-img-normal"></canvas>
+  <section class="comments">
+    <h2 class="section-title">Comments</h2>
+    <ul class="item-list">
+      {{#each comments}}
+      <li class="item-card comment-card">
+        <a class="item-avatar" href="/{{comment.user.username}}">
+          {{> partials/avatar comment.user cls="avatar-md" px=40}}
+        </a>
+        <div class="item-main">
+          <div class="item-meta">
+            <a class="item-user" href="/{{comment.user.username}}">@{{comment.user.username}}</a>
+            {{#if editable}}
+            <span class="comment-tools">
+              <button class="icon-btn" type="button" onclick="editComment({{comment.id}})" aria-label="Edit"><i class="fas fa-edit"></i></button>
+              <button class="icon-btn" type="button" onclick="removeComment({{comment.id}})" aria-label="Delete"><i class="fas fa-trash-alt"></i></button>
+            </span>
             {{/if}}
-          </a>
-        </div>
-        <div class="post-item-body">
-          <div class="post-item">
-            <div class="post-item-action">
-              {{#if editable}}
-              <a href="javascript:edit({{comment.id}})">
-                <i class="fa fa-edit" aria-hidden="true"></i>
-              </a>
-              <a href="javascript:remove({{comment.id}})">
-                <i class="fa fa-trash-alt" aria-hidden="true"></i>
-              </a>
-              {{/if}}
-            </div>
-            <div class="post-item-description">
-              @{{comment.user.username}}<br/>
-            </div>
-            <div class="marked" style="display:none;" id="comment_view_{{comment.id}}">{{comment.body}}</div>
-            <form action="/{{kind}}/comment/{{comment.id}}" method="post" id="comment_input_{{comment.id}}" style="display:none;">
-              <input type="hidden" name="action" value="update" id="comment_action_{{comment.id}}" class="input">
-              <div class="field">
-                <div class="control">
-                  <textarea placeholder="comment" name="body" id="input-comment" class="textarea" required>{{comment.body}}</textarea>
-                </div>
-              </div>
-              <div class="field is-grouped">
-                <div class="control">
-                  <button type="submit" class="button is-info is-outlined">Update</button>
-                </div>
-              </div>
-            </form>
           </div>
+          <div class="marked" hidden id="comment_view_{{comment.id}}">{{comment.body}}</div>
+          <form action="/{{kind}}/comment/{{comment.id}}" method="post" id="comment_input_{{comment.id}}" hidden>
+            <input type="hidden" name="action" value="update" id="comment_action_{{comment.id}}">
+            <div class="form-field">
+              <textarea placeholder="Comment" name="body" class="textarea" required>{{comment.body}}</textarea>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">Update</button>
+          </form>
         </div>
       </li>
-    {{/each}}
+      {{/each}}
     </ul>
-  </div>
 
-  <form class="mui-form" action="/{{kind}}/comment" method="post">
-    <input type="hidden" name="id" value="{{post.id}}">
-    <div class="field">
-      <div class="control">
-        <textarea class="textarea is-info" placeholder="Post a comment" name="body" id="input-comment" required></textarea>
+    <form class="comment-form" action="/{{kind}}/comment" method="post">
+      <input type="hidden" name="id" value="{{post.id}}">
+      <div class="form-field">
+        <textarea class="textarea" placeholder="Post a comment" name="body" id="input-comment" required></textarea>
       </div>
-    </div>
-    <div class="field is-grouped">
-      <div class="control">
-        <button type="submit" class="button is-info is-outlined">Submit</button>
-      </div>
-    </div>
-  </form>
+      <button type="submit" class="btn btn-primary">Comment</button>
+    </form>
+  </section>
+
   <script>
-    function edit(comment_id) {
-      $("#comment_view_"+comment_id).hide();
-      $("#comment_input_"+comment_id).show();
+    function editComment(id) {
+      document.getElementById('comment_view_' + id).hidden = true;
+      document.getElementById('comment_input_' + id).hidden = false;
     }
-    function remove(comment_id) {
-      var confirmed = confirm('Are you sure?');
-      if (confirmed) {
-        $("#comment_action_"+comment_id).val("delete");
-        $("#comment_input_"+comment_id).submit();
+    function removeComment(id) {
+      if (confirm('Are you sure?')) {
+        document.getElementById('comment_action_' + id).value = 'delete';
+        document.getElementById('comment_input_' + id).hidden = false;
+        document.getElementById('comment_input_' + id).submit();
       }
     }
     function editTags() {
-      $("#tags_view").hide();
-      $("#tags_input").show();
+      document.getElementById('tags_view').hidden = true;
+      document.getElementById('tags_input').hidden = false;
     }
     function editTagsCancel() {
-      $("#tags_view").show();
-      $("#tags_input").hide();
+      document.getElementById('tags_view').hidden = false;
+      document.getElementById('tags_input').hidden = true;
     }
-    function remove_post(kind, post_id) {
-      var confirmed = confirm('Are you sure?');
-      if (confirmed) {
-        window.location.href = '/' + kind + '/delete/' + post_id;
+    function removePost(kind, id) {
+      if (confirm('Are you sure?')) {
+        window.location.href = '/' + kind + '/delete/' + id;
       }
     }
   </script>

@@ -1,45 +1,27 @@
-use persistent;
-use iron::prelude::*;
-use iron::status;
-use iron::modifiers::Redirect;
-use hbs::Template;
-use hbs::handlebars::to_json;
+use axum::extract::{Query, State};
+use axum::response::Html;
+use serde::{Deserialize, Serialize};
 
-use db;
-use models;
-use handlers;
-use helper;
+use crate::auth::AuthUser;
+use crate::error::AppResult;
+use crate::handlers::PageQuery;
+use crate::models;
+use crate::state::AppState;
+use crate::util::{self, Page};
+use crate::views::render;
 
-const PAGINATES_PER: i32 = 10;
+pub async fn index(
+    State(state): State<AppState>,
+    AuthUser(login_user): AuthUser,
+    Query(q): Query<PageQuery>,
+) -> AppResult<Html<String>> {
+    let page = Page::new(q.page);
 
-pub fn index_handler(req: &mut Request) -> IronResult<Response> {
-    let conn = get_pg_connection!(req);
-    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
-    match handlers::account::current_user(req, &conn) {
-        Ok(user) => { login_user = user; }
-        Err(e) => { error!("Errored: {:?}", e); }
-    }
-    let login_id = login_user.id;
-    if login_id == 0 {
-        return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/signin")))));
-    }
+    let feeds = models::post::get_feeds(&state.pool, page.offset, page.limit).await?;
+    let count = models::post::get_feed_count(&state.pool).await?;
+    let pinneds = models::post::pinned_list(&state.pool, 0, 3).await?;
 
-    let page_param: String;
-
-    {
-        use params::{Params, Value};
-        let map = req.get_ref::<Params>().unwrap();
-        match map.get("page") {
-            Some(&Value::String(ref name)) => {
-                page_param = name.to_string();
-            }
-            _ => page_param = "1".to_string(),
-        }
-    }
-
-    let mut resp = Response::new();
-
-    #[derive(Serialize, Debug)]
+    #[derive(Serialize)]
     struct Data {
         logged_in: bool,
         login_user: models::user::UserWithPreference,
@@ -51,113 +33,39 @@ pub fn index_handler(req: &mut Request) -> IronResult<Response> {
         pinneds: Vec<models::post::Post>,
     }
 
-    let mut page = page_param.parse::<i32>().unwrap();
-    if page <= 0 {
-        page = 1;
-    }
-    let offset = (page - 1) * PAGINATES_PER;
-    let limit = PAGINATES_PER;
-
-    let feeds: Vec<models::post::Feed>;
-    let pinneds: Vec<models::post::Post>;
-    let count: i32;
-
-    match models::post::get_feeds(&conn, &offset, &limit) {
-        Ok(feeds_db) => {
-            feeds = feeds_db;
-        }
-        Err(e) => {
-            error!("Errored: {:?}", e);
-            return Ok(Response::with(status::InternalServerError));
-        }
-    }
-
-    match models::post::get_feed_count(&conn) {
-        Ok(count_db) => {
-            count = count_db;
-        }
-        Err(e) => {
-            error!("Errored: {:?}", e);
-            return Ok(Response::with(status::InternalServerError));
-        }
-    }
-
-    let pinned_offset = 0;
-    let pinned_limit = 3;
-    match models::post::pinned_list(&conn, &pinned_offset, &pinned_limit) {
-        Ok(pinneds_db) => {
-            pinneds = pinneds_db;
-        }
-        Err(e) => {
-            error!("Errored: {:?}", e);
-            return Ok(Response::with(status::InternalServerError));
-        }
-    }
-
     let data = Data {
-        logged_in: login_id != 0,
-        login_user: login_user,
-        feeds: feeds,
-        current_page: page,
-        total_page: count / PAGINATES_PER + 1,
-        next_page: page + 1,
-        prev_page: page - 1,
-        pinneds: pinneds,
+        logged_in: true,
+        login_user,
+        feeds,
+        current_page: page.current,
+        total_page: page.total_pages(count),
+        next_page: page.current + 1,
+        prev_page: page.current - 1,
+        pinneds,
     };
-
-    resp.set_mut(Template::new("index", to_json(&data)))
-        .set_mut(status::Ok);
-    return Ok(resp);
+    render(&state, "index", &data)
 }
 
-pub fn search_handler(req: &mut Request) -> IronResult<Response> {
-    let conn = get_pg_connection!(req);
-    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
-    match handlers::account::current_user(req, &conn) {
-        Ok(user) => { login_user = user; }
-        Err(e) => { error!("Errored: {:?}", e); }
-    }
-    let login_id = login_user.id;
-    if login_id == 0 {
-        return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/signin")))));
-    }
+#[derive(Deserialize, Debug)]
+pub struct SearchQuery {
+    pub keyword: Option<String>,
+    pub kind: Option<String>,
+    pub page: Option<i32>,
+}
 
-    let keyword_param: String;
-    let kind_param: String;
-    let page_param: String;
+pub async fn search(
+    State(state): State<AppState>,
+    AuthUser(login_user): AuthUser,
+    Query(q): Query<SearchQuery>,
+) -> AppResult<Html<String>> {
+    let keyword = q.keyword.unwrap_or_default();
+    let kind = q.kind.unwrap_or_else(|| "all".to_string());
+    let page = Page::new(q.page);
 
-    {
-        use params::{Params, Value};
-        let map = req.get_ref::<Params>().unwrap();
-        match map.get("keyword") {
-            Some(&Value::String(ref name)) => {
-                keyword_param = name.to_string();
-            }
-            _ => keyword_param = "".to_string(),
-        }
-        match map.get("kind") {
-            Some(&Value::String(ref name)) => {
-                kind_param = name.to_string();
-            }
-            _ => kind_param = "all".to_string(),
-        }
-        match map.get("page") {
-            Some(&Value::String(ref name)) => {
-                page_param = name.to_string();
-            }
-            _ => page_param = "1".to_string(),
-        }
-    }
+    let posts = models::post::search(&state.pool, &keyword, &kind, page.offset, page.limit).await?;
+    let count = models::post::search_count(&state.pool, &keyword, &kind).await?;
 
-    let keyword_search = keyword_param.clone();
-    let kind_search = kind_param.clone();
-    let keyword_count = keyword_param.clone();
-    let kind_count = kind_param.clone();
-    let kind_title = kind_param.clone();
-
-    let mut resp = Response::new();
-
-    #[derive(Serialize, Debug)]
+    #[derive(Serialize)]
     struct Data {
         logged_in: bool,
         login_user: models::user::UserWithPreference,
@@ -174,103 +82,49 @@ pub fn search_handler(req: &mut Request) -> IronResult<Response> {
         kind_title: String,
     }
 
-    let mut page = page_param.parse::<i32>().unwrap();
-    let offset = (page - 1) * PAGINATES_PER;
-    let limit = PAGINATES_PER;
-
-    let posts: Vec<models::post::Post>;
-    let count: i32;
-
-    match models::post::search(&conn, &keyword_search, &kind_search, &offset, &limit) {
-        Ok(posts_db) => {
-            posts = posts_db;
+    let active = |k: &str| {
+        if kind == k {
+            "is-active".to_string()
+        } else {
+            String::new()
         }
-        Err(e) => {
-            error!("Errored: {:?}", e);
-            return Ok(Response::with(status::InternalServerError));
-        }
-    }
-
-    match models::post::search_count(&conn, &keyword_count, &kind_count) {
-        Ok(count_db) => {
-            count = count_db;
-        }
-        Err(e) => {
-            error!("Errored: {:?}", e);
-            return Ok(Response::with(status::InternalServerError));
-        }
-    }
-
-    if page == 0 {
-        page = 1;
-    }
-    let mut kind_all_active = String::from("");
-    let mut kind_post_active = String::from("");
-    let mut kind_nippo_active = String::from("");
-    let mui_is_active = String::from("is-active");
-    if kind_param == "all" {
-        kind_all_active = mui_is_active.clone();
-    }
-    if kind_param == "post" {
-        kind_post_active = mui_is_active.clone();
-    }
-    if kind_param == "nippo" {
-        kind_nippo_active = mui_is_active.clone();
-    }
-    let data = Data {
-        logged_in: login_id != 0,
-        login_user: login_user,
-        posts: posts,
-        current_page: page,
-        total_page: count / PAGINATES_PER + 1,
-        next_page: page + 1,
-        prev_page: page - 1,
-        keyword: keyword_param,
-        kind: kind_param,
-        kind_all_active: kind_all_active,
-        kind_post_active: kind_post_active,
-        kind_nippo_active: kind_nippo_active,
-        kind_title: helper::uppercase_first_letter(&kind_title),
     };
 
-    resp.set_mut(Template::new("search", to_json(&data)))
-        .set_mut(status::Ok);
-    return Ok(resp);
+    let data = Data {
+        logged_in: true,
+        login_user,
+        posts,
+        current_page: page.current,
+        total_page: page.total_pages(count),
+        next_page: page.current + 1,
+        prev_page: page.current - 1,
+        kind_all_active: active("all"),
+        kind_post_active: active("post"),
+        kind_nippo_active: active("nippo"),
+        kind_title: util::uppercase_first_letter(&kind),
+        keyword,
+        kind,
+    };
+    render(&state, "search", &data)
 }
 
-pub fn tag_handler(req: &mut Request) -> IronResult<Response> {
-    let conn = get_pg_connection!(req);
-    let mut login_user: models::user::UserWithPreference = models::user::UserWithPreference{..Default::default()};
-    match handlers::account::current_user(req, &conn) {
-        Ok(user) => { login_user = user; }
-        Err(e) => { error!("Errored: {:?}", e); }
-    }
-    let login_id = login_user.id;
-    if login_id == 0 {
-        return Ok(Response::with((status::Found, Redirect(helper::redirect_url("/signin")))));
-    }
+#[derive(Deserialize, Debug)]
+pub struct TagQuery {
+    pub name: String,
+    pub page: Option<i32>,
+}
 
-    let page_param: String;
-    let tag_param: String;
+pub async fn tag(
+    State(state): State<AppState>,
+    AuthUser(login_user): AuthUser,
+    Query(q): Query<TagQuery>,
+) -> AppResult<Html<String>> {
+    let page = Page::new(q.page);
 
-    {
-        use params::Params;
-        let map = &req.get_ref::<Params>().unwrap();
+    let posts = models::tag::tag_search(&state.pool, &q.name, page.offset, page.limit).await?;
+    let count = models::tag::tag_count(&state.pool, &q.name).await?;
 
-        match helper::get_param(map, "page") {
-            Ok(value) => page_param = value,
-            Err(_) => page_param = String::from("1"),
-        }
-
-        match helper::get_param(map, "name") {
-            Ok(value) => tag_param = value,
-            Err(st) => return Ok(Response::with(st)),
-        }
-    }
-
-    let mut resp = Response::new();
-
-    #[derive(Serialize, Debug)]
+    #[derive(Serialize)]
     struct Data {
         logged_in: bool,
         login_user: models::user::UserWithPreference,
@@ -282,47 +136,15 @@ pub fn tag_handler(req: &mut Request) -> IronResult<Response> {
         tag_name: String,
     }
 
-    let mut page = page_param.parse::<i32>().unwrap();
-    let offset = ( page - 1 ) * PAGINATES_PER;
-    let limit = PAGINATES_PER;
-
-    let posts: Vec<models::post::Post>;
-    let count: i32;
-
-    match models::tag::tag_search(&conn, &tag_param, offset, limit) {
-        Ok(posts_db) => {
-            posts = posts_db;
-        },
-        Err(e) => {
-            error!("Errored: {:?}", e);
-            return Ok(Response::with(status::InternalServerError));
-        }
-    }
-
-    match models::tag::tag_count(&conn, &tag_param) {
-        Ok(count_db) => {
-            count = count_db;
-        },
-        Err(e) => {
-            error!("Errored: {:?}", e);
-            return Ok(Response::with(status::InternalServerError));
-        }
-    }
-
-    if page == 0 {
-        page = 1;
-    }
     let data = Data {
-        logged_in: login_id != 0,
-        login_user: login_user,
-        posts: posts,
-        current_page: page,
-        total_page: count / PAGINATES_PER + 1,
-        next_page: page + 1,
-        prev_page: page - 1,
-        tag_name: tag_param,
+        logged_in: true,
+        login_user,
+        posts,
+        current_page: page.current,
+        total_page: page.total_pages(count),
+        next_page: page.current + 1,
+        prev_page: page.current - 1,
+        tag_name: q.name,
     };
-
-    resp.set_mut(Template::new("tag", to_json(&data))).set_mut(status::Ok);
-    return Ok(resp);
+    render(&state, "tag", &data)
 }

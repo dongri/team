@@ -1,139 +1,125 @@
+{{#*inline "title"}}Settings - Team{{/inline}}
 {{#*inline "page"}}
-<div class="page-title">Settings</div>
-<div class="page-title">Menu</div>
-<form action="/account/preference/menu" method="post" id="preference_menu_form">
-  <input type="hidden" name="menu_param" id="menu_param" value="">
-  <div class="field">
-    <div class="control">
-      {{#each menu}}
+  <h1 class="page-title">Settings</h1>
+
+  <div class="card settings-card">
+    <h2 class="card-title">Menu</h2>
+    <form action="/account/preference/menu" method="post" id="preference_menu_form">
+      <input type="hidden" name="menu_param" id="menu_param" value="">
+      <div class="checkbox-row">
+        {{#each menu}}
         <label class="checkbox">
-          {{name}}
           <input type="checkbox" name="menu" value="{{name}}" class="menu" {{checked}}>
+          <span>{{name}}</span>
         </label>
-         &nbsp;
-      {{/each}}
-    </div>
+        {{/each}}
+      </div>
+      <button type="submit" class="btn btn-primary btn-sm" id="update-menu-btn">Update</button>
+    </form>
   </div>
-  <div class="field">
-    <div class="control">
-      <button type="submit" class="button is-info is-outlined" onclick="javascript:submitUpdateMenu();return false;">Update</button>
-    </div>
+
+  <div class="card settings-card">
+    <h2 class="card-title">Theme</h2>
+    <form action="/account/preference/theme" method="post">
+      <div class="checkbox-row">
+        <label class="radio">
+          <input type="radio" name="theme" value="light" {{theme_light}}>
+          <span>Light</span>
+        </label>
+        <label class="radio">
+          <input type="radio" name="theme" value="black" {{theme_black}}>
+          <span>Dark</span>
+        </label>
+      </div>
+      <button type="submit" class="btn btn-primary btn-sm">Update</button>
+    </form>
   </div>
-</form>
-<hr>
-<div class="page-title">Theme</div>
-<form action="/account/preference/theme" method="post">
-  <div class="field">
-    <div class="control">
-      <label class="radio">
-        Light
-        <input type="radio" name="theme" value="light" {{theme_light}}>
-      </label>
-      &nbsp;
-      <label class="radio">
-        Dark
-        <input type="radio" name="theme" value="black" {{theme_black}}>
-      </label>
-    </div>
+
+  <div class="card settings-card">
+    <h2 class="card-title">Username</h2>
+    <form action="/account/username" method="post">
+      <div class="form-field">
+        <input type="text" id="username" name="username" value="{{user.username}}" placeholder="username" class="input" required>
+      </div>
+      <button type="submit" class="btn btn-primary btn-sm">Update</button>
+    </form>
   </div>
-  <div class="field">
-    <div class="control">
-      <button type="submit" class="button is-info is-outlined">Update</button>
-    </div>
+
+  <div class="card settings-card">
+    <h2 class="card-title">Password</h2>
+    <form action="/account/password" method="post">
+      <div class="form-field">
+        <label class="form-label">Current password</label>
+        <input type="password" id="current_password" name="current_password" placeholder="Current password" class="input" required>
+      </div>
+      <div class="form-field">
+        <label class="form-label">New password</label>
+        <input type="password" id="new_password" name="new_password" placeholder="New password" class="input" required>
+      </div>
+      <div class="form-field">
+        <label class="form-label">Confirm new password</label>
+        <input type="password" id="confirm_password" name="confirm_password" placeholder="Confirm new password" class="input" required>
+      </div>
+      <button type="submit" class="btn btn-primary btn-sm">Update</button>
+    </form>
   </div>
-</form>
-<hr>
-<div class="page-title">Username</div>
-<form action="/account/username" method="post">
-  <div class="field">
-    <div class="control">
-      <input type="text" id="username" name="username" value="{{user.username}}" placeholder="username" class="input" required>
-    </div>
-  </div>
-  <div class="field">
-    <div class="control">
-      <button type="submit" class="button is-info is-outlined">Update</button>
-    </div>
-  </div>
-</form>
-<hr />
-<div class="page-title">Password</div>
-<form action="/account/password" method="post">
-  <div class="field">
-    <div class="control">
-      <input type="password" id="current_password" name="current_password" placeholder="current password" class="input">
-    </div>
-  </div>
-  <div class="field">
-    <div class="control">
-      <input type="password" id="new_password" name="new_password" placeholder="new password" class="input">
-    </div>
-  </div>
-  <h1>Confirm new password</h1>
-  <div class="field">
-    <div class="control">
-    <input type="password" id="confirm_password" name="confirm_password" placeholder="Confirm new password" class="input">
-    </div>
-  </div>
-  <div class="field">
-    <div class="control">
-      <button type="submit" class="button is-info is-outlined">Submit</button>
-    </div>
-  </div>
-</form>
-<hr />
-<div class="page-title">Profile Icon</div>
-<form action="/account/settings" method="post">
-  <div>
-    {{#if user.icon_url}}
-    <img src="{{user.icon_url}}" class="icon-img-large">
-    {{else}}
-    <canvas width="60" height="60" data-jdenticon-hash="{{user.username_hash}}" class="icon-img-large"></canvas>
-    {{/if}}
-  </div>
-  <div class="field">
-    <label class="label-file">
-      <i aria-hidden="true" data-hidden="true" class="far fa-file-image toolbar-button-icon"></i>
-      Attach a file
-      <input type="file" name="image" style="display: none;">
-    </label>
-    <div class="field">
-      <div class="control">
+
+  <div class="card settings-card">
+    <h2 class="card-title">Profile icon</h2>
+    <form action="/account/settings" method="post">
+      <div class="settings-avatar">
+        {{> partials/avatar user cls="avatar-lg" px=60}}
+      </div>
+      <div class="form-field">
+        <label class="btn btn-ghost btn-sm file-label">
+          <i class="far fa-file-image"></i>
+          Choose a file
+          <input type="file" name="image" id="icon-file" hidden>
+        </label>
+      </div>
+      <div class="form-field">
         <input type="text" placeholder="Icon URL" name="icon_url" value="{{user.icon_url}}" class="input" id="user_icon_url">
       </div>
-    </div>
+      <button type="submit" class="btn btn-primary btn-sm">Update</button>
+    </form>
   </div>
-  <div class="field">
-    <div class="control">
-      <button type="submit" class="button is-info is-outlined">Submit</button>
-    </div>
-  </div>
-</form>
-<hr />
 
-<script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      var menuForm = document.getElementById('preference_menu_form');
+      menuForm.addEventListener('submit', function (e) {
+        var checked = Array.from(document.querySelectorAll('.menu:checked')).map(function (el) { return el.value; });
+        document.getElementById('menu_param').value = checked.join(',');
+      });
 
-  $(document).on('change', 'input[name="image"]', function () {
-    var fd = new FormData();
-    if ($("input[name='image']").val() !== '') {
-      fd.append("file", $("input[name='image']").prop("files")[0]);
-    }
-    fd.append("dir", $("#image").val());
-    var postData = {
-      type: "POST",
-      dataType: "text",
-      data: fd,
-      processData: false,
-      contentType: false
-    };
-    $.ajax(
-      "/account/icon/upload", postData
-    ).done(function (text) {
-      var json = JSON.parse(text);
-      $('#user_icon_url').val(json.fileurl);
+      var MAX_UPLOAD = 20 * 1024 * 1024;
+      var fileInput = document.getElementById('icon-file');
+      fileInput.addEventListener('change', function () {
+        if (!fileInput.files.length) return;
+        var file = fileInput.files[0];
+        if (file.size > MAX_UPLOAD) {
+          alert('ファイルサイズが大きすぎます(最大20MB)');
+          fileInput.value = '';
+          return;
+        }
+        var fd = new FormData();
+        fd.append('file', file);
+        fetch('/account/icon/upload', { method: 'POST', body: fd })
+          .then(function (res) {
+            return res.json().then(function (json) {
+              if (!res.ok) throw new Error(json.error || 'アップロードに失敗しました');
+              return json;
+            });
+          })
+          .then(function (json) {
+            document.getElementById('user_icon_url').value = json.fileurl;
+          })
+          .catch(function (err) {
+            alert(err.message);
+            fileInput.value = '';
+          });
+      });
     });
-  });
-
-</script>
-
-{{/inline}} {{~> layout ~}}
+  </script>
+{{/inline}}
+{{~> layout ~}}

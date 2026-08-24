@@ -123,3 +123,48 @@ create table pinneds (
   created       timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated       timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Indexes ------------------------------------------------------------------
+
+-- Google sign-in looks users up by email
+create index if not exists idx_users_email on users (email);
+
+-- Post lists: where status/kind, order by id desc
+create index if not exists idx_posts_kind_status_id on posts (kind, status, id desc);
+create index if not exists idx_posts_user_id on posts (user_id);
+
+-- Comments are fetched per post / gist / tweet
+create index if not exists idx_post_comments_post_id on post_comments (post_id);
+create index if not exists idx_post_comments_user_id on post_comments (user_id);
+create index if not exists idx_gist_comments_gist_id on gist_comments (gist_id);
+create index if not exists idx_gist_comments_user_id on gist_comments (user_id);
+create index if not exists idx_tweet_comments_tweet_id on tweet_comments (tweet_id);
+create index if not exists idx_tweet_comments_user_id on tweet_comments (user_id);
+
+-- Tags: name lookup on save, taggings lookup per post and per tag
+create index if not exists idx_tags_name on tags (name);
+create index if not exists idx_taggings_post_id_tag_id on taggings (post_id, tag_id);
+create index if not exists idx_taggings_tag_id on taggings (tag_id);
+
+-- Stocks: per-user list and (user, post) membership check
+create index if not exists idx_stocks_user_id_post_id on stocks (user_id, post_id);
+create index if not exists idx_stocks_post_id on stocks (post_id);
+
+-- Pinned lookup per post
+create index if not exists idx_pinneds_post_id on pinneds (post_id);
+
+-- Owner lookups / FK cascades
+create index if not exists idx_gists_user_id on gists (user_id);
+create index if not exists idx_tweets_user_id on tweets (user_id);
+
+-- Notifications: unread badge is checked on every page load
+create index if not exists idx_notifications_to_user_read on notifications (to_user, read);
+create index if not exists idx_notifications_from_user on notifications (from_user);
+
+-- Preferences: loaded for the signed-in user on every request
+create index if not exists idx_preferences_user_id on preferences (user_id);
+
+-- Search: title/body ILIKE '%keyword%' needs trigram GIN indexes
+create extension if not exists pg_trgm;
+create index if not exists idx_posts_title_trgm on posts using gin (title gin_trgm_ops);
+create index if not exists idx_posts_body_trgm on posts using gin (body gin_trgm_ops);

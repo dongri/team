@@ -1,0 +1,21 @@
+<li class="item-card">
+  <a class="item-avatar" href="/{{user.username}}">
+    {{> partials/avatar user cls="avatar-md" px=40}}
+  </a>
+  <div class="item-main">
+    <div class="item-meta">
+      <a class="item-user" href="/{{user.username}}">@{{user.username}}</a>
+      <span class="item-date">{{formated_created}}</span>
+    </div>
+    <div class="item-title">
+      <a href="/{{kind}}/show/{{id}}">{{title}}</a>
+    </div>
+    {{#if tags}}
+    <div class="item-tags">
+      {{#each tags}}
+      <a class="tag-pill" href="/tag?name={{name}}">{{name}}</a>
+      {{/each}}
+    </div>
+    {{/if}}
+  </div>
+</li>

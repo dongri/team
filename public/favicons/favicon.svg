@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="g" gradientUnits="userSpaceOnUse" x1="48" y1="40" x2="464" y2="484">
+      <stop offset="0" stop-color="#3b82f6"/>
+      <stop offset="1" stop-color="#8b5cf6"/>
+    </linearGradient>
+  </defs>
+  <!-- speech bubble -->
+  <path fill="url(#g)" d="M148 40 h216 a100 100 0 0 1 100 100 v184 a100 100 0 0 1 -100 100 h-156 c-14 34 -48 54 -96 60 26 -16 40 -36 42 -62 a100 100 0 0 1 -106 -98 v-184 a100 100 0 0 1 100 -100 z"/>
+  <!-- letter T -->
+  <rect x="156" y="140" width="200" height="56" rx="28" fill="#fff"/>
+  <rect x="228" y="140" width="56" height="196" rx="28" fill="#fff"/>
+</svg>

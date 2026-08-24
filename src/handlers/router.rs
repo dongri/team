@@ -1,98 +1,94 @@
-use std::path::Path;
+use axum::extract::DefaultBodyLimit;
+use axum::routing::{get, post};
+use axum::Router;
+use tower_http::services::ServeDir;
+use tower_http::trace::TraceLayer;
 
-use mount::Mount;
-use staticfile::Static;
+use crate::handlers::{account, gist, index, post, tweet};
+use crate::state::AppState;
 
-use Router;
-use handlers::index;
-use handlers::account;
-use handlers::post;
-use handlers::gist;
-use handlers::tweet;
-
-pub fn create_router() -> Router {
-    let mut router = Router::new();
-    router.get("/", index::index_handler, "index");
-    router.get("/search", index::search_handler, "search");
-    router.get("/tag", index::tag_handler, "tag");
-
-    router.get("/signup", account::get_signup_handler, "account/get_signup");
-    router.post("/signup", account::post_signup_handler, "account/post_signup");
-    router.get("/signin", account::get_signin_handler, "account/get_signin");
-    router.post("/signin", account::post_signin_handler, "account/post_signin");
-    router.get("/signout", account::get_signout_handler, "account/get_signout");
-
-    router.get("/auth/google", account::get_auth_google_handler, "account/get_auth_google");
-
-    router.get("/account/settings", account::get_settings_handler, "account/get_settings");
-    router.post("/account/settings", account::post_settings_handler, "account/post_settings");
-    router.post("/account/password", account::post_password_update, "account/post_password");
-    router.post("/account/username", account::post_username_update, "account/post_username");
-    router.post("/account/preference/menu", account::post_preference_menu, "account/post_preference_menu");
-    router.post("/account/preference/theme", account::post_preference_theme, "account/post_preference_theme");
-    router.post("/account/icon/upload", account::icon_upload_handler, "account/icon_upload");
-
-    router.get("/pinned/list", post::pin::pinned_list_handler, "piined/list");
-
-    router.get("/gist/new", gist::new_handler, "gist/new");
-    router.post("/gist/create", gist::create_handler, "gist/create");
-    router.get("/gist/list", gist::list_handler, "gist/list");
-    router.get("/gist/show/:id", gist::show_handler, "gist/show");
-    router.get("/gist/edit/:id", gist::edit_handler, "gist/edit");
-    router.post("/gist/update", gist::update_handler, "gist/update");
-    router.get("/gist/delete/:id", gist::delete_handler, "gist/delete");
-    router.post("/gist/comment", gist::comment_handler, "gist/comment");
-    router.post("/gist/comment/:id", gist::comment_update_handler, "gist/comment/update");
-
-    router.get("/:kind/new", post::post::new_handler, "post/new");
-    router.post("/:kind/create", post::post::create_handler, "post/create");
-    router.get("/:kind/list", post::post::list_handler, "post/list");
-    router.get("/:kind/show/:id", post::post::show_handler, "post/show/:id");
-    router.get("/:kind/delete/:id", post::post::delete_handler, "post/delete");
-    router.get("/:kind/edit/:id", post::post::edit_handler, "post/edit");
-    router.post("/:kind/update", post::post::update_handler, "post/update");
-    router.post("/:kind/comment", post::comment::comment_handler, "post/comment");
-    router.post("/:kind/comment/:id", post::comment::comment_update_handler, "post/comment/update");
-    router.post("/:kind/tags/:id", post::post::tags_update_handler, "post/tags/update");
-
-    router.post("/:kind/stock/:id", post::stock::stock_handler, "post/stock");
-    router.post("/:kind/unstock/:id", post::stock::unstock_handler, "post/unstock");
-    router.post("/:kind/share/:id", post::share::share_handler, "post/share");
-
-    router.post("/:kind/pin/:id", post::pin::pin_handler, "post/pin");
-    router.post("/:kind/unpin/:id", post::pin::unpin_handler, "post/unpin");
-
-    router.get("/stocked/list", post::stock::stocked_list_handler, "stocked/list");
-    router.get("/draft/list", post::draft::draft_list_handler, "draft/list");
-
-    router.get("/tweet/list", tweet::list_handler, "tweet/list");
-    router.post("/tweet/post", tweet::post_handler, "tweet/post");
-    router.get("/tweet/show/:id", tweet::show_handler, "tweet/show");
-    router.post("/tweet/comment", tweet::comment_handler, "tweet/comment");
-
-    router.get("/tag/list", post::tag::tag_list_handler, "tag/list");
-
-    router.get("/notifications", post::post::notifications_handler, "post/notifications");
-    router.get("/notification_count", post::post::notification_count_handler, "post/notification_count");
-
-    router.post("/image/upload", post::post::image_upload_handler, "post/imageupload");
-
-    router.get("/:username", account::profile_post_handler, "user/profile");
-    router.get("/:username/post", account::profile_post_handler, "user/profile_post");
-    router.get("/:username/nippo", account::profile_nippo_handler, "user/profile_nippo");
-
-    return router;
-}
-
-pub fn mount_path() -> Mount {
-    let mut mount = Mount::new();
-    mount.mount("/css", Static::new(Path::new("./public/css/")));
-    mount.mount("/js", Static::new(Path::new("./public/js/")));
-    mount.mount("/img", Static::new(Path::new("./public/img/")));
-    mount.mount("/webfonts", Static::new(Path::new("./public/webfonts/")));
-    mount.mount("/codemirror", Static::new(Path::new("./public/codemirror/")));
-    mount.mount("/favicons", Static::new(Path::new("./public/favicons/")));
-    mount.mount("/", create_router());
-
-    return mount
+pub fn create_router(state: AppState) -> Router {
+    Router::new()
+        .route("/", get(index::index))
+        .route("/search", get(index::search))
+        .route("/tag", get(index::tag))
+        // Account
+        .route(
+            "/signup",
+            get(account::get_signup).post(account::post_signup),
+        )
+        .route(
+            "/signin",
+            get(account::get_signin).post(account::post_signin),
+        )
+        .route("/signout", get(account::signout))
+        .route("/auth/google", get(account::auth_google))
+        .route(
+            "/account/settings",
+            get(account::get_settings).post(account::post_settings),
+        )
+        .route("/account/password", post(account::update_password))
+        .route("/account/username", post(account::update_username))
+        .route("/account/preference/menu", post(account::preference_menu))
+        .route("/account/preference/theme", post(account::preference_theme))
+        .route("/account/icon/upload", post(account::icon_upload))
+        // Pinned / stocked / draft
+        .route("/pinned/list", get(post::pinned_list))
+        .route("/stocked/list", get(post::stocked_list))
+        .route("/draft/list", get(post::draft_list))
+        // Gist
+        .route("/gist/new", get(gist::new_form))
+        .route("/gist/create", post(gist::create))
+        .route("/gist/list", get(gist::list))
+        .route("/gist/show/{id}", get(gist::show))
+        .route("/gist/edit/{id}", get(gist::edit))
+        .route("/gist/update", post(gist::update))
+        .route("/gist/delete/{id}", get(gist::delete))
+        .route("/gist/comment", post(gist::comment))
+        .route("/gist/comment/{id}", post(gist::comment_update))
+        // Tweet
+        .route("/tweet/list", get(tweet::list))
+        .route("/tweet/post", post(tweet::post_tweet))
+        .route("/tweet/show/{id}", get(tweet::show))
+        .route("/tweet/comment", post(tweet::comment))
+        // Tags / notifications / uploads
+        .route("/tag/list", get(post::tag_list))
+        .route("/notifications", get(post::notifications))
+        .route("/notification_count", get(post::notification_count))
+        .route("/image/upload", post(post::image_upload))
+        // Posts (kind = post | nippo)
+        .route("/{kind}/new", get(post::new_form))
+        .route("/{kind}/create", post(post::create))
+        .route("/{kind}/list", get(post::list))
+        .route("/{kind}/show/{id}", get(post::show))
+        .route("/{kind}/delete/{id}", get(post::delete))
+        .route("/{kind}/edit/{id}", get(post::edit))
+        .route("/{kind}/update", post(post::update))
+        .route("/{kind}/comment", post(post::comment))
+        .route("/{kind}/comment/{id}", post(post::comment_update))
+        .route("/{kind}/tags/{id}", post(post::tags_update))
+        .route("/{kind}/stock/{id}", post(post::stock))
+        .route("/{kind}/unstock/{id}", post(post::unstock))
+        .route("/{kind}/share/{id}", post(post::share))
+        .route("/{kind}/pin/{id}", post(post::pin))
+        .route("/{kind}/unpin/{id}", post(post::unpin))
+        // User profile (same first-segment param name as the post routes;
+        // handlers extract it positionally)
+        .route("/{kind}", get(account::profile_post))
+        .route("/{kind}/post", get(account::profile_post))
+        .route("/{kind}/nippo", get(account::profile_nippo))
+        // Static assets
+        .nest_service("/css", ServeDir::new("public/css"))
+        .nest_service("/js", ServeDir::new("public/js"))
+        .nest_service("/img", ServeDir::new("public/img"))
+        .nest_service("/webfonts", ServeDir::new("public/webfonts"))
+        .nest_service("/codemirror", ServeDir::new("public/codemirror"))
+        .nest_service("/favicons", ServeDir::new("public/favicons"))
+        // Allow uploads up to MAX_UPLOAD_BYTES; the small margin lets the
+        // multipart handler reject oversized files with a friendly error.
+        .layer(DefaultBodyLimit::max(
+            crate::handlers::account::MAX_UPLOAD_BYTES + 1024 * 1024,
+        ))
+        .layer(TraceLayer::new_for_http())
+        .with_state(state)
 }

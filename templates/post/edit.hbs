@@ -1,72 +1,65 @@
-{{#*inline "title"}}
-  Update {{kind_title}} - Team
-{{/inline}}
+{{#*inline "title"}}Update {{kind_title}} - Team{{/inline}}
 {{#*inline "page_head"}}
 {{> post/head}}
 {{/inline}}
 {{#*inline "page"}}
-  <form action="/{{kind}}/update" method="post">
+  <h1 class="page-title">Update {{kind_title}}</h1>
+
+  <form action="/{{kind}}/update" method="post" class="post-form">
     <input type="hidden" name="id" value="{{post.id}}">
-    <div class="field">
-      <div class="control">
-        <input type="text" placeholder="Title" name="title" value="{{post.title}}" class="input" required>
-      </div>
+    <div class="form-field">
+      <input type="text" placeholder="Title" name="title" value="{{post.title}}" class="input input-lg" required>
     </div>
-    <div class="field">
-      <div class="control">
-        <textarea name="body" placeholder="body" id="mdeditor" cols="30" rows="10" style="display:none;" required>{{post.body}}</textarea>
-      </div>
-      <label class="label-file">
-        <i aria-hidden="true" data-hidden="true" class="far fa-file-image toolbar-button-icon"></i>
-        Attach a file
-        <input type="file" name="image" style="display: none;">
+    <div class="form-field">
+      <textarea name="body" id="mdeditor" hidden required>{{post.body}}</textarea>
+      <label class="btn btn-ghost btn-sm file-label">
+        <i class="far fa-file-image"></i>
+        Attach an image
+        <input type="file" name="image" id="post-image" hidden>
       </label>
-      <input id="image" type="hidden" value="image">
     </div>
-    <div class="field">
-      <div class="control">
-        <input type="text" placeholder="Tags (e.g. rust,tips,postgres)" name="tags" value="{{tags}}" class="input">
-      </div>
+    <div class="form-field">
+      <input type="text" placeholder="Tags (e.g. rust,tips,postgres)" name="tags" value="{{tags}}" class="input">
     </div>
-    <div class="field is-grouped">
-      <div class="control">
-        <button type="submit" class="button is-info is-outlined" name='action' value="publish">Update & Publish</button>
-        <button type="submit" class="button is-info is-outlined" name='action' value="draft">Draft</button>
-      </div>
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary" name="action" value="publish">Update &amp; publish</button>
+      <button type="submit" class="btn btn-ghost" name="action" value="draft">Save draft</button>
     </div>
   </form>
 
   <script>
-
     var simplemde = new SimpleMDE({
-      element: document.getElementById("mdeditor"),
+      element: document.getElementById('mdeditor'),
       spellChecker: false,
       status: false
     });
 
-    $(document).on('change', 'input[name="image"]', function () {
-      var fd = new FormData();
-      if ($("input[name='image']").val() !== '') {
-        fd.append("file", $("input[name='image']").prop("files")[0]);
+    document.getElementById('post-image').addEventListener('change', function () {
+      if (!this.files.length) return;
+      var input = this;
+      var file = input.files[0];
+      if (file.size > 20 * 1024 * 1024) {
+        alert('ファイルサイズが大きすぎます(最大20MB)');
+        input.value = '';
+        return;
       }
-      fd.append("dir", $("#image").val());
-      var postData = {
-        type: "POST",
-        dataType: "text",
-        data: fd,
-        processData: false,
-        contentType: false
-      };
-      $.ajax(
-        "/image/upload", postData
-      ).done(function (text) {
-        var json = JSON.parse(text);
-        var v = simplemde.value();
-        simplemde.value(v + "\n![](" + json.fileurl + ")");
-      });
+      var fd = new FormData();
+      fd.append('file', file);
+      fetch('/image/upload', { method: 'POST', body: fd })
+        .then(function (res) {
+          return res.json().then(function (json) {
+            if (!res.ok) throw new Error(json.error || 'アップロードに失敗しました');
+            return json;
+          });
+        })
+        .then(function (json) {
+          simplemde.value(simplemde.value() + "\n![](" + json.fileurl + ")");
+        })
+        .catch(function (err) {
+          alert(err.message);
+          input.value = '';
+        });
     });
-
   </script>
-
 {{/inline}}
 {{~> layout ~}}
