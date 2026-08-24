@@ -274,9 +274,33 @@ async fn profile(
     let page = Page::new(page);
 
     let user = models::user::get_by_username(&state.pool, &username).await?;
-    let posts =
-        models::post::user_posts(&state.pool, &username, page.offset, page.limit, kind).await?;
-    let count = models::post::user_posts_count(&state.pool, &username, kind).await?;
+    let mut posts: Vec<models::post::Post> = Vec::new();
+    let mut gists: Vec<models::gist::Gist> = Vec::new();
+    let mut tweets: Vec<models::tweet::Tweet> = Vec::new();
+    let count = match kind {
+        "gist" => {
+            gists =
+                models::gist::user_gists(&state.pool, &username, page.offset, page.limit).await?;
+            models::gist::user_gists_count(&state.pool, &username).await?
+        }
+        "tweet" => {
+            tweets = models::tweet::user_tweets(
+                &state.pool,
+                login_user.id,
+                &username,
+                page.offset,
+                page.limit,
+            )
+            .await?;
+            models::tweet::user_tweets_count(&state.pool, &username).await?
+        }
+        _ => {
+            posts =
+                models::post::user_posts(&state.pool, &username, page.offset, page.limit, kind)
+                    .await?;
+            models::post::user_posts_count(&state.pool, &username, kind).await?
+        }
+    };
 
     #[derive(Serialize)]
     struct Data {
@@ -284,6 +308,8 @@ async fn profile(
         login_user: models::user::UserWithPreference,
         user: models::user::User,
         posts: Vec<models::post::Post>,
+        gists: Vec<models::gist::Gist>,
+        tweets: Vec<models::tweet::Tweet>,
         current_page: i32,
         total_page: i32,
         next_page: i32,
@@ -291,6 +317,8 @@ async fn profile(
         kind: String,
         kind_post_active: String,
         kind_nippo_active: String,
+        kind_gist_active: String,
+        kind_tweet_active: String,
     }
 
     let data = Data {
@@ -298,6 +326,8 @@ async fn profile(
         login_user,
         user,
         posts,
+        gists,
+        tweets,
         current_page: page.current,
         total_page: page.total_pages(count),
         next_page: page.current + 1,
@@ -305,6 +335,8 @@ async fn profile(
         kind: kind.to_string(),
         kind_post_active: if kind == "post" { "is-active" } else { "" }.to_string(),
         kind_nippo_active: if kind == "nippo" { "is-active" } else { "" }.to_string(),
+        kind_gist_active: if kind == "gist" { "is-active" } else { "" }.to_string(),
+        kind_tweet_active: if kind == "tweet" { "is-active" } else { "" }.to_string(),
     };
     Ok(render(&state, "account/profile", &data)?.into_response())
 }
@@ -325,6 +357,24 @@ pub async fn profile_nippo(
     Query(q): Query<PageQuery>,
 ) -> AppResult<Response> {
     profile(state, login_user, username, "nippo", q.page).await
+}
+
+pub async fn profile_gist(
+    State(state): State<AppState>,
+    AuthUser(login_user): AuthUser,
+    Path(username): Path<String>,
+    Query(q): Query<PageQuery>,
+) -> AppResult<Response> {
+    profile(state, login_user, username, "gist", q.page).await
+}
+
+pub async fn profile_tweet(
+    State(state): State<AppState>,
+    AuthUser(login_user): AuthUser,
+    Path(username): Path<String>,
+    Query(q): Query<PageQuery>,
+) -> AppResult<Response> {
+    profile(state, login_user, username, "tweet", q.page).await
 }
 
 #[derive(Deserialize)]

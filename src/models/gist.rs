@@ -74,6 +74,43 @@ pub async fn list(pool: &PgPool, offset: i32, limit: i32) -> anyhow::Result<Vec<
     Ok(gists)
 }
 
+pub async fn user_gists(
+    pool: &PgPool,
+    username: &str,
+    offset: i32,
+    limit: i32,
+) -> anyhow::Result<Vec<Gist>> {
+    let conn = pool.get().await?;
+    let mut gists: Vec<Gist> = Vec::new();
+    for row in conn
+        .query(
+            "SELECT g.id, g.user_id, g.description, g.filename, g.code, g.created, u.username, u.icon_url
+             from gists as g
+             join users as u on u.id = g.user_id
+             where u.username = $1
+             order by g.id desc offset $2::int limit $3::int",
+            &[&username, &offset, &limit],
+        )
+        .await?
+    {
+        gists.push(gist_from_row(&row));
+    }
+    Ok(gists)
+}
+
+pub async fn user_gists_count(pool: &PgPool, username: &str) -> anyhow::Result<i32> {
+    let conn = pool.get().await?;
+    let row = conn
+        .query_one(
+            "SELECT count(*)::int as count from gists as g
+             join users as u on u.id = g.user_id
+             where u.username = $1",
+            &[&username],
+        )
+        .await?;
+    Ok(row.get("count"))
+}
+
 pub async fn count(pool: &PgPool) -> anyhow::Result<i32> {
     let conn = pool.get().await?;
     let row = conn
@@ -124,16 +161,21 @@ pub struct Comment {
     pub user_id: i32,
     pub gist_id: i32,
     pub body: String,
+    pub created: NaiveDateTime,
+    pub formated_created: String,
     pub user: models::user::User,
 }
 
 fn comment_from_row(row: &Row) -> Comment {
     let username: String = row.get("username");
+    let created: NaiveDateTime = row.get("created");
     Comment {
         id: row.get("id"),
         user_id: row.get("user_id"),
         gist_id: row.get("gist_id"),
         body: row.get("body"),
+        created,
+        formated_created: util::jst_time_formatter(created),
         user: models::user::User {
             id: row.get("user_id"),
             username_hash: util::username_hash(&username),
@@ -163,7 +205,7 @@ pub async fn get_comments_by_gist_id(pool: &PgPool, id: i32) -> anyhow::Result<V
     let mut comments: Vec<Comment> = Vec::new();
     for row in conn
         .query(
-            "SELECT c.id, c.user_id, c.gist_id, c.body, u.username, u.icon_url
+            "SELECT c.id, c.user_id, c.gist_id, c.body, c.created, u.username, u.icon_url
              from gist_comments as c join users as u on u.id = c.user_id
              where c.gist_id = $1 order by id asc",
             &[&id],

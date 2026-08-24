@@ -7,10 +7,12 @@
     {{/each}}
   </ul>
 
+  {{#if (gt total_page 1)}}
   <nav class="pagination" role="navigation" aria-label="pagination">
     <a class="page-btn" href="/pinned/list?page={{prev_page}}">&larr; Prev</a>
     <span class="page-status">{{current_page}} / {{total_page}}</span>
     <a class="page-btn" href="/pinned/list?page={{next_page}}">Next &rarr;</a>
   </nav>
+  {{/if}}
 {{/inline}}
 {{~> layout ~}}

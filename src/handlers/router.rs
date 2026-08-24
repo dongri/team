@@ -83,6 +83,8 @@ pub fn create_router(state: AppState) -> Router {
         .route("/{kind}", get(account::profile_post))
         .route("/{kind}/post", get(account::profile_post))
         .route("/{kind}/nippo", get(account::profile_nippo))
+        .route("/{kind}/gist", get(account::profile_gist))
+        .route("/{kind}/tweet", get(account::profile_tweet))
         // Static assets
         .nest_service("/css", ServeDir::new("public/css"))
         .nest_service("/js", ServeDir::new("public/js"))

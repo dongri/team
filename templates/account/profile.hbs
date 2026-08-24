@@ -8,18 +8,57 @@
   <div class="tabs">
     <a class="tab {{kind_post_active}}" href="/{{user.username}}/post">Post</a>
     <a class="tab {{kind_nippo_active}}" href="/{{user.username}}/nippo">Nippo</a>
+    <a class="tab {{kind_gist_active}}" href="/{{user.username}}/gist">Gist</a>
+    <a class="tab {{kind_tweet_active}}" href="/{{user.username}}/tweet">Tweet</a>
   </div>
 
   <ul class="item-list">
     {{#each posts}}
     {{> partials/post_item}}
     {{/each}}
+    {{#each gists}}
+    <li class="item-card">
+      <a class="item-avatar" href="/{{user.username}}">
+        {{> partials/avatar user cls="avatar-md" px=40}}
+      </a>
+      <div class="item-main">
+        <div class="item-meta">
+          <a class="item-user" href="/{{user.username}}">@{{user.username}}</a>
+          <span class="item-date">{{formated_created}}</span>
+        </div>
+        <div class="item-title">
+          <a href="/gist/show/{{id}}">{{description}}</a>
+        </div>
+        <div class="item-meta"><span class="mono">{{filename}}</span></div>
+      </div>
+    </li>
+    {{/each}}
+    {{#each tweets}}
+    <li class="item-card tweet-card" onclick="location.href='/tweet/show/{{id}}'">
+      <a class="item-avatar" href="/{{user.username}}" onclick="event.stopPropagation()">
+        {{> partials/avatar user cls="avatar-md" px=40}}
+      </a>
+      <div class="item-main">
+        <div class="item-meta">
+          <a class="item-user" href="/{{user.username}}" onclick="event.stopPropagation()">@{{user.username}}</a>
+          <span class="item-date">{{formated_created}}</span>
+        </div>
+        <div class="tweet-body marked" hidden>{{body}}</div>
+        <div class="tweet-actions">
+          <span class="tweet-action"><i class="far fa-comment"></i>{{#if comment_count}} {{comment_count}}{{/if}}</span>
+          <span class="tweet-action tweet-like{{#if liked}} liked{{/if}}" data-tweet-id="{{id}}" role="button" aria-label="Like"><i class="{{#if liked}}fas{{else}}far{{/if}} fa-heart"></i><span class="like-count">{{#if like_count}} {{like_count}}{{/if}}</span></span>
+        </div>
+      </div>
+    </li>
+    {{/each}}
   </ul>
 
+  {{#if (gt total_page 1)}}
   <nav class="pagination" role="navigation" aria-label="pagination">
     <a class="page-btn" href="/{{user.username}}/{{kind}}?page={{prev_page}}">&larr; Prev</a>
     <span class="page-status">{{current_page}} / {{total_page}}</span>
     <a class="page-btn" href="/{{user.username}}/{{kind}}?page={{next_page}}">Next &rarr;</a>
   </nav>
+  {{/if}}
 {{/inline}}
 {{~> layout ~}}

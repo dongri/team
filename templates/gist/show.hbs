@@ -43,6 +43,7 @@
         <div class="item-main">
           <div class="item-meta">
             <a class="item-user" href="/{{comment.user.username}}">@{{comment.user.username}}</a>
+            <span class="item-date">{{comment.formated_created}}</span>
             {{#if editable}}
             <span class="comment-tools">
               <button class="icon-btn" type="button" onclick="editComment({{comment.id}})" aria-label="Edit"><i class="fas fa-edit"></i></button>

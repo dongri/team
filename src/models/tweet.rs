@@ -165,6 +165,47 @@ pub async fn list(
     Ok(tweets)
 }
 
+pub async fn user_tweets(
+    pool: &PgPool,
+    login_user_id: i32,
+    username: &str,
+    offset: i32,
+    limit: i32,
+) -> anyhow::Result<Vec<Tweet>> {
+    let conn = pool.get().await?;
+    let mut tweets: Vec<Tweet> = Vec::new();
+    for row in conn
+        .query(
+            "select t.id, t.user_id, t.body, t.created, u.username, u.icon_url,
+             (select count(*)::int from tweet_comments as c where c.tweet_id = t.id) as comment_count,
+             (select count(*)::int from tweet_likes as l where l.tweet_id = t.id) as like_count,
+             exists(select 1 from tweet_likes as l where l.tweet_id = t.id and l.user_id = $4) as liked
+             from tweets as t
+             join users as u on u.id = t.user_id
+             where u.username = $1
+             order by t.id desc offset $2::int limit $3::int",
+            &[&username, &offset, &limit, &login_user_id],
+        )
+        .await?
+    {
+        tweets.push(tweet_from_row(&row));
+    }
+    Ok(tweets)
+}
+
+pub async fn user_tweets_count(pool: &PgPool, username: &str) -> anyhow::Result<i32> {
+    let conn = pool.get().await?;
+    let row = conn
+        .query_one(
+            "SELECT count(*)::int as count from tweets as t
+             join users as u on u.id = t.user_id
+             where u.username = $1",
+            &[&username],
+        )
+        .await?;
+    Ok(row.get("count"))
+}
+
 pub async fn count(pool: &PgPool) -> anyhow::Result<i32> {
     let conn = pool.get().await?;
     let row = conn

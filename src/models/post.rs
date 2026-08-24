@@ -203,6 +203,8 @@ pub struct Comment {
     pub user_id: i32,
     pub post_id: i32,
     pub body: String,
+    pub created: NaiveDateTime,
+    pub formated_created: String,
     pub user: models::user::User,
 }
 
@@ -237,11 +239,14 @@ pub async fn add_comment(
 
 fn comment_from_row(row: &Row) -> Comment {
     let username: String = row.get("username");
+    let created: NaiveDateTime = row.get("created");
     Comment {
         id: row.get("id"),
         user_id: row.get("user_id"),
         post_id: row.get("post_id"),
         body: row.get("body"),
+        created,
+        formated_created: util::jst_time_formatter(created),
         user: models::user::User {
             id: row.get("user_id"),
             username_hash: util::username_hash(&username),
@@ -256,7 +261,7 @@ pub async fn get_comments_by_post_id(pool: &PgPool, id: i32) -> anyhow::Result<V
     let mut comments: Vec<Comment> = Vec::new();
     for row in conn
         .query(
-            "SELECT c.id, c.user_id, c.post_id, c.body, u.username, u.icon_url
+            "SELECT c.id, c.user_id, c.post_id, c.body, c.created, u.username, u.icon_url
              from post_comments as c join users as u on u.id = c.user_id
              where c.post_id = $1 order by id asc",
             &[&id],
