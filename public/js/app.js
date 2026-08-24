@@ -1,6 +1,18 @@
 // Team — application script (vanilla JS)
 
 document.addEventListener('DOMContentLoaded', function () {
+  // ----- Default avatars (Identicon.js) -----
+  if (window.Identicon) {
+    document.querySelectorAll('img[data-identicon-hash]').forEach(function (el) {
+      var size = parseInt(el.getAttribute('width'), 10) || 40;
+      var svg = new Identicon(el.getAttribute('data-identicon-hash'), {
+        size: size * 2,
+        format: 'svg',
+      }).toString();
+      el.src = 'data:image/svg+xml;base64,' + svg;
+    });
+  }
+
   // ----- User dropdown -----
   var dropdown = document.getElementById('user-dropdown');
   if (dropdown) {
