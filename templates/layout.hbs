@@ -27,5 +27,21 @@
       {{~> page}}
     </main>
     {{> footer}}
+    <script>
+      // Render default avatars from their username hash. Kept inline (rather
+      // than in app.js) so it ships with the never-cached HTML — a CDN can't
+      // serve a stale copy and leave avatars broken.
+      document.addEventListener('DOMContentLoaded', function () {
+        if (!window.Identicon) return;
+        document.querySelectorAll('img[data-identicon-hash]').forEach(function (el) {
+          var size = parseInt(el.getAttribute('width'), 10) || 40;
+          var svg = new Identicon(el.getAttribute('data-identicon-hash'), {
+            size: size * 2,
+            format: 'svg',
+          }).toString();
+          el.src = 'data:image/svg+xml;base64,' + svg;
+        });
+      });
+    </script>
   </body>
 </html>
