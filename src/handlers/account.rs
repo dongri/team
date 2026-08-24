@@ -14,8 +14,33 @@ use crate::state::AppState;
 use crate::util::{self, Page};
 use crate::views::render;
 
-pub async fn get_signup(State(state): State<AppState>) -> AppResult<Response> {
-    let data = json!({ "google_enabled": state.config.google_configured() });
+/// `?error=<code>` on redirects back to a form, rendered as an alert banner.
+#[derive(Deserialize, Default)]
+pub struct FlashQuery {
+    pub error: Option<String>,
+}
+
+fn flash_message(code: &Option<String>) -> Option<&'static str> {
+    Some(match code.as_deref()? {
+        "username_taken" => "That username is already taken.",
+        "invalid_credentials" => "Invalid username or password.",
+        "missing_fields" => "Please fill in both username and password.",
+        "oauth_failed" => "Google sign-in failed. Please try again.",
+        "domain_not_allowed" => "This email domain is not allowed.",
+        "wrong_password" => "Current password is incorrect.",
+        "password_mismatch" => "New passwords do not match.",
+        _ => return None,
+    })
+}
+
+pub async fn get_signup(
+    State(state): State<AppState>,
+    Query(q): Query<FlashQuery>,
+) -> AppResult<Response> {
+    let data = json!({
+        "google_enabled": state.config.google_configured(),
+        "error_message": flash_message(&q.error),
+    });
     Ok(render(&state, "account/signup", &data)?.into_response())
 }
 
@@ -30,11 +55,17 @@ pub async fn post_signup(
     jar: SignedCookieJar,
     Form(form): Form<CredentialsForm>,
 ) -> AppResult<Response> {
-    if form.username.is_empty() || form.password.is_empty() {
-        return Ok(StatusCode::BAD_REQUEST.into_response());
+    if form.username.trim().is_empty() || form.password.is_empty() {
+        return Ok(Redirect::to("/signup?error=missing_fields").into_response());
     }
     let password = util::hash_password(form.password).await?;
-    let user_id = models::user::create(&state.pool, &form.username, &password).await?;
+    let user_id = match models::user::create(&state.pool, form.username.trim(), &password).await {
+        Ok(id) => id,
+        Err(e) if crate::error::is_unique_violation(&e) => {
+            return Ok(Redirect::to("/signup?error=username_taken").into_response());
+        }
+        Err(e) => return Err(e.into()),
+    };
     let jar = auth::sign_in(jar, user_id);
     Ok((jar, Redirect::to("/")).into_response())
 }
@@ -42,11 +73,15 @@ pub async fn post_signup(
 pub async fn get_signin(
     State(state): State<AppState>,
     MaybeUser(user): MaybeUser,
+    Query(q): Query<FlashQuery>,
 ) -> AppResult<Response> {
     if user.is_some() {
         return Ok(Redirect::to("/").into_response());
     }
-    let data = json!({ "google_enabled": state.config.google_configured() });
+    let data = json!({
+        "google_enabled": state.config.google_configured(),
+        "error_message": flash_message(&q.error),
+    });
     Ok(render(&state, "account/signin", &data)?.into_response())
 }
 
@@ -59,7 +94,7 @@ pub async fn post_signin(
     if user.username.is_empty()
         || !util::verify_password(form.password.clone(), user.password.clone()).await
     {
-        return Ok(Redirect::to("/signin").into_response());
+        return Ok(Redirect::to("/signin?error=invalid_credentials").into_response());
     }
 
     // Transparently upgrade accounts still on the legacy hash scheme.
@@ -88,6 +123,7 @@ pub async fn signout(jar: SignedCookieJar) -> Response {
 pub async fn get_settings(
     State(state): State<AppState>,
     AuthUser(login_user): AuthUser,
+    Query(q): Query<FlashQuery>,
 ) -> AppResult<Response> {
     let user = models::user::get_by_id(&state.pool, login_user.id).await?;
 
@@ -128,6 +164,7 @@ pub async fn get_settings(
         menu: Vec<Menu>,
         theme_light: String,
         theme_black: String,
+        error_message: Option<&'static str>,
     }
 
     let data = Data {
@@ -137,6 +174,7 @@ pub async fn get_settings(
         theme_light: theme_light.to_string(),
         theme_black: theme_black.to_string(),
         login_user,
+        error_message: flash_message(&q.error),
     };
     Ok(render(&state, "account/settings", &data)?.into_response())
 }
@@ -168,11 +206,11 @@ pub async fn update_password(
     Form(form): Form<PasswordForm>,
 ) -> AppResult<Response> {
     if form.new_password != form.confirm_password {
-        return Ok(StatusCode::BAD_REQUEST.into_response());
+        return Ok(Redirect::to("/account/settings?error=password_mismatch").into_response());
     }
     let user = models::user::get_with_password_by_id(&state.pool, login_user.id).await?;
     if !util::verify_password(form.current_password, user.password).await {
-        return Ok(StatusCode::BAD_REQUEST.into_response());
+        return Ok(Redirect::to("/account/settings?error=wrong_password").into_response());
     }
     let new_hash = util::hash_password(form.new_password).await?;
     models::user::update_password(&state.pool, login_user.id, &new_hash).await?;
@@ -189,8 +227,13 @@ pub async fn update_username(
     AuthUser(login_user): AuthUser,
     Form(form): Form<UsernameForm>,
 ) -> AppResult<Response> {
-    models::user::update_username(&state.pool, login_user.id, &form.username).await?;
-    Ok(Redirect::to("/account/settings").into_response())
+    match models::user::update_username(&state.pool, login_user.id, &form.username).await {
+        Ok(()) => Ok(Redirect::to("/account/settings").into_response()),
+        Err(e) if crate::error::is_unique_violation(&e) => {
+            Ok(Redirect::to("/account/settings?error=username_taken").into_response())
+        }
+        Err(e) => Err(e.into()),
+    }
 }
 
 #[derive(Deserialize)]
@@ -314,7 +357,7 @@ pub async fn auth_google(
         (Some(expected), Some(got)) if expected == got => {}
         _ => {
             tracing::warn!("google oauth: state mismatch");
-            return Ok((jar, Redirect::to("/signin")).into_response());
+            return Ok((jar, Redirect::to("/signin?error=oauth_failed")).into_response());
         }
     }
 
@@ -322,7 +365,7 @@ pub async fn auth_google(
         Ok(email) => email,
         Err(e) => {
             tracing::error!("google oauth failed: {:?}", e);
-            return Ok(Redirect::to("/signin").into_response());
+            return Ok(Redirect::to("/signin?error=oauth_failed").into_response());
         }
     };
 
@@ -331,7 +374,7 @@ pub async fn auth_google(
     let username = parts.next().unwrap_or("").to_string();
     let domain = parts.next().unwrap_or("");
     if !allow_domain.is_empty() && allow_domain != domain {
-        return Ok((StatusCode::INTERNAL_SERVER_ERROR, "domain error").into_response());
+        return Ok(Redirect::to("/signin?error=domain_not_allowed").into_response());
     }
 
     let user = models::user::get_by_email(&state.pool, &email).await?;

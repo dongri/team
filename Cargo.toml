@@ -9,7 +9,7 @@ authors = ["Dongri Jin <dongrify@gmail.com>"]
 axum = { version = "0.8", features = ["multipart"] }
 axum-extra = { version = "0.10", features = ["cookie-signed"] }
 tokio = { version = "1", features = ["full"] }
-tower-http = { version = "0.6", features = ["fs", "trace"] }
+tower-http = { version = "0.6", features = ["fs"] }
 
 # Database
 tokio-postgres = { version = "0.7", features = ["with-chrono-0_4"] }

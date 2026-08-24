@@ -19,8 +19,7 @@ async fn main() -> anyhow::Result<()> {
 
     tracing_subscriber::fmt()
         .with_env_filter(
-            EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| EnvFilter::new("team=debug,tower_http=info")),
+            EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("team=debug")),
         )
         .init();
 
@@ -44,6 +43,11 @@ async fn main() -> anyhow::Result<()> {
 
     tracing::info!("Listening on {}", listen);
     let listener = tokio::net::TcpListener::bind(&listen).await?;
-    axum::serve(listener, app).await?;
+    // ConnectInfo provides the peer address for access logging.
+    axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<std::net::SocketAddr>(),
+    )
+    .await?;
     Ok(())
 }

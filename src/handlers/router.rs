@@ -1,8 +1,12 @@
-use axum::extract::DefaultBodyLimit;
+use std::net::SocketAddr;
+use std::time::Instant;
+
+use axum::extract::{ConnectInfo, DefaultBodyLimit, Request};
+use axum::middleware::Next;
+use axum::response::Response;
 use axum::routing::{get, post};
 use axum::Router;
 use tower_http::services::ServeDir;
-use tower_http::trace::TraceLayer;
 
 use crate::handlers::{account, gist, index, post, tweet};
 use crate::state::AppState;
@@ -84,11 +88,51 @@ pub fn create_router(state: AppState) -> Router {
         .nest_service("/webfonts", ServeDir::new("public/webfonts"))
         .nest_service("/codemirror", ServeDir::new("public/codemirror"))
         .nest_service("/favicons", ServeDir::new("public/favicons"))
+        .fallback(not_found)
         // Allow uploads up to MAX_UPLOAD_BYTES; the small margin lets the
         // multipart handler reject oversized files with a friendly error.
         .layer(DefaultBodyLimit::max(
             crate::handlers::account::MAX_UPLOAD_BYTES + 1024 * 1024,
         ))
-        .layer(TraceLayer::new_for_http())
+        .layer(axum::middleware::from_fn(access_log))
         .with_state(state)
+}
+
+async fn not_found() -> Response {
+    crate::error::not_found_page()
+}
+
+/// One access-log line per request:
+/// `<client> "<method> <uri>" <status> <latency>ms`
+async fn access_log(req: Request, next: Next) -> Response {
+    let method = req.method().clone();
+    let uri = req.uri().clone();
+    // Behind a reverse proxy the client is in X-Forwarded-For;
+    // otherwise fall back to the socket peer address.
+    let client = req
+        .headers()
+        .get("x-forwarded-for")
+        .and_then(|v| v.to_str().ok())
+        .and_then(|v| v.split(',').next())
+        .map(|s| s.trim().to_string())
+        .or_else(|| {
+            req.extensions()
+                .get::<ConnectInfo<SocketAddr>>()
+                .map(|ci| ci.0.ip().to_string())
+        })
+        .unwrap_or_else(|| "-".to_string());
+
+    let start = Instant::now();
+    let response = next.run(req).await;
+
+    tracing::info!(
+        target: "team::access",
+        "{} \"{} {}\" {} {}ms",
+        client,
+        method,
+        uri,
+        response.status().as_u16(),
+        start.elapsed().as_millis()
+    );
+    response
 }
