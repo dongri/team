@@ -26,7 +26,7 @@
         <div class="tweet-body marked" hidden>{{body}}</div>
         <div class="tweet-actions">
           <span class="tweet-action"><i class="far fa-comment"></i>{{#if comment_count}} {{comment_count}}{{/if}}</span>
-          <span class="tweet-action"><i class="far fa-heart"></i></span>
+          <span class="tweet-action tweet-like{{#if liked}} liked{{/if}}" data-tweet-id="{{id}}" role="button" aria-label="Like"><i class="{{#if liked}}fas{{else}}far{{/if}} fa-heart"></i><span class="like-count">{{#if like_count}} {{like_count}}{{/if}}</span></span>
         </div>
       </div>
     </li>

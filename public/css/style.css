@@ -258,9 +258,15 @@ img {
   position: relative;
 }
 
-/* Menu links inside the user dropdown: mobile-only replacement for .nav-links */
-.dropdown-mobile-links {
+/* Hamburger menu: mobile-only replacement for .nav-links */
+.nav-burger {
   display: none;
+}
+
+.nav-icon-btn {
+  border: none;
+  background: transparent;
+  cursor: pointer;
 }
 
 .dropdown-item-capitalize {
@@ -327,6 +333,18 @@ img {
   border: 0;
   border-top: 1px solid var(--border);
   margin: 6px 0;
+}
+
+/* Unread dot on the Notifications item inside the hamburger menu */
+.dropdown-item.has-notification::after {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--danger);
+  margin-left: 6px;
+  vertical-align: middle;
 }
 
 /* ---------- Avatars ---------- */
@@ -1012,6 +1030,25 @@ img {
   color: var(--primary);
 }
 
+.tweet-like {
+  cursor: pointer;
+}
+
+.tweet-like:hover,
+.tweet-like.liked {
+  color: #e0245e;
+}
+
+.notification-like-icon {
+  color: #e0245e;
+}
+
+.item-excerpt {
+  color: var(--text-muted);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
 .tweet-detail {
   margin-bottom: 8px;
 }
@@ -1307,8 +1344,18 @@ img {
     display: none;
   }
 
-  .dropdown-mobile-links {
+  /* Collapse tag/notification icons into the hamburger (avatar stays visible) */
+  .nav-actions > a.nav-icon {
+    display: none;
+  }
+
+  .nav-burger {
     display: block;
+  }
+
+  .nav-burger .dropdown-menu {
+    max-height: calc(100vh - var(--nav-height) - 24px);
+    overflow-y: auto;
   }
 
   .container {

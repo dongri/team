@@ -230,6 +230,7 @@ pub async fn add_comment(
         user_id,
         post_user_id,
         body,
+        "comment",
     )
     .await
 }
@@ -338,42 +339,6 @@ pub async fn get_feed_count(pool: &PgPool) -> anyhow::Result<i32> {
               union all
               select count(*) as b from post_comments) as t;",
             &[],
-        )
-        .await?;
-    Ok(row.get("count"))
-}
-
-pub async fn search(
-    pool: &PgPool,
-    keyword: &str,
-    kind: &str,
-    offset: i32,
-    limit: i32,
-) -> anyhow::Result<Vec<Post>> {
-    let kind_param = if kind == "all" { "" } else { kind };
-    let conn = pool.get().await?;
-    let rows = conn
-        .query(
-            "SELECT p.id, p.kind, p.user_id, p.title, p.body, p.created, p.shared, p.status, u.username, u.icon_url
-             from posts as p
-             join users as u on u.id = p.user_id
-             where p.status = 'publish' and (p.title ilike '%' || $1 || '%' or p.body ilike '%' || $1 || '%') and p.kind like '%' || $2 || '%'
-             order by p.id desc offset $3::int limit $4::int",
-            &[&keyword, &kind_param, &offset, &limit],
-        )
-        .await?;
-    drop(conn);
-    posts_from_rows(pool, rows).await
-}
-
-pub async fn search_count(pool: &PgPool, keyword: &str, kind: &str) -> anyhow::Result<i32> {
-    let kind_param = if kind == "all" { "" } else { kind };
-    let conn = pool.get().await?;
-    let row = conn
-        .query_one(
-            "SELECT count(*)::int as count from posts
-             where status = 'publish' and (title ilike '%' || $1 || '%' or body ilike '%' || $1 || '%') and kind like '%' || $2 || '%'",
-            &[&keyword, &kind_param],
         )
         .await?;
     Ok(row.get("count"))

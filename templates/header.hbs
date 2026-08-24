@@ -29,26 +29,40 @@
       </a>
       {{/if}}
       {{/each}}
-      <a class="nav-icon" href="/notifications" aria-label="Notifications" title="Notifications" id="notification-icon">
+      <a class="nav-icon notification-indicator" href="/notifications" aria-label="Notifications" title="Notifications">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
           <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
         </svg>
       </a>
+      <div class="dropdown nav-burger" id="mobile-menu">
+        <button class="nav-icon nav-icon-btn notification-indicator" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="4" y1="6" x2="20" y2="6"/>
+            <line x1="4" y1="12" x2="20" y2="12"/>
+            <line x1="4" y1="18" x2="20" y2="18"/>
+          </svg>
+        </button>
+        <div class="dropdown-menu" role="menu">
+          {{#each login_user.menu}}
+          {{#unless (eq this "tag")}}
+          <a class="dropdown-item dropdown-item-capitalize" href="/{{this}}/list">{{this}}</a>
+          {{/unless}}
+          {{/each}}
+          {{#each login_user.menu}}
+          {{#if (eq this "tag")}}
+          <a class="dropdown-item" href="/tag/list">Tags</a>
+          {{/if}}
+          {{/each}}
+          <a class="dropdown-item notification-indicator" href="/notifications">Notifications</a>
+        </div>
+      </div>
       <div class="dropdown" id="user-dropdown">
         <button class="avatar-btn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Account menu">
           {{> partials/avatar login_user cls="avatar-sm" px=28}}
         </button>
         <div class="dropdown-menu" role="menu">
           <div class="dropdown-header">@{{login_user.username}}</div>
-          <div class="dropdown-mobile-links">
-            {{#each login_user.menu}}
-            {{#unless (eq this "tag")}}
-            <a class="dropdown-item dropdown-item-capitalize" href="/{{this}}/list">{{this}}</a>
-            {{/unless}}
-            {{/each}}
-            <hr class="dropdown-divider">
-          </div>
           <a class="dropdown-item" href="/{{login_user.username}}">Your profile</a>
           <a class="dropdown-item" href="/stocked/list">Stocked</a>
           <a class="dropdown-item" href="/draft/list">Draft</a>

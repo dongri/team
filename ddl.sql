@@ -95,6 +95,15 @@ create table tweet_comments (
   updated       timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+create table tweet_likes (
+  id            serial primary key,
+  user_id       serial REFERENCES users (id) ON DELETE CASCADE NOT NULL,
+  tweet_id      serial REFERENCES tweets (id) ON DELETE CASCADE NOT NULL,
+  created       timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated       timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(user_id, tweet_id)
+);
+
 create table notifications (
   id            serial primary key,
   path          varchar(255),
@@ -102,6 +111,7 @@ create table notifications (
   to_user       serial REFERENCES users (id) ON DELETE CASCADE NOT NULL,
   body          text NOT NULL,
   read          boolean DEFAULT false,
+  kind          varchar(255) NOT NULL DEFAULT 'comment',
   created       timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated       timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -141,6 +151,10 @@ create index if not exists idx_gist_comments_user_id on gist_comments (user_id);
 create index if not exists idx_tweet_comments_tweet_id on tweet_comments (tweet_id);
 create index if not exists idx_tweet_comments_user_id on tweet_comments (user_id);
 
+-- Likes are counted per tweet; (user_id, tweet_id) membership is covered
+-- by the UNIQUE constraint
+create index if not exists idx_tweet_likes_tweet_id on tweet_likes (tweet_id);
+
 -- Tags: name lookup on save, taggings lookup per post and per tag
 create index if not exists idx_tags_name on tags (name);
 create index if not exists idx_taggings_post_id_tag_id on taggings (post_id, tag_id);
@@ -164,7 +178,14 @@ create index if not exists idx_notifications_from_user on notifications (from_us
 -- Preferences: loaded for the signed-in user on every request
 create index if not exists idx_preferences_user_id on preferences (user_id);
 
--- Search: title/body ILIKE '%keyword%' needs trigram GIN indexes
+-- Search: ILIKE '%keyword%' over searchable columns needs trigram GIN indexes
 create extension if not exists pg_trgm;
 create index if not exists idx_posts_title_trgm on posts using gin (title gin_trgm_ops);
 create index if not exists idx_posts_body_trgm on posts using gin (body gin_trgm_ops);
+create index if not exists idx_gists_description_trgm on gists using gin (description gin_trgm_ops);
+create index if not exists idx_gists_filename_trgm on gists using gin (filename gin_trgm_ops);
+create index if not exists idx_gists_code_trgm on gists using gin (code gin_trgm_ops);
+create index if not exists idx_tweets_body_trgm on tweets using gin (body gin_trgm_ops);
+create index if not exists idx_post_comments_body_trgm on post_comments using gin (body gin_trgm_ops);
+create index if not exists idx_gist_comments_body_trgm on gist_comments using gin (body gin_trgm_ops);
+create index if not exists idx_tweet_comments_body_trgm on tweet_comments using gin (body gin_trgm_ops);

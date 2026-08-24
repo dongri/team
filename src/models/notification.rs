@@ -13,6 +13,8 @@ pub struct Notification {
     pub to_user: i32,
     pub body: String,
     pub read: bool,
+    pub kind: String,
+    pub is_like: bool,
     pub created: NaiveDateTime,
     pub formated_created: String,
     pub user: models::user::User,
@@ -24,16 +26,29 @@ pub async fn create(
     from_user: i32,
     to_user: i32,
     body: &str,
+    kind: &str,
 ) -> anyhow::Result<i32> {
     let conn = pool.get().await?;
     let row = conn
         .query_one(
-            "INSERT INTO notifications (path, from_user, to_user, body)
-             VALUES ($1, $2, $3, $4) returning id;",
-            &[&path, &from_user, &to_user, &body],
+            "INSERT INTO notifications (path, from_user, to_user, body, kind)
+             VALUES ($1, $2, $3, $4, $5) returning id;",
+            &[&path, &from_user, &to_user, &body, &kind],
         )
         .await?;
     Ok(row.get("id"))
+}
+
+/// Remove like notifications a user produced for a path (used on unlike, so
+/// a like/unlike toggle doesn't leave stale or duplicate notifications).
+pub async fn delete_likes(pool: &PgPool, path: &str, from_user: i32) -> anyhow::Result<()> {
+    let conn = pool.get().await?;
+    conn.execute(
+        "DELETE FROM notifications WHERE path = $1 and from_user = $2 and kind = 'like'",
+        &[&path, &from_user],
+    )
+    .await?;
+    Ok(())
 }
 
 pub async fn list(
@@ -62,6 +77,7 @@ pub async fn list(
     {
         let username: String = row.get("username");
         let created: NaiveDateTime = row.get("created");
+        let kind: String = row.get("kind");
         notifications.push(Notification {
             id: row.get("id"),
             path: row.get("path"),
@@ -69,6 +85,8 @@ pub async fn list(
             to_user: row.get("to_user"),
             body: row.get("body"),
             read: row.get("read"),
+            is_like: kind == "like",
+            kind,
             created,
             formated_created: util::jst_time_formatter(created),
             user: models::user::User {

@@ -10,10 +10,15 @@
       <div class="item-main">
         <div class="item-meta">
           <a class="item-user" href="/{{user.username}}">@{{user.username}}</a>
+          {{#if is_like}}
+          <span>liked your</span>
+          <a class="item-context" href="{{path}}">Tweet</a>
+          {{else}}
           <span>commented on</span>
           <a class="item-context" href="{{path}}">Post</a>
+          {{/if}}
         </div>
-        <div class="comment-bubble">{{body}}</div>
+        <div class="comment-bubble">{{#if is_like}}<i class="fas fa-heart notification-like-icon"></i> {{/if}}{{body}}</div>
         <div class="item-meta"><span class="item-date">{{formated_created}}</span></div>
       </div>
     </li>

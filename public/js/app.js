@@ -1,31 +1,62 @@
 // Team — application script (vanilla JS)
 
 document.addEventListener('DOMContentLoaded', function () {
-  // ----- User dropdown -----
-  var dropdown = document.getElementById('user-dropdown');
-  if (dropdown) {
-    var trigger = dropdown.querySelector('.avatar-btn');
+  // ----- Nav dropdowns (user menu, mobile hamburger menu) -----
+  var dropdowns = Array.prototype.slice.call(document.querySelectorAll('.nav .dropdown'));
+  function closeDropdowns(except) {
+    dropdowns.forEach(function (d) {
+      if (d === except) return;
+      d.classList.remove('is-active');
+      d.querySelector('button').setAttribute('aria-expanded', 'false');
+    });
+  }
+  dropdowns.forEach(function (dropdown) {
+    var trigger = dropdown.querySelector('button');
     trigger.addEventListener('click', function (event) {
       event.stopPropagation();
+      closeDropdowns(dropdown);
       dropdown.classList.toggle('is-active');
       trigger.setAttribute('aria-expanded', dropdown.classList.contains('is-active'));
     });
+  });
+  if (dropdowns.length) {
     document.addEventListener('click', function () {
-      dropdown.classList.remove('is-active');
-      trigger.setAttribute('aria-expanded', 'false');
+      closeDropdowns(null);
     });
   }
 
   // ----- Unread notification badge -----
-  var bell = document.getElementById('notification-icon');
-  if (bell) {
+  var indicators = document.querySelectorAll('.notification-indicator');
+  if (indicators.length) {
     fetch('/notification_count')
       .then(function (res) { return res.ok ? res.json() : { count: 0 }; })
       .then(function (data) {
-        bell.classList.toggle('has-notification', data.count > 0);
+        indicators.forEach(function (el) {
+          el.classList.toggle('has-notification', data.count > 0);
+        });
       })
       .catch(function () { /* ignore */ });
   }
+
+  // ----- Tweet like (toggle via fetch, no page reload) -----
+  document.querySelectorAll('.tweet-like').forEach(function (el) {
+    el.addEventListener('click', function (event) {
+      // Tweet cards navigate on click; keep the like tap local.
+      event.stopPropagation();
+      event.preventDefault();
+      fetch('/tweet/like/' + el.getAttribute('data-tweet-id'), { method: 'POST' })
+        .then(function (res) { return res.ok ? res.json() : null; })
+        .then(function (data) {
+          if (!data) return;
+          el.classList.toggle('liked', data.liked);
+          var icon = el.querySelector('i');
+          if (icon) icon.className = (data.liked ? 'fas' : 'far') + ' fa-heart';
+          var count = el.querySelector('.like-count');
+          if (count) count.textContent = data.like_count > 0 ? ' ' + data.like_count : '';
+        })
+        .catch(function () { /* ignore */ });
+    });
+  });
 
   // ----- Markdown rendering -----
   var md = window.markdownit

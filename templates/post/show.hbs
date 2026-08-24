@@ -104,7 +104,10 @@
             <div class="form-field">
               <textarea placeholder="Comment" name="body" class="textarea" required>{{comment.body}}</textarea>
             </div>
-            <button type="submit" class="btn btn-primary btn-sm">Update</button>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary btn-sm">Update</button>
+              <button type="button" class="btn btn-ghost btn-sm" onclick="editCommentCancel({{comment.id}})">Cancel</button>
+            </div>
           </form>
         </div>
       </li>
@@ -125,10 +128,17 @@
       document.getElementById('comment_view_' + id).hidden = true;
       document.getElementById('comment_input_' + id).hidden = false;
     }
+    function editCommentCancel(id) {
+      var form = document.getElementById('comment_input_' + id);
+      form.reset(); // discard unsaved edits
+      form.hidden = true;
+      document.getElementById('comment_view_' + id).hidden = false;
+    }
     function removeComment(id) {
       if (confirm('Are you sure?')) {
         document.getElementById('comment_action_' + id).value = 'delete';
-        document.getElementById('comment_input_' + id).hidden = false;
+        // Submit the (still hidden) edit form — unhiding it here would
+        // flash the edit UI before the page navigates.
         document.getElementById('comment_input_' + id).submit();
       }
     }

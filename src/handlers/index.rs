@@ -62,14 +62,15 @@ pub async fn search(
     let kind = q.kind.unwrap_or_else(|| "all".to_string());
     let page = Page::new(q.page);
 
-    let posts = models::post::search(&state.pool, &keyword, &kind, page.offset, page.limit).await?;
-    let count = models::post::search_count(&state.pool, &keyword, &kind).await?;
+    let results =
+        models::search::search(&state.pool, &keyword, &kind, page.offset, page.limit).await?;
+    let count = models::search::search_count(&state.pool, &keyword, &kind).await?;
 
     #[derive(Serialize)]
     struct Data {
         logged_in: bool,
         login_user: models::user::UserWithPreference,
-        posts: Vec<models::post::Post>,
+        results: Vec<models::search::SearchResult>,
         current_page: i32,
         total_page: i32,
         next_page: i32,
@@ -79,6 +80,9 @@ pub async fn search(
         kind_all_active: String,
         kind_post_active: String,
         kind_nippo_active: String,
+        kind_gist_active: String,
+        kind_tweet_active: String,
+        kind_comment_active: String,
         kind_title: String,
     }
 
@@ -93,7 +97,7 @@ pub async fn search(
     let data = Data {
         logged_in: true,
         login_user,
-        posts,
+        results,
         current_page: page.current,
         total_page: page.total_pages(count),
         next_page: page.current + 1,
@@ -101,6 +105,9 @@ pub async fn search(
         kind_all_active: active("all"),
         kind_post_active: active("post"),
         kind_nippo_active: active("nippo"),
+        kind_gist_active: active("gist"),
+        kind_tweet_active: active("tweet"),
+        kind_comment_active: active("comment"),
         kind_title: util::uppercase_first_letter(&kind),
         keyword,
         kind,

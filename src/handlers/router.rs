@@ -55,6 +55,8 @@ pub fn create_router(state: AppState) -> Router {
         .route("/tweet/post", post(tweet::post_tweet))
         .route("/tweet/show/{id}", get(tweet::show))
         .route("/tweet/comment", post(tweet::comment))
+        .route("/tweet/comment/{id}", post(tweet::comment_update))
+        .route("/tweet/like/{id}", post(tweet::like))
         // Tags / notifications / uploads
         .route("/tag/list", get(post::tag_list))
         .route("/notifications", get(post::notifications))

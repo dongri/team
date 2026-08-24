@@ -10,6 +10,10 @@
         <span class="item-date">{{tweet.formated_created}}</span>
       </div>
       <div class="tweet-body marked" hidden>{{tweet.body}}</div>
+      <div class="tweet-actions">
+        <span class="tweet-action"><i class="far fa-comment"></i>{{#if tweet.comment_count}} {{tweet.comment_count}}{{/if}}</span>
+        <span class="tweet-action tweet-like{{#if tweet.liked}} liked{{/if}}" data-tweet-id="{{tweet.id}}" role="button" aria-label="Like"><i class="{{#if tweet.liked}}fas{{else}}far{{/if}} fa-heart"></i><span class="like-count">{{#if tweet.like_count}} {{tweet.like_count}}{{/if}}</span></span>
+      </div>
     </div>
   </div>
 
@@ -18,15 +22,31 @@
     <ul class="item-list">
       {{#each comments}}
       <li class="item-card comment-card">
-        <a class="item-avatar" href="/{{user.username}}">
-          {{> partials/avatar user cls="avatar-md" px=40}}
+        <a class="item-avatar" href="/{{comment.user.username}}">
+          {{> partials/avatar comment.user cls="avatar-md" px=40}}
         </a>
         <div class="item-main">
           <div class="item-meta">
-            <a class="item-user" href="/{{user.username}}">@{{user.username}}</a>
-            <span class="item-date">{{formated_created}}</span>
+            <a class="item-user" href="/{{comment.user.username}}">@{{comment.user.username}}</a>
+            <span class="item-date">{{comment.formated_created}}</span>
+            {{#if editable}}
+            <span class="comment-tools">
+              <button class="icon-btn" type="button" onclick="editComment({{comment.id}})" aria-label="Edit"><i class="fas fa-edit"></i></button>
+              <button class="icon-btn" type="button" onclick="removeComment({{comment.id}})" aria-label="Delete"><i class="fas fa-trash-alt"></i></button>
+            </span>
+            {{/if}}
           </div>
-          <div class="marked" hidden id="comment_view_{{id}}">{{body}}</div>
+          <div class="marked" hidden id="comment_view_{{comment.id}}">{{comment.body}}</div>
+          <form action="/tweet/comment/{{comment.id}}" method="post" id="comment_input_{{comment.id}}" hidden>
+            <input type="hidden" name="action" value="update" id="comment_action_{{comment.id}}">
+            <div class="form-field">
+              <textarea placeholder="Comment" name="body" class="textarea" required>{{comment.body}}</textarea>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary btn-sm">Update</button>
+              <button type="button" class="btn btn-ghost btn-sm" onclick="editCommentCancel({{comment.id}})">Cancel</button>
+            </div>
+          </form>
         </div>
       </li>
       {{/each}}
@@ -40,5 +60,26 @@
       <button type="submit" class="btn btn-primary">Comment</button>
     </form>
   </section>
+
+  <script>
+    function editComment(id) {
+      document.getElementById('comment_view_' + id).hidden = true;
+      document.getElementById('comment_input_' + id).hidden = false;
+    }
+    function editCommentCancel(id) {
+      var form = document.getElementById('comment_input_' + id);
+      form.reset(); // discard unsaved edits
+      form.hidden = true;
+      document.getElementById('comment_view_' + id).hidden = false;
+    }
+    function removeComment(id) {
+      if (confirm('Are you sure?')) {
+        document.getElementById('comment_action_' + id).value = 'delete';
+        // Submit the (still hidden) edit form — unhiding it here would
+        // flash the edit UI before the page navigates.
+        document.getElementById('comment_input_' + id).submit();
+      }
+    }
+  </script>
 {{/inline}}
 {{~> layout ~}}

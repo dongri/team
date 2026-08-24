@@ -6,11 +6,40 @@
     <a class="tab {{kind_all_active}}" href="/search?keyword={{keyword}}&kind=all&page=1">All</a>
     <a class="tab {{kind_post_active}}" href="/search?keyword={{keyword}}&kind=post&page=1">Post</a>
     <a class="tab {{kind_nippo_active}}" href="/search?keyword={{keyword}}&kind=nippo&page=1">Nippo</a>
+    <a class="tab {{kind_gist_active}}" href="/search?keyword={{keyword}}&kind=gist&page=1">Gist</a>
+    <a class="tab {{kind_tweet_active}}" href="/search?keyword={{keyword}}&kind=tweet&page=1">Tweet</a>
+    <a class="tab {{kind_comment_active}}" href="/search?keyword={{keyword}}&kind=comment&page=1">Comment</a>
   </div>
 
   <ul class="item-list">
-    {{#each posts}}
-    {{> partials/post_item}}
+    {{#each results}}
+    <li class="item-card">
+      <a class="item-avatar" href="/{{user.username}}">
+        {{> partials/avatar user cls="avatar-md" px=40}}
+      </a>
+      <div class="item-main">
+        {{#if is_comment}}
+        <div class="item-meta">
+          <a class="item-user" href="/{{user.username}}">@{{user.username}}</a>
+          <span>commented on</span>
+          <a class="item-context" href="{{path}}">{{#if title}}{{title}}{{else}}Tweet{{/if}}</a>
+        </div>
+        <div class="comment-bubble">{{body}}</div>
+        <div class="item-meta"><span class="item-date">{{formated_created}}</span></div>
+        {{else}}
+        <div class="item-meta">
+          <a class="item-user" href="/{{user.username}}">@{{user.username}}</a>
+          <span class="item-date">{{formated_created}}</span>
+        </div>
+        {{#if is_tweet}}
+        <div class="item-title"><a href="{{path}}">{{body}}</a></div>
+        {{else}}
+        <div class="item-title"><a href="{{path}}">{{title}}</a></div>
+        <div class="item-excerpt">{{body}}</div>
+        {{/if}}
+        {{/if}}
+      </div>
+    </li>
     {{/each}}
   </ul>
 
