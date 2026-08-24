@@ -2,6 +2,10 @@
 
 A knowledge-sharing tool for teams. Bring articles, daily reports, code snippets, and short updates together in one place, with everything broadcast to Slack.
 
+## Demo
+
+Try the live demo: https://team.huatuo.xyz
+
 - **Post** — knowledge articles written in Markdown (tags, comments, stock, pin, co-editing)
 - **Nippo** — daily reports with a template-equipped editor
 - **Gist** — code snippets with syntax highlighting
