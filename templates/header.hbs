@@ -41,6 +41,14 @@
         </button>
         <div class="dropdown-menu" role="menu">
           <div class="dropdown-header">@{{login_user.username}}</div>
+          <div class="dropdown-mobile-links">
+            {{#each login_user.menu}}
+            {{#unless (eq this "tag")}}
+            <a class="dropdown-item dropdown-item-capitalize" href="/{{this}}/list">{{this}}</a>
+            {{/unless}}
+            {{/each}}
+            <hr class="dropdown-divider">
+          </div>
           <a class="dropdown-item" href="/{{login_user.username}}">Your profile</a>
           <a class="dropdown-item" href="/stocked/list">Stocked</a>
           <a class="dropdown-item" href="/draft/list">Draft</a>
