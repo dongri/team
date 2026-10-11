@@ -39,7 +39,9 @@
       <button class="btn btn-primary btn-block" type="submit">Sign in</button>
     </form>
 
+    {{#if signup_enabled}}
     <p class="auth-switch">No account? <a href="/signup">Sign up</a></p>
+    {{/if}}
   </div>
 {{/inline}}
 {{~> layout ~}}

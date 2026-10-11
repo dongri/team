@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use std::time::Duration;
 
 use axum::extract::FromRef;
 use axum_extra::extract::cookie::Key;
@@ -7,6 +8,12 @@ use sha2::{Digest, Sha512};
 
 use crate::config::Config;
 use crate::db::PgPool;
+use crate::ratelimit::FailureLimiter;
+
+/// Failed sign-in attempts allowed per key (client IP / username) before
+/// further attempts are rejected for the rest of the window.
+pub const LOGIN_MAX_FAILURES: u32 = 10;
+pub const LOGIN_FAILURE_WINDOW: Duration = Duration::from_secs(15 * 60);
 
 #[derive(Clone)]
 pub struct AppState {
@@ -15,6 +22,7 @@ pub struct AppState {
     pub templates: Arc<Handlebars<'static>>,
     pub cookie_key: Key,
     pub http: reqwest::Client,
+    pub login_limiter: Arc<FailureLimiter>,
 }
 
 impl AppState {
@@ -29,6 +37,10 @@ impl AppState {
             templates: Arc::new(templates),
             cookie_key,
             http: reqwest::Client::new(),
+            login_limiter: Arc::new(FailureLimiter::new(
+                LOGIN_MAX_FAILURES,
+                LOGIN_FAILURE_WINDOW,
+            )),
         }
     }
 }

@@ -37,7 +37,11 @@ impl FromRequestParts<AppState> for AuthUser {
         let mut jar = jar;
         if parts.method == Method::GET {
             if let Some(pq) = parts.uri.path_and_query() {
-                jar = jar.add(session_cookie(REF_URL_COOKIE, pq.as_str().to_string()));
+                jar = jar.add(session_cookie(
+                    REF_URL_COOKIE,
+                    pq.as_str().to_string(),
+                    state.config.secure_cookies(),
+                ));
             }
         }
         Err((jar, Redirect::to("/signin")).into_response())
@@ -69,17 +73,18 @@ impl FromRequestParts<AppState> for MaybeUser {
     }
 }
 
-fn session_cookie(name: &str, value: String) -> Cookie<'static> {
+fn session_cookie(name: &str, value: String, secure: bool) -> Cookie<'static> {
     Cookie::build((name.to_string(), value))
         .path("/")
         .http_only(true)
+        .secure(secure)
         .same_site(SameSite::Lax)
         .build()
 }
 
 /// Sign the user in by storing their id in the signed cookie jar.
-pub fn sign_in(jar: SignedCookieJar, user_id: i32) -> SignedCookieJar {
-    jar.add(session_cookie(LOGIN_COOKIE, user_id.to_string()))
+pub fn sign_in(jar: SignedCookieJar, user_id: i32, secure: bool) -> SignedCookieJar {
+    jar.add(session_cookie(LOGIN_COOKIE, user_id.to_string(), secure))
 }
 
 /// Sign the user out.
@@ -88,9 +93,9 @@ pub fn sign_out(jar: SignedCookieJar) -> SignedCookieJar {
 }
 
 /// Store a freshly generated OAuth CSRF state token in the signed jar.
-pub fn set_oauth_state(jar: SignedCookieJar) -> (SignedCookieJar, String) {
+pub fn set_oauth_state(jar: SignedCookieJar, secure: bool) -> (SignedCookieJar, String) {
     let token = crate::util::random_token();
-    let jar = jar.add(session_cookie(OAUTH_STATE_COOKIE, token.clone()));
+    let jar = jar.add(session_cookie(OAUTH_STATE_COOKIE, token.clone(), secure));
     (jar, token)
 }
 
@@ -101,14 +106,41 @@ pub fn take_oauth_state(jar: SignedCookieJar) -> (SignedCookieJar, Option<String
     (jar, token)
 }
 
-/// Pop the remembered return-to URL. Only relative paths are honored,
-/// which rules out open redirects.
+/// True for an in-app path such as `/post/show/1?x=y`. Protocol-relative
+/// forms (`//evil.com`, `/\evil.com`) and anything with a scheme are
+/// rejected, which rules out open redirects.
+pub fn is_safe_redirect(url: &str) -> bool {
+    url.starts_with('/')
+        && !url.starts_with("//")
+        && !url.starts_with("/\\")
+        && !url.contains('\\')
+        && !url.contains("\r")
+        && !url.contains("\n")
+}
+
+/// Pop the remembered return-to URL. Only relative paths are honored.
 pub fn take_ref_url(jar: SignedCookieJar) -> (SignedCookieJar, String) {
     let url = jar
         .get(REF_URL_COOKIE)
         .map(|c| c.value().to_string())
-        .filter(|u| u.starts_with('/') && !u.starts_with("//"))
+        .filter(|u| is_safe_redirect(u))
         .unwrap_or_else(|| "/".to_string());
     let jar = jar.remove(Cookie::build((REF_URL_COOKIE, "")).path("/").build());
     (jar, url)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn safe_redirect_rejects_external_forms() {
+        assert!(is_safe_redirect("/"));
+        assert!(is_safe_redirect("/post/show/1?page=2"));
+        assert!(!is_safe_redirect("//evil.com"));
+        assert!(!is_safe_redirect("/\\evil.com"));
+        assert!(!is_safe_redirect("https://evil.com"));
+        assert!(!is_safe_redirect("post/list"));
+        assert!(!is_safe_redirect(""));
+    }
 }

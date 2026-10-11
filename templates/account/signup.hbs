@@ -27,17 +27,27 @@
     <div class="auth-divider"><span>or</span></div>
     {{/if}}
 
+    {{#if signup_enabled}}
     <form action="/signup" method="post" class="auth-form">
       <div class="form-field">
         <label class="form-label" for="username">Username</label>
-        <input class="input" id="username" type="text" placeholder="Username" name="username" required>
+        <input class="input" id="username" type="text" placeholder="Username" name="username" required maxlength="39" pattern="[A-Za-z0-9][A-Za-z0-9_.\-]*" autocomplete="username">
       </div>
       <div class="form-field">
         <label class="form-label" for="password">Password</label>
-        <input class="input" id="password" type="password" placeholder="Password" name="password" required>
+        <input class="input" id="password" type="password" placeholder="Password (8+ characters)" name="password" required minlength="8" autocomplete="new-password">
       </div>
+      {{#if signup_code_required}}
+      <div class="form-field">
+        <label class="form-label" for="signup_code">Invitation code</label>
+        <input class="input" id="signup_code" type="text" placeholder="Invitation code" name="signup_code" required autocomplete="off">
+      </div>
+      {{/if}}
       <button class="btn btn-primary btn-block" type="submit">Sign up</button>
     </form>
+    {{else}}
+    <p class="auth-sub">Sign-up is closed. Ask an administrator for an account.</p>
+    {{/if}}
 
     <p class="auth-switch">Already have an account? <a href="/signin">Sign in</a></p>
   </div>

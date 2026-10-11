@@ -3,27 +3,39 @@ use axum::response::{Html, IntoResponse, Response};
 
 /// Application-wide error type. Errors bubble up via `?` and are rendered
 /// as a styled error page; details are logged server-side only.
-pub struct AppError(pub anyhow::Error);
+pub enum AppError {
+    /// The resource does not exist, or the caller must not learn that it
+    /// does (e.g. another user's draft).
+    NotFound,
+    /// The caller is signed in but not allowed to perform the action.
+    Forbidden,
+    Internal(anyhow::Error),
+}
 
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
-        // `query_one` on a missing row is how handlers hit nonexistent
-        // resources (e.g. /post/show/999) — show a 404, not a 500.
-        if self
-            .0
-            .chain()
-            .any(|c| c.to_string().contains("unexpected number of rows"))
-        {
-            tracing::warn!("not found: {:?}", self.0);
-            return not_found_page();
+        match self {
+            AppError::NotFound => not_found_page(),
+            AppError::Forbidden => forbidden_page(),
+            AppError::Internal(err) => {
+                // `query_one` on a missing row is how handlers hit nonexistent
+                // resources (e.g. /post/show/999) — show a 404, not a 500.
+                if err
+                    .chain()
+                    .any(|c| c.to_string().contains("unexpected number of rows"))
+                {
+                    tracing::warn!("not found: {:?}", err);
+                    return not_found_page();
+                }
+                tracing::error!("internal error: {:?}", err);
+                error_page(
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "500",
+                    "Something went wrong",
+                    "An unexpected error occurred. Please try again later.",
+                )
+            }
         }
-        tracing::error!("internal error: {:?}", self.0);
-        error_page(
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "500",
-            "Something went wrong",
-            "An unexpected error occurred. Please try again later.",
-        )
     }
 }
 
@@ -32,7 +44,7 @@ where
     E: Into<anyhow::Error>,
 {
     fn from(err: E) -> Self {
-        AppError(err.into())
+        AppError::Internal(err.into())
     }
 }
 
@@ -55,6 +67,15 @@ pub fn not_found_page() -> Response {
         "404",
         "Page not found",
         "The page you are looking for doesn't exist or may have been deleted.",
+    )
+}
+
+pub fn forbidden_page() -> Response {
+    error_page(
+        StatusCode::FORBIDDEN,
+        "403",
+        "Forbidden",
+        "You don't have permission to perform this action.",
     )
 }
 

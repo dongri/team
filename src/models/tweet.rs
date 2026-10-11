@@ -253,15 +253,17 @@ pub async fn toggle_like(pool: &PgPool, user_id: i32, tweet_id: i32) -> anyhow::
     )
     .await?;
     let tweet = conn
-        .query_one("SELECT user_id, body from tweets where id = $1", &[&tweet_id])
+        .query_one(
+            "SELECT user_id, body from tweets where id = $1",
+            &[&tweet_id],
+        )
         .await?;
     let tweet_user_id: i32 = tweet.get("user_id");
     let tweet_body: String = tweet.get("body");
     drop(conn);
     if tweet_user_id != user_id {
         let excerpt: String = tweet_body.chars().take(40).collect();
-        models::notification::create(pool, &path, user_id, tweet_user_id, &excerpt, "like")
-            .await?;
+        models::notification::create(pool, &path, user_id, tweet_user_id, &excerpt, "like").await?;
     }
     Ok(true)
 }

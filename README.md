@@ -42,6 +42,13 @@ cp .env.example .env
 `.env` is loaded automatically by both the app itself (dotenvy) and docker compose.
 See [.env.example](.env.example) for a description of each variable.
 
+`TEAM_SECRET_COOKIE` is required (32+ characters) and the app refuses to
+start without it:
+
+```sh
+openssl rand -hex 32
+```
+
 ### 2-a. Run with Docker
 
 ```sh
@@ -117,6 +124,30 @@ docker compose -f compose.prod.yml up --build -d
 
 4. In production, terminate TLS with a reverse proxy such as Nginx and set
    `TEAM_DOMAIN` to the public URL (e.g. `https://team.example.com`).
+   Set `TEAM_TRUST_PROXY=true` so the client address is taken from
+   `X-Forwarded-For`, and make sure the proxy forwards the original `Host`
+   header (`proxy_set_header Host $host;`).
+
+## Security checklist
+
+Before exposing an instance to the internet:
+
+- **Close sign-up.** With the defaults anyone who can reach the server can
+  create an account and read everything. Set `TEAM_SIGNUP_CODE` (invitation
+  code) or `TEAM_SIGNUP_ENABLED=false` once your team has accounts.
+- **Restrict Google sign-in** with `TEAM_GOOGLE_ALLOW_DOMAIN`; without it any
+  Google account can sign in.
+- **Use HTTPS** and an `https://` `TEAM_DOMAIN`, which turns on the `Secure`
+  flag for session cookies.
+- Uploaded images under `public/img/posts` and `public/img/profile/icons`
+  are served without authentication (file names are random, but the URLs
+  are shareable). Keep that in mind for sensitive screenshots.
+
+Built-in protections: Argon2id password hashes, signed `HttpOnly`
+`SameSite=Lax` session cookies, same-origin enforcement on every
+state-changing request, sign-in throttling, OAuth `state` validation,
+parameterized SQL, HTML escaping in templates and Markdown rendered with
+raw HTML disabled.
 
 ## License
 

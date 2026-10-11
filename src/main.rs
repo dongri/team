@@ -4,6 +4,7 @@ mod db;
 mod error;
 mod handlers;
 mod models;
+mod ratelimit;
 mod services;
 mod state;
 mod util;
@@ -23,10 +24,23 @@ async fn main() -> anyhow::Result<()> {
         )
         .init();
 
-    let config = config::Config::from_env();
-    if config.team_secret_cookie == config::DEFAULT_SECRET_COOKIE {
+    // Fails fast on a missing / placeholder / short cookie secret.
+    let config = config::Config::from_env()?;
+
+    if config.team_signup_enabled && config.team_signup_code.is_empty() {
         tracing::warn!(
-            "TEAM_SECRET_COOKIE is the built-in default — set a long random value in production"
+            "Sign-up is open to anyone (TEAM_SIGNUP_ENABLED=true, no TEAM_SIGNUP_CODE). \
+             Set TEAM_SIGNUP_CODE or TEAM_SIGNUP_ENABLED=false once your team has accounts."
+        );
+    }
+    if config.google_configured() && config.team_google_allow_domain.is_empty() {
+        tracing::warn!(
+            "Google sign-in accepts any Google account (TEAM_GOOGLE_ALLOW_DOMAIN is empty)"
+        );
+    }
+    if config.team_domain.is_empty() {
+        tracing::warn!(
+            "TEAM_DOMAIN is empty: generated links and origin checks fall back to the Host header"
         );
     }
 

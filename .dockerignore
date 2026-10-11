@@ -1,0 +1,12 @@
+# Never bake local secrets or build output into the image.
+.env
+.env.*
+!.env.example
+target/
+.git/
+.github/
+screenshots/
+public/img/posts/*
+public/img/profile/icons/*
+*.log
+.DS_Store

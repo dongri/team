@@ -1,7 +1,9 @@
 use std::net::SocketAddr;
 use std::time::Instant;
 
-use axum::extract::{ConnectInfo, DefaultBodyLimit, Request};
+use axum::extract::{ConnectInfo, DefaultBodyLimit, Request, State};
+use axum::http::header::{HeaderValue, ORIGIN, REFERER};
+use axum::http::{HeaderMap, Method};
 use axum::middleware::Next;
 use axum::response::Response;
 use axum::routing::{get, post};
@@ -25,7 +27,7 @@ pub fn create_router(state: AppState) -> Router {
             "/signin",
             get(account::get_signin).post(account::post_signin),
         )
-        .route("/signout", get(account::signout))
+        .route("/signout", post(account::signout))
         .route("/auth/google", get(account::auth_google))
         .route(
             "/account/settings",
@@ -47,7 +49,7 @@ pub fn create_router(state: AppState) -> Router {
         .route("/gist/show/{id}", get(gist::show))
         .route("/gist/edit/{id}", get(gist::edit))
         .route("/gist/update", post(gist::update))
-        .route("/gist/delete/{id}", get(gist::delete))
+        .route("/gist/delete/{id}", post(gist::delete))
         .route("/gist/comment", post(gist::comment))
         .route("/gist/comment/{id}", post(gist::comment_update))
         // Tweet
@@ -67,7 +69,7 @@ pub fn create_router(state: AppState) -> Router {
         .route("/{kind}/create", post(post::create))
         .route("/{kind}/list", get(post::list))
         .route("/{kind}/show/{id}", get(post::show))
-        .route("/{kind}/delete/{id}", get(post::delete))
+        .route("/{kind}/delete/{id}", post(post::delete))
         .route("/{kind}/edit/{id}", get(post::edit))
         .route("/{kind}/update", post(post::update))
         .route("/{kind}/comment", post(post::comment))
@@ -98,7 +100,15 @@ pub fn create_router(state: AppState) -> Router {
         .layer(DefaultBodyLimit::max(
             crate::handlers::account::MAX_UPLOAD_BYTES + 1024 * 1024,
         ))
-        .layer(axum::middleware::from_fn(access_log))
+        .layer(axum::middleware::from_fn_with_state(
+            state.clone(),
+            csrf_guard,
+        ))
+        .layer(axum::middleware::from_fn(security_headers))
+        .layer(axum::middleware::from_fn_with_state(
+            state.clone(),
+            access_log,
+        ))
         .with_state(state)
 }
 
@@ -106,25 +116,106 @@ async fn not_found() -> Response {
     crate::error::not_found_page()
 }
 
-/// One access-log line per request:
-/// `<client> "<method> <uri>" <status> <latency>ms`
-async fn access_log(req: Request, next: Next) -> Response {
-    let method = req.method().clone();
-    let uri = req.uri().clone();
-    // Behind a reverse proxy the client is in X-Forwarded-For;
-    // otherwise fall back to the socket peer address.
-    let client = req
-        .headers()
-        .get("x-forwarded-for")
+/// Reject state-changing requests that did not originate from this site.
+///
+/// All mutating endpoints are cookie-authenticated HTML forms or same-origin
+/// `fetch` calls, so a legitimate browser request always carries Fetch
+/// Metadata (`Sec-Fetch-Site`) and/or an `Origin`/`Referer` matching our own
+/// host. Together with `SameSite=Lax` cookies this blocks cross-site request
+/// forgery without a per-form token.
+async fn csrf_guard(State(state): State<AppState>, req: Request, next: Next) -> Response {
+    if matches!(
+        *req.method(),
+        Method::GET | Method::HEAD | Method::OPTIONS | Method::TRACE
+    ) {
+        return next.run(req).await;
+    }
+
+    let allowed = request_is_same_origin(req.headers(), state.config.domain_authority().as_deref());
+    if !allowed {
+        tracing::warn!(
+            target: "team::csrf",
+            "rejected cross-site {} {}",
+            req.method(),
+            req.uri().path()
+        );
+        return crate::error::forbidden_page();
+    }
+    next.run(req).await
+}
+
+/// Pure check behind `csrf_guard`, split out for testing.
+fn request_is_same_origin(headers: &HeaderMap, configured_authority: Option<&str>) -> bool {
+    // Fetch Metadata is set by the browser and cannot be spoofed by pages.
+    if let Some(site) = headers.get("sec-fetch-site").and_then(|v| v.to_str().ok()) {
+        return matches!(site, "same-origin" | "none");
+    }
+
+    // Older browsers: fall back to Origin, then Referer. Absence of both on
+    // a POST is not something a browser form submission produces.
+    let source = headers
+        .get(ORIGIN)
+        .or_else(|| headers.get(REFERER))
+        .and_then(|v| v.to_str().ok());
+    let Some(source) = source else {
+        return false;
+    };
+    let Some(source_authority) = authority_of(source) else {
+        return false;
+    };
+
+    let host_header = headers
+        .get(axum::http::header::HOST)
         .and_then(|v| v.to_str().ok())
-        .and_then(|v| v.split(',').next())
-        .map(|s| s.trim().to_string())
-        .or_else(|| {
-            req.extensions()
-                .get::<ConnectInfo<SocketAddr>>()
-                .map(|ci| ci.0.ip().to_string())
-        })
-        .unwrap_or_else(|| "-".to_string());
+        .map(|h| h.trim().to_ascii_lowercase());
+
+    host_header.as_deref() == Some(source_authority.as_str())
+        || configured_authority
+            .map(|a| a.eq_ignore_ascii_case(&source_authority))
+            .unwrap_or(false)
+}
+
+/// `host[:port]` of an absolute URL, lower-cased, default ports omitted.
+fn authority_of(url: &str) -> Option<String> {
+    let parsed = url::Url::parse(url).ok()?;
+    let host = parsed.host_str()?.to_ascii_lowercase();
+    Some(match parsed.port() {
+        Some(port) => format!("{}:{}", host, port),
+        None => host,
+    })
+}
+
+/// Defensive response headers for every response.
+async fn security_headers(req: Request, next: Next) -> Response {
+    let mut response = next.run(req).await;
+    let headers = response.headers_mut();
+    headers.insert(
+        "x-content-type-options",
+        HeaderValue::from_static("nosniff"),
+    );
+    headers.insert("x-frame-options", HeaderValue::from_static("DENY"));
+    headers.insert(
+        "referrer-policy",
+        HeaderValue::from_static("strict-origin-when-cross-origin"),
+    );
+    response
+}
+
+/// One access-log line per request:
+/// `<client> "<method> <path>" <status> <latency>ms`
+async fn access_log(State(state): State<AppState>, req: Request, next: Next) -> Response {
+    let method = req.method().clone();
+    // The OAuth callback carries a one-time authorization code in its query
+    // string; keep it (and any other query) out of the logs.
+    let target = match req.uri().path() {
+        p if p.starts_with("/auth/") => p.to_string(),
+        _ => req.uri().to_string(),
+    };
+    let peer = req
+        .extensions()
+        .get::<ConnectInfo<SocketAddr>>()
+        .map(|ci| ci.0);
+    let client = crate::util::client_ip(req.headers(), peer, state.config.team_trust_proxy);
 
     let start = Instant::now();
     let response = next.run(req).await;
@@ -134,9 +225,83 @@ async fn access_log(req: Request, next: Next) -> Response {
         "{} \"{} {}\" {} {}ms",
         client,
         method,
-        uri,
+        target,
         response.status().as_u16(),
         start.elapsed().as_millis()
     );
     response
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn headers(pairs: &[(&str, &str)]) -> HeaderMap {
+        let mut h = HeaderMap::new();
+        for (k, v) in pairs {
+            h.insert(
+                axum::http::HeaderName::from_bytes(k.as_bytes()).unwrap(),
+                v.parse().unwrap(),
+            );
+        }
+        h
+    }
+
+    #[test]
+    fn fetch_metadata_decides_when_present() {
+        assert!(request_is_same_origin(
+            &headers(&[("sec-fetch-site", "same-origin")]),
+            None
+        ));
+        assert!(request_is_same_origin(
+            &headers(&[("sec-fetch-site", "none")]),
+            None
+        ));
+        assert!(!request_is_same_origin(
+            &headers(&[
+                ("sec-fetch-site", "cross-site"),
+                ("origin", "http://localhost:3000"),
+                ("host", "localhost:3000"),
+            ]),
+            None
+        ));
+        assert!(!request_is_same_origin(
+            &headers(&[("sec-fetch-site", "same-site")]),
+            None
+        ));
+    }
+
+    #[test]
+    fn origin_must_match_host_or_configured_domain() {
+        assert!(request_is_same_origin(
+            &headers(&[
+                ("origin", "http://localhost:3000"),
+                ("host", "localhost:3000")
+            ]),
+            None
+        ));
+        assert!(request_is_same_origin(
+            &headers(&[
+                ("origin", "https://team.example.com"),
+                ("host", "internal:3000")
+            ]),
+            Some("team.example.com")
+        ));
+        assert!(!request_is_same_origin(
+            &headers(&[("origin", "https://evil.com"), ("host", "team.example.com")]),
+            Some("team.example.com")
+        ));
+        assert!(request_is_same_origin(
+            &headers(&[
+                ("referer", "https://team.example.com/post/show/1"),
+                ("host", "team.example.com"),
+            ]),
+            None
+        ));
+        assert!(!request_is_same_origin(&headers(&[("host", "x")]), None));
+        assert!(!request_is_same_origin(
+            &headers(&[("origin", "null"), ("host", "x")]),
+            None
+        ));
+    }
 }

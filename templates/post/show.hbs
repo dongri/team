@@ -153,7 +153,13 @@
     }
     function removePost(kind, id) {
       if (confirm('Are you sure?')) {
-        window.location.href = '/' + kind + '/delete/' + id;
+        // Deletion is a POST so it cannot be triggered by a crafted link or
+        // image URL.
+        var form = document.createElement('form');
+        form.method = 'post';
+        form.action = '/' + encodeURIComponent(kind) + '/delete/' + encodeURIComponent(id);
+        document.body.appendChild(form);
+        form.submit();
       }
     }
   </script>

@@ -538,6 +538,20 @@ pub async fn pinned_list(pool: &PgPool, offset: i32, limit: i32) -> anyhow::Resu
     posts_from_rows(pool, rows).await
 }
 
+/// True when `user_id` holds the active pin on `post_id`.
+pub async fn is_pinned_by(pool: &PgPool, user_id: i32, post_id: i32) -> anyhow::Result<bool> {
+    let conn = pool.get().await?;
+    let row = conn
+        .query_one(
+            "SELECT count(*)::int as count from pinneds
+             where deleted = false and post_id = $1 and user_id = $2",
+            &[&post_id, &user_id],
+        )
+        .await?;
+    let count: i32 = row.get("count");
+    Ok(count > 0)
+}
+
 pub async fn is_pinned(pool: &PgPool, post_id: i32) -> anyhow::Result<bool> {
     let conn = pool.get().await?;
     let row = conn

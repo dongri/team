@@ -329,6 +329,16 @@ img {
   color: var(--text);
 }
 
+/* Sign out is a POST form button; make it look like the other items. */
+button.dropdown-item {
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
 .dropdown-divider {
   border: 0;
   border-top: 1px solid var(--border);

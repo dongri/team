@@ -3,11 +3,15 @@ services:
   team_postgres:
     image: postgres:10.4-alpine
     container_name: team_postgres
+    environment:
+      # Development-only credentials; the database is reachable only from
+      # this machine (see `ports`).
+      - POSTGRES_PASSWORD=team_dev_password
     volumes:
       - ./ddl.sql:/docker-entrypoint-initdb.d/init.sql
       - /tmp/postgres:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
 
   team_server:
     container_name: team_server
@@ -17,7 +21,7 @@ services:
     environment:
       # Other variables come from the mounted .env (loaded by the app itself).
       # The DB host differs inside the container, so only this one is overridden.
-      - TEAM_DATABASE_URL=postgres://postgres:@team_postgres:5432/team
+      - TEAM_DATABASE_URL=postgres://postgres:team_dev_password@team_postgres:5432/team
     volumes:
       - .:/source
     logging:

@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 use crate::auth::AuthUser;
-use crate::error::AppResult;
+use crate::error::{AppError, AppResult};
 use crate::handlers::account::upload_and_respond;
 use crate::handlers::PageQuery;
 use crate::models;
@@ -18,6 +18,26 @@ use crate::views::render;
 
 fn show_path(kind: &str, id: i32) -> String {
     format!("/{}/show/{}", kind, id)
+}
+
+/// Load a post for `login_user_id`. Drafts are private to their author, so
+/// anyone else gets a 404 (not a 403, which would confirm the id exists).
+async fn load_visible_post(
+    state: &AppState,
+    id: i32,
+    login_user_id: i32,
+) -> AppResult<models::post::Post> {
+    let post = models::post::get_by_id(&state.pool, id).await?;
+    if post.status != "publish" && post.user_id != login_user_id {
+        return Err(AppError::NotFound);
+    }
+    Ok(post)
+}
+
+/// The author may always edit. Co-editing (`shared`) opens a published
+/// post to every signed-in user.
+fn can_edit(post: &models::post::Post, login_user_id: i32) -> bool {
+    post.user_id == login_user_id || (post.shared && post.status == "publish")
 }
 
 pub async fn new_form(
@@ -140,7 +160,7 @@ pub async fn show(
     AuthUser(login_user): AuthUser,
     Path((kind, id)): Path<(String, i32)>,
 ) -> AppResult<Response> {
-    let post = models::post::get_by_id(&state.pool, id).await?;
+    let post = load_visible_post(&state, id, login_user.id).await?;
     let comments = models::post::get_comments_by_post_id(&state.pool, id).await?;
     let stocked = models::post::is_stocked(&state.pool, login_user.id, id).await?;
     let pinned = models::post::is_pinned(&state.pool, id).await?;
@@ -176,12 +196,14 @@ pub async fn show(
         pinned: bool,
     }
 
-    let editable = post.user_id == login_user.id || post.shared;
+    let editable = can_edit(&post, login_user.id);
+    // Only the author may delete; co-editors get the Edit button alone.
+    let deletable = post.user_id == login_user.id;
     let data = Data {
         logged_in: true,
         login_user,
         editable,
-        deletable: editable,
+        deletable,
         shared: post.shared,
         post,
         comments: post_comments,
@@ -196,14 +218,14 @@ pub async fn show(
 pub async fn delete(
     State(state): State<AppState>,
     AuthUser(login_user): AuthUser,
-    Path((_kind, id)): Path<(String, i32)>,
+    Path((kind, id)): Path<(String, i32)>,
 ) -> AppResult<Response> {
-    let post = models::post::get_by_id(&state.pool, id).await?;
+    let post = load_visible_post(&state, id, login_user.id).await?;
     if post.user_id != login_user.id {
-        return Ok(StatusCode::FORBIDDEN.into_response());
+        return Err(AppError::Forbidden);
     }
     models::post::delete_by_id(&state.pool, id).await?;
-    Ok(Redirect::to("/post/list").into_response())
+    Ok(Redirect::to(&format!("/{}/list", kind)).into_response())
 }
 
 pub async fn edit(
@@ -211,9 +233,9 @@ pub async fn edit(
     AuthUser(login_user): AuthUser,
     Path((kind, id)): Path<(String, i32)>,
 ) -> AppResult<Response> {
-    let post = models::post::get_by_id(&state.pool, id).await?;
-    if post.user_id != login_user.id && !post.shared {
-        return Ok(StatusCode::FORBIDDEN.into_response());
+    let post = load_visible_post(&state, id, login_user.id).await?;
+    if !can_edit(&post, login_user.id) {
+        return Err(AppError::Forbidden);
     }
 
     let tags = post
@@ -271,9 +293,12 @@ pub async fn update(
     Path(kind): Path<String>,
     Form(form): Form<PostUpdateForm>,
 ) -> AppResult<Response> {
-    let old_post = models::post::get_by_id(&state.pool, form.id).await?;
-    if old_post.user_id != login_user.id && !old_post.shared {
-        return Ok(StatusCode::FORBIDDEN.into_response());
+    let old_post = load_visible_post(&state, form.id, login_user.id).await?;
+    if !can_edit(&old_post, login_user.id) {
+        return Err(AppError::Forbidden);
+    }
+    if form.action != "publish" && form.action != "draft" {
+        return Ok(StatusCode::BAD_REQUEST.into_response());
     }
 
     models::post::update(
@@ -327,17 +352,25 @@ pub struct TagsUpdateForm {
 pub async fn tags_update(
     State(state): State<AppState>,
     AuthUser(login_user): AuthUser,
-    Path((kind, _id)): Path<(String, i32)>,
+    Path((kind, id)): Path<(String, i32)>,
     Form(form): Form<TagsUpdateForm>,
 ) -> AppResult<Response> {
-    let old_post = models::post::get_by_id(&state.pool, form.id).await?;
+    // The path id is authoritative; ignore a mismatching form id.
+    if form.id != id {
+        return Ok(StatusCode::BAD_REQUEST.into_response());
+    }
+    let old_post = load_visible_post(&state, id, login_user.id).await?;
+    if !can_edit(&old_post, login_user.id) {
+        return Err(AppError::Forbidden);
+    }
+    // Keep the current status: retagging must never publish a draft.
     models::post::update(
         &state.pool,
         form.id,
         &old_post.title,
         &old_post.body,
         &form.tags,
-        "publish",
+        &old_post.status,
     )
     .await?;
 
@@ -370,7 +403,7 @@ pub async fn comment(
     Path(kind): Path<String>,
     Form(form): Form<CommentForm>,
 ) -> AppResult<Response> {
-    let post = models::post::get_by_id(&state.pool, form.id).await?;
+    let post = load_visible_post(&state, form.id, login_user.id).await?;
     let mut mentions = vec![post.user.username.clone()];
     for c in models::post::get_comments_by_post_id(&state.pool, form.id).await? {
         if !mentions.contains(&c.user.username) {
@@ -429,6 +462,7 @@ pub async fn stock(
     AuthUser(login_user): AuthUser,
     Path((kind, id)): Path<(String, i32)>,
 ) -> AppResult<Response> {
+    load_visible_post(&state, id, login_user.id).await?;
     models::post::stock_post(&state.pool, login_user.id, id).await?;
     Ok(Redirect::to(&show_path(&kind, id)).into_response())
 }
@@ -475,29 +509,51 @@ pub async fn stocked_list(
     Ok(render(&state, "stock/list", &data)?.into_response())
 }
 
+/// Open a post for co-editing. Only the author can grant this, since it
+/// lets every signed-in user rewrite the post.
 pub async fn share(
     State(state): State<AppState>,
-    AuthUser(_login_user): AuthUser,
+    AuthUser(login_user): AuthUser,
     Path((kind, id)): Path<(String, i32)>,
 ) -> AppResult<Response> {
+    let post = load_visible_post(&state, id, login_user.id).await?;
+    if post.user_id != login_user.id {
+        return Err(AppError::Forbidden);
+    }
+    if post.status != "publish" {
+        return Ok(StatusCode::BAD_REQUEST.into_response());
+    }
     models::post::share_post(&state.pool, id).await?;
     Ok(Redirect::to(&show_path(&kind, id)).into_response())
 }
 
+/// Pinning is a team-wide feature: any member may pin a published post.
 pub async fn pin(
     State(state): State<AppState>,
     AuthUser(login_user): AuthUser,
     Path((kind, id)): Path<(String, i32)>,
 ) -> AppResult<Response> {
-    models::post::pin_post(&state.pool, login_user.id, id).await?;
+    let post = load_visible_post(&state, id, login_user.id).await?;
+    if post.status != "publish" {
+        return Ok(StatusCode::BAD_REQUEST.into_response());
+    }
+    if !models::post::is_pinned(&state.pool, id).await? {
+        models::post::pin_post(&state.pool, login_user.id, id).await?;
+    }
     Ok(Redirect::to(&show_path(&kind, id)).into_response())
 }
 
+/// Only the post's author or whoever pinned it may unpin.
 pub async fn unpin(
     State(state): State<AppState>,
-    AuthUser(_login_user): AuthUser,
+    AuthUser(login_user): AuthUser,
     Path((kind, id)): Path<(String, i32)>,
 ) -> AppResult<Response> {
+    let post = load_visible_post(&state, id, login_user.id).await?;
+    let pinned_by_me = models::post::is_pinned_by(&state.pool, login_user.id, id).await?;
+    if post.user_id != login_user.id && !pinned_by_me {
+        return Err(AppError::Forbidden);
+    }
     models::post::unpin_post(&state.pool, id).await?;
     Ok(Redirect::to(&show_path(&kind, id)).into_response())
 }
